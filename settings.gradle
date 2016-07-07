@@ -1,0 +1,3 @@
+rootProject.name = 'groovy-language-server'
+
+include 'groovy-language-server'

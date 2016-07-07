@@ -1,0 +1,53 @@
+machine:
+  java:
+    version: oraclejdk8
+  environment:
+    TERM: dumb
+
+dependencies:
+  override:
+    - ./gradlew resolveConfigurations --parallel
+
+test:
+  override:
+    - ? |
+        set -euo pipefail
+
+        case $CIRCLE_NODE_INDEX in
+        0)
+            ./scripts/circle/run-checkstyle-only.sh
+            ;;
+        1)
+            ./scripts/circle/run-findbugs-test-only.sh
+            ;;
+        2)
+            ./scripts/circle/run-findbugs-main-only.sh
+            ;;
+        3)
+            ./scripts/circle/run-unit-tests-only.sh
+            ;;
+        esac
+      :
+        parallel: true
+        timeout: 1200
+  post:
+    - ./gradlew --stacktrace --parallel copyCiArtifactsToCircle:
+        parallel: true
+      # ensure that version is not dirty
+    - |
+      if [[ -n $(git status --porcelain) ]]; then false; fi
+
+# Reach out to RAINBOW for access to publish. For CircleCI info, see: https://circleci.com/docs/configuration#deployment
+# ---
+# deployment:
+#   snapshot:
+#     branch: develop
+#     # owner: <github org>
+#     commands:
+#       - ./gradlew -is publish
+#
+#   release:
+#     tag: /[0-9]+(\.[0-9]+)+(-[a-zA-Z]+[0-9]*)*/
+#     # owner: <github org>
+#     commands:
+#       - ./gradlew -is publish

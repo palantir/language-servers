@@ -1,0 +1,14 @@
+apply plugin: 'com.palantir.publish-dist'
+apply plugin: 'sls'
+
+publishing {
+    publications {
+        dist(MavenPublication) {
+            artifact distTar
+        }
+    }
+}
+
+slsVerify {
+    strict true
+}

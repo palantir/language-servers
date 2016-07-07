@@ -1,0 +1,21 @@
+ext.applicationName = 'groovy-language-server'
+
+apply plugin: 'com.palantir.java-distribution'
+apply from: "${rootDir}/gradle/java.gradle"
+apply from: "${rootDir}/gradle/immutables-processors.gradle"
+
+sourceCompatibility = '1.8'
+
+distribution {
+    serviceName applicationName
+    mainClass 'com.palantir.groovylanguageserver.GroovyLanguageServer'
+}
+
+dependencies {
+    compile "com.fasterxml.jackson.core:jackson-databind:${jacksonDatabindVersion}"
+    compile "com.google.guava:guava:${guavaVersion}"
+    compile "javax.ws.rs:javax.ws.rs-api:${javaxRsVersion}"
+
+    testCompile "junit:junit:${junitVersion}"
+    testCompile "org.mockito:mockito-core:${mockitoVersion}"
+}
