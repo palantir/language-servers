@@ -1,8 +1,8 @@
 ext.applicationName = 'groovy-language-server'
 
 apply plugin: 'com.palantir.java-distribution'
-apply from: "${rootDir}/gradle/java.gradle"
 apply from: "${rootDir}/gradle/immutables-processors.gradle"
+apply from: "${rootDir}/gradle/java.gradle"
 
 sourceCompatibility = '1.8'
 
