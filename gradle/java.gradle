@@ -1,0 +1,49 @@
+apply plugin: 'java'
+apply plugin: 'com.palantir.baseline-checkstyle'
+apply plugin: 'com.palantir.baseline-eclipse'
+apply plugin: 'com.palantir.baseline-findbugs'
+apply plugin: 'com.palantir.baseline-idea'
+apply plugin: 'com.palantir.configuration-resolver'
+apply plugin: 'com.palantir.jacoco-coverage'
+apply plugin: 'com.palantir.launch-config'
+
+sourceCompatibility = '1.8'
+
+jacocoTestReport {
+    reports {
+        xml.enabled true
+    }
+    // Ignore Immutables-generated code from coverage checks
+    afterEvaluate {
+        classDirectories = files(classDirectories.files.collect {
+            // Exclusion path is project-relative and has a base of compiled classes
+            fileTree(dir: it, exclude: '**/Immutable*.class')
+        })
+    }
+}
+
+tasks.withType(Javadoc) {
+    // suppress Javadoc doclint warnings
+    options.addStringOption('Xdoclint:none', '-quiet')
+}
+
+// add resolve task for CircleCI
+task resolveDependencies {
+    description = 'Forces the resolution of all dependencies in all configurations'
+    group = 'build'
+
+    doLast {
+        configurations.all { c ->
+            c.resolve()
+        }
+    }
+}
+
+jar {
+    manifest {
+        attributes("Implementation-Title": project.name,
+                "Implementation-Version": project.version,
+                "Implementation-Vendor": "Palantir Technologies, Inc.")
+    }
+}
+
