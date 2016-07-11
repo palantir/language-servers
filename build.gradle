@@ -36,6 +36,13 @@ allprojects {
     group 'com.palantir.groovylanguageserver'
     version gitVersion()
 
+    repositories {
+        jcenter()
+        maven {
+            url "https://oss.sonatype.org/content/repositories/snapshots/"
+        }
+    }
+
     if (System.env.CIRCLE_ARTIFACTS) {
         task copyCiArtifactsToCircle {
             outputs.upToDateWhen { false }
@@ -55,9 +62,8 @@ allprojects {
     }
 }
 
-subprojects {
-    repositories {
-        jcenter()
+configurations.all {
+    resolutionStrategy {
+        force "com.netflix.feign:feign-slf4j:${feignVersion}"
     }
 }
-
