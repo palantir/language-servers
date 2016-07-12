@@ -14,8 +14,14 @@ distribution {
 dependencies {
     compile "com.fasterxml.jackson.core:jackson-databind:${jacksonDatabindVersion}"
     compile "com.google.guava:guava:${guavaVersion}"
+    compile "com.netflix.feign:feign-slf4j:${feignVersion}"
+    compile "io.typefox.lsapi:io.typefox.lsapi:${typefoxLsApiVersion}"
+    compile "io.typefox.lsapi:io.typefox.lsapi.annotations:${typefoxLsApiVersion}"
+    compile "io.typefox.lsapi:io.typefox.lsapi.services:${typefoxLsApiVersion}"
     compile "javax.ws.rs:javax.ws.rs-api:${javaxRsVersion}"
+    compile "org.codehaus.groovy:groovy-all:${groovyAllVersion}"
 
     testCompile "junit:junit:${junitVersion}"
+    testCompile "org.hamcrest:hamcrest-all:${hamcrestVersion}"
     testCompile "org.mockito:mockito-core:${mockitoVersion}"
 }
