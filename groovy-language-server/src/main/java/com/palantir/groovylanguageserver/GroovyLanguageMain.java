@@ -25,7 +25,7 @@ public final class GroovyLanguageMain {
 
     private static final Logger log = LoggerFactory.getLogger(GroovyLanguageMain.class);
 
-    private GroovyLanguageMain(){}
+    private GroovyLanguageMain() {}
 
     public static void main(String[] args) {
         GroovyLanguageServer server = new GroovyLanguageServer(new GroovyTextDocumentService(),
