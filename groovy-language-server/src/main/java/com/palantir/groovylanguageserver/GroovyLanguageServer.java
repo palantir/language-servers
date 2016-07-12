@@ -25,11 +25,17 @@ import io.typefox.lsapi.services.LanguageServer;
 import io.typefox.lsapi.services.TextDocumentService;
 import io.typefox.lsapi.services.WindowService;
 import io.typefox.lsapi.services.WorkspaceService;
+import io.typefox.lsapi.services.json.LanguageServerToJsonAdapter;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class GroovyLanguageServer implements LanguageServer {
+
+    private static final Logger log = LoggerFactory.getLogger(GroovyLanguageServer.class);
 
     private final TextDocumentService textDocumentService;
     private final WorkspaceService workspaceService;
@@ -81,6 +87,21 @@ public final class GroovyLanguageServer implements LanguageServer {
 
     public Path getWorkspaceRoot() {
         return workspaceRoot;
+    }
+
+    public static void main(String[] args) {
+        GroovyLanguageServer server = new GroovyLanguageServer(
+                new GroovyTextDocumentService(), new GroovyWorkspaceService(), new GroovyWindowService());
+
+        LanguageServerToJsonAdapter adapter = new LanguageServerToJsonAdapter(server);
+        adapter.connect(System.in, System.out);
+        adapter.getProtocol().addErrorListener((message, err) -> log.error(message, err));
+
+        try {
+            adapter.join();
+        } catch (InterruptedException | ExecutionException e) {
+            throw new RuntimeException(e);
+        }
     }
 
 }
