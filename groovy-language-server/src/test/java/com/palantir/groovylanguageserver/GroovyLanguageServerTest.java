@@ -26,7 +26,6 @@ import io.typefox.lsapi.ServerCapabilities;
 import io.typefox.lsapi.services.TextDocumentService;
 import io.typefox.lsapi.services.WindowService;
 import io.typefox.lsapi.services.WorkspaceService;
-import java.nio.file.Paths;
 import java.util.concurrent.ExecutionException;
 import org.junit.Rule;
 import org.junit.Test;
@@ -41,17 +40,24 @@ public final class GroovyLanguageServerTest {
     @Test
     public void testInitialize() throws InterruptedException, ExecutionException {
         GroovyLanguageServer server =
-                new GroovyLanguageServer(Mockito.mock(TextDocumentService.class),
-                        Mockito.mock(WorkspaceService.class),
-                        Mockito.mock(WindowService.class));
+                new GroovyLanguageServer(new CompilerWrapperProvider() {
+                    @Override
+                    public void set(CompilerWrapper compilerWrapper) {}
+
+                    @Override
+                    public CompilerWrapper get() {
+                        return Mockito.mock(CompilerWrapper.class);
+                    }
+                }, Mockito.mock(LanguageServerConfig.class), Mockito.mock(TextDocumentService.class),
+                        Mockito.mock(WorkspaceService.class), Mockito.mock(WindowService.class));
         InitializeParamsImpl params = new InitializeParamsImpl();
         ClientCapabilitiesImpl capabilities = new ClientCapabilitiesImpl();
         params.setCapabilities(capabilities);
         params.setClientName("Test");
         params.setProcessId(1);
-        params.setRootPath(folder.toString());
+        params.setRootPath(folder.getRoot().toPath().toAbsolutePath().toString());
         InitializeResult result = server.initialize(params).get();
-        assertThat(server.getWorkspaceRoot(), is(Paths.get(folder.toString()).toAbsolutePath().normalize()));
+        assertThat(server.getWorkspaceRoot(), is(folder.getRoot().toPath().toAbsolutePath().normalize()));
         assertThat(result.getCapabilities().getTextDocumentSync(), is(ServerCapabilities.SYNC_INCREMENTAL));
     }
 

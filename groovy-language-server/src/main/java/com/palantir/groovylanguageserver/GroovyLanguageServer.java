@@ -37,14 +37,18 @@ public final class GroovyLanguageServer implements LanguageServer {
 
     private static final Logger log = LoggerFactory.getLogger(GroovyLanguageServer.class);
 
+    private final CompilerWrapperProvider provider;
+    private final LanguageServerConfig config;
     private final TextDocumentService textDocumentService;
     private final WorkspaceService workspaceService;
     private final WindowService windowService;
 
     private Path workspaceRoot;
 
-    public GroovyLanguageServer(TextDocumentService textDocumentService, WorkspaceService workspaceService,
-            WindowService windowService) {
+    public GroovyLanguageServer(CompilerWrapperProvider provider, LanguageServerConfig config,
+            TextDocumentService textDocumentService, WorkspaceService workspaceService, WindowService windowService) {
+        this.provider = provider;
+        this.config = config;
         this.textDocumentService = textDocumentService;
         this.workspaceService = workspaceService;
         this.windowService = windowService;
@@ -60,6 +64,9 @@ public final class GroovyLanguageServer implements LanguageServer {
 
         InitializeResultImpl result = new InitializeResultImpl();
         result.setCapabilities(capabilities);
+
+        GroovycWrapper groovycWrapper = new GroovycWrapper(workspaceRoot);
+        provider.set(groovycWrapper);
 
         return CompletableFuture.completedFuture(result);
     }
@@ -90,8 +97,11 @@ public final class GroovyLanguageServer implements LanguageServer {
     }
 
     public static void main(String[] args) {
-        GroovyLanguageServer server = new GroovyLanguageServer(
-                new GroovyTextDocumentService(), new GroovyWorkspaceService(), new GroovyWindowService());
+        CompilerWrapperProvider provider = new SingleCompilerWrapperProvider();
+        LanguageServerConfig config = new GroovyLanguageServerConfig();
+        GroovyLanguageServer server =
+                new GroovyLanguageServer(provider, config, new GroovyTextDocumentService(provider, config),
+                        new GroovyWorkspaceService(provider), new GroovyWindowService(config));
 
         LanguageServerToJsonAdapter adapter = new LanguageServerToJsonAdapter(server);
         adapter.connect(System.in, System.out);

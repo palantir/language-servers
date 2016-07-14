@@ -34,6 +34,7 @@ import io.typefox.lsapi.DocumentSymbolParams;
 import io.typefox.lsapi.Hover;
 import io.typefox.lsapi.Location;
 import io.typefox.lsapi.PublishDiagnosticsParams;
+import io.typefox.lsapi.PublishDiagnosticsParamsImpl;
 import io.typefox.lsapi.ReferenceParams;
 import io.typefox.lsapi.RenameParams;
 import io.typefox.lsapi.SignatureHelp;
@@ -47,6 +48,14 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
 public final class GroovyTextDocumentService implements TextDocumentService {
+
+    private final CompilerWrapperProvider provider;
+    private final LanguageServerConfig config;
+
+    public GroovyTextDocumentService(CompilerWrapperProvider provider, LanguageServerConfig config) {
+        this.provider = provider;
+        this.config = config;
+    }
 
     @Override
     public CompletableFuture<CompletionList> completion(TextDocumentPositionParams position) {
@@ -125,7 +134,8 @@ public final class GroovyTextDocumentService implements TextDocumentService {
 
     @Override
     public void didOpen(DidOpenTextDocumentParams params) {
-        throw new UnsupportedOperationException();
+        provider.get().compile();
+        publishDiagnostics();
     }
 
     @Override
@@ -140,12 +150,20 @@ public final class GroovyTextDocumentService implements TextDocumentService {
 
     @Override
     public void didSave(DidSaveTextDocumentParams params) {
-        throw new UnsupportedOperationException();
+        provider.get().compile();
+        publishDiagnostics();
     }
 
     @Override
     public void onPublishDiagnostics(Consumer<PublishDiagnosticsParams> callback) {
-        throw new UnsupportedOperationException();
+        config.setPublishDiagnostics(callback);
+    }
+
+    private void publishDiagnostics() {
+        PublishDiagnosticsParamsImpl publishDiagnostics = new PublishDiagnosticsParamsImpl();
+        publishDiagnostics.setDiagnostics(provider.get().getDiagnostics());
+        publishDiagnostics.setUri(provider.get().getWorkspaceRoot().toAbsolutePath().toString());
+        config.getPublishDiagnostics().accept(publishDiagnostics);
     }
 
 }
