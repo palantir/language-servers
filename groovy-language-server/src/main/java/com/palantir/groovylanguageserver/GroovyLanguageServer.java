@@ -16,6 +16,7 @@
 
 package com.palantir.groovylanguageserver;
 
+import com.google.common.io.Files;
 import io.typefox.lsapi.InitializeParams;
 import io.typefox.lsapi.InitializeResult;
 import io.typefox.lsapi.InitializeResultImpl;
@@ -63,7 +64,7 @@ public final class GroovyLanguageServer implements LanguageServer {
         InitializeResultImpl result = new InitializeResultImpl();
         result.setCapabilities(capabilities);
 
-        GroovycWrapper groovycWrapper = GroovycWrapper.of(workspaceRoot);
+        GroovycWrapper groovycWrapper = GroovycWrapper.of(Files.createTempDir().toPath(), workspaceRoot);
         provider.set(groovycWrapper);
 
         return CompletableFuture.completedFuture(result);

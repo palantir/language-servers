@@ -44,12 +44,15 @@ public final class GroovycWrapperTest {
     public ExpectedException expectedException = ExpectedException.none();
 
     @Rule
+    public TemporaryFolder output = new TemporaryFolder();
+
+    @Rule
     public TemporaryFolder root = new TemporaryFolder();
 
     @Test
     public void testWorkspaceRootNotFolder() throws IOException {
         expectedException.expect(IllegalArgumentException.class);
-        GroovycWrapper.of(root.newFile().toPath());
+        GroovycWrapper.of(output.getRoot().toPath(), root.newFile().toPath());
     }
 
     @Test
@@ -79,7 +82,7 @@ public final class GroovycWrapperTest {
                 + "else throw new ExceptionNew(\"Wrong coordinate index, use 0 or 1\")}}");
         addFileToFolder(root.getRoot(), "test4.groovy", "class ExceptionNew {}");
 
-        GroovycWrapper wrapper = GroovycWrapper.of(root.getRoot().toPath());
+        GroovycWrapper wrapper = GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath());
         List<DiagnosticImpl> diagnostics = wrapper.compile();
 
         assertEquals(0, diagnostics.size());
@@ -99,7 +102,7 @@ public final class GroovycWrapperTest {
         addFileToFolder(newFolder2, "file.txt", "Something that is not groovy");
         addFileToFolder(newFolder2, "Test.java", "public class Test {}");
 
-        GroovycWrapper wrapper = GroovycWrapper.of(root.getRoot().toPath());
+        GroovycWrapper wrapper = GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath());
         List<DiagnosticImpl> diagnostics = wrapper.compile();
 
         assertEquals(0, diagnostics.size());
@@ -132,7 +135,7 @@ public final class GroovycWrapperTest {
                 + "else throw new ExceptionNew(\"Wrong coordinate index, use 0 or 1\")}}");
         addFileToFolder(root.getRoot(), "test4.groovy", "class ExceptionNew {}");
 
-        GroovycWrapper wrapper = GroovycWrapper.of(root.getRoot().toPath());
+        GroovycWrapper wrapper = GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath());
         List<DiagnosticImpl> diagnostics = wrapper.compile();
 
         assertEquals(2, diagnostics.size());

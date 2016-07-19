@@ -31,6 +31,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.codehaus.groovy.control.CompilationUnit;
+import org.codehaus.groovy.control.CompilerConfiguration;
 import org.codehaus.groovy.control.ErrorCollector;
 import org.codehaus.groovy.control.MultipleCompilationErrorsException;
 import org.codehaus.groovy.control.messages.Message;
@@ -47,11 +48,13 @@ public final class GroovycWrapper implements CompilerWrapper {
         this.workspaceRoot = workspaceRoot;
     }
 
-    public static GroovycWrapper of(Path workspaceRoot) {
+    public static GroovycWrapper of(Path targetDirectory, Path workspaceRoot) {
         Preconditions.checkNotNull(workspaceRoot, "workspaceRoot must not be null");
         Preconditions.checkArgument(workspaceRoot.toFile().isDirectory(), "workspaceRoot must be a directory");
         GroovycWrapper wrapper = new GroovycWrapper(workspaceRoot);
-        wrapper.unit = new CompilationUnit();
+        CompilerConfiguration config = new CompilerConfiguration();
+        config.setTargetDirectory(targetDirectory.toFile());
+        wrapper.unit = new CompilationUnit(config);
         wrapper.addAllSourcesToCompilationUnit();
         return wrapper;
     }
@@ -102,9 +105,8 @@ public final class GroovycWrapper implements CompilerWrapper {
                 RangeImpl range = LsapiFactories.newRange(
                                     LsapiFactories.newPosition(cause.getStartLine(), cause.getStartColumn()),
                                     LsapiFactories.newPosition(cause.getEndLine(), cause.getEndColumn()));
-                diagnostic =
-                        new DiagnosticBuilder(cause.getMessage(), Diagnostic.SEVERITY_ERROR).range(range)
-                                .source(cause.getSourceLocator()).build();
+                diagnostic = new DiagnosticBuilder(cause.getMessage(), Diagnostic.SEVERITY_ERROR)
+                                    .range(range).source(cause.getSourceLocator()).build();
             } else {
                 StringWriter data = new StringWriter();
                 PrintWriter writer = new PrintWriter(data);
