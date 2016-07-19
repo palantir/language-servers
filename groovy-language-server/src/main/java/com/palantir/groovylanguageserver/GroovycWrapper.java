@@ -40,6 +40,7 @@ import org.codehaus.groovy.control.messages.WarningMessage;
 import org.codehaus.groovy.syntax.SyntaxException;
 
 public final class GroovycWrapper implements CompilerWrapper {
+
     private static final String GROOVY_EXTENSION = "groovy";
     private final Path workspaceRoot;
     private CompilationUnit unit;

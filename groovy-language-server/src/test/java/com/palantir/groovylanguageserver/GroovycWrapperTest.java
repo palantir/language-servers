@@ -40,6 +40,7 @@ import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 
 public final class GroovycWrapperTest {
+
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
 
@@ -161,4 +162,5 @@ public final class GroovycWrapperTest {
         PositionImpl end = LsapiFactories.newPosition(endLine, endColumn);
         return LsapiFactories.newRange(start, end);
     }
+
 }
