@@ -24,8 +24,6 @@ public interface CompilerWrapper {
 
     Path getWorkspaceRoot();
 
-    void compile();
-
-    List<DiagnosticImpl> getDiagnostics();
+    List<DiagnosticImpl> compile();
 
 }

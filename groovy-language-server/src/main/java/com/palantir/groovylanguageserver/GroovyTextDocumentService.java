@@ -22,6 +22,7 @@ import io.typefox.lsapi.CodeLensParams;
 import io.typefox.lsapi.Command;
 import io.typefox.lsapi.CompletionItem;
 import io.typefox.lsapi.CompletionList;
+import io.typefox.lsapi.DiagnosticImpl;
 import io.typefox.lsapi.DidChangeTextDocumentParams;
 import io.typefox.lsapi.DidCloseTextDocumentParams;
 import io.typefox.lsapi.DidOpenTextDocumentParams;
@@ -50,11 +51,11 @@ import java.util.function.Consumer;
 public final class GroovyTextDocumentService implements TextDocumentService {
 
     private final CompilerWrapperProvider provider;
-    private final LanguageServerConfig config;
 
-    public GroovyTextDocumentService(CompilerWrapperProvider provider, LanguageServerConfig config) {
+    private Consumer<PublishDiagnosticsParams> publishDiagnostics = p -> { };
+
+    public GroovyTextDocumentService(CompilerWrapperProvider provider) {
         this.provider = provider;
-        this.config = config;
     }
 
     @Override
@@ -134,8 +135,7 @@ public final class GroovyTextDocumentService implements TextDocumentService {
 
     @Override
     public void didOpen(DidOpenTextDocumentParams params) {
-        provider.get().compile();
-        publishDiagnostics();
+        publishDiagnostics(provider.get().compile());
     }
 
     @Override
@@ -150,20 +150,19 @@ public final class GroovyTextDocumentService implements TextDocumentService {
 
     @Override
     public void didSave(DidSaveTextDocumentParams params) {
-        provider.get().compile();
-        publishDiagnostics();
+        publishDiagnostics(provider.get().compile());
     }
 
     @Override
     public void onPublishDiagnostics(Consumer<PublishDiagnosticsParams> callback) {
-        config.setPublishDiagnostics(callback);
+        publishDiagnostics = callback;
     }
 
-    private void publishDiagnostics() {
-        PublishDiagnosticsParamsImpl publishDiagnostics = new PublishDiagnosticsParamsImpl();
-        publishDiagnostics.setDiagnostics(provider.get().getDiagnostics());
-        publishDiagnostics.setUri(provider.get().getWorkspaceRoot().toAbsolutePath().toString());
-        config.getPublishDiagnostics().accept(publishDiagnostics);
+    private void publishDiagnostics(List<DiagnosticImpl> diagnostics) {
+        PublishDiagnosticsParamsImpl publishDiagnosticsImpl = new PublishDiagnosticsParamsImpl();
+        publishDiagnosticsImpl.setDiagnostics(diagnostics);
+        publishDiagnosticsImpl.setUri(provider.get().getWorkspaceRoot().toAbsolutePath().toString());
+        publishDiagnostics.accept(publishDiagnosticsImpl);
     }
 
 }

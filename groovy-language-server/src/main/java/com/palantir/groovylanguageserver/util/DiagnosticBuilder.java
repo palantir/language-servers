@@ -17,35 +17,37 @@
 package com.palantir.groovylanguageserver.util;
 
 import com.google.common.base.Optional;
+import com.google.common.base.Preconditions;
 import io.typefox.lsapi.DiagnosticImpl;
 import io.typefox.lsapi.RangeImpl;
 import io.typefox.lsapi.util.LsapiFactories;
 
 public final class DiagnosticBuilder {
     private final String message;
-    private final Integer severity;
+    private final int severity;
 
     private Optional<String> code = Optional.absent();
     private Optional<RangeImpl> range = Optional.absent();
     private Optional<String> source = Optional.absent();
 
-    public DiagnosticBuilder(String message, Integer severity) {
+    public DiagnosticBuilder(String message, int severity) {
+        Preconditions.checkNotNull(message, "message cannot be null");
         this.message = message;
         this.severity = severity;
     }
 
     public DiagnosticBuilder code(String codeStr) {
-        this.code = Optional.of(codeStr);
+        this.code = Optional.fromNullable(codeStr);
         return this;
     }
 
     public DiagnosticBuilder range(RangeImpl rangeImpl) {
-        this.range = Optional.of(rangeImpl);
+        this.range = Optional.fromNullable(rangeImpl);
         return this;
     }
 
     public DiagnosticBuilder source(String sourceStr) {
-        this.source = Optional.of(sourceStr);
+        this.source = Optional.fromNullable(sourceStr);
         return this;
     }
 

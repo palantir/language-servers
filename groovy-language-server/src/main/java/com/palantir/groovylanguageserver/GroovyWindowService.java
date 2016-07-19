@@ -36,10 +36,12 @@ public final class GroovyWindowService implements WindowService {
 
     @Override
     public void onShowMessageRequest(Consumer<ShowMessageRequestParams> callback) {
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void onLogMessage(Consumer<MessageParams> callback) {
+        throw new UnsupportedOperationException();
     }
 
 }

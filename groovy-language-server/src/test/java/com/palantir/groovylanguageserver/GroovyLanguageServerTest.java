@@ -48,8 +48,8 @@ public final class GroovyLanguageServerTest {
                     public CompilerWrapper get() {
                         return Mockito.mock(CompilerWrapper.class);
                     }
-                }, Mockito.mock(LanguageServerConfig.class), Mockito.mock(TextDocumentService.class),
-                        Mockito.mock(WorkspaceService.class), Mockito.mock(WindowService.class));
+                }, Mockito.mock(TextDocumentService.class), Mockito.mock(WorkspaceService.class),
+                        Mockito.mock(WindowService.class));
         InitializeParamsImpl params = new InitializeParamsImpl();
         ClientCapabilitiesImpl capabilities = new ClientCapabilitiesImpl();
         params.setCapabilities(capabilities);

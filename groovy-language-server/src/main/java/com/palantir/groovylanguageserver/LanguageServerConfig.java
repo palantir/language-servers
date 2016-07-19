@@ -17,14 +17,9 @@
 package com.palantir.groovylanguageserver;
 
 import io.typefox.lsapi.MessageParams;
-import io.typefox.lsapi.PublishDiagnosticsParams;
 import java.util.function.Consumer;
 
 public interface LanguageServerConfig {
-
-    Consumer<PublishDiagnosticsParams>  getPublishDiagnostics();
-
-    void setPublishDiagnostics(Consumer<PublishDiagnosticsParams> publishDiagnostics);
 
     Consumer<MessageParams> getShowMessage();
 

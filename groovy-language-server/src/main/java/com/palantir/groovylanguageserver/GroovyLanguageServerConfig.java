@@ -17,23 +17,11 @@
 package com.palantir.groovylanguageserver;
 
 import io.typefox.lsapi.MessageParams;
-import io.typefox.lsapi.PublishDiagnosticsParams;
 import java.util.function.Consumer;
 
 public final class GroovyLanguageServerConfig implements LanguageServerConfig {
 
-    private Consumer<PublishDiagnosticsParams> publishDiagnostics = p -> { };
     private Consumer<MessageParams> showMessage = m -> { };
-
-    @Override
-    public Consumer<PublishDiagnosticsParams> getPublishDiagnostics() {
-        return publishDiagnostics;
-    }
-
-    @Override
-    public void setPublishDiagnostics(Consumer<PublishDiagnosticsParams> publishDiagnostics) {
-        this.publishDiagnostics = publishDiagnostics;
-    }
 
     @Override
     public Consumer<MessageParams> getShowMessage() {

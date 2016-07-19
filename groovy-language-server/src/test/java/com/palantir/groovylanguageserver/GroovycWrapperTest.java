@@ -21,6 +21,7 @@ import static org.junit.Assert.assertEquals;
 import com.google.common.collect.Sets;
 import com.palantir.groovylanguageserver.util.DiagnosticBuilder;
 import io.typefox.lsapi.Diagnostic;
+import io.typefox.lsapi.DiagnosticImpl;
 import io.typefox.lsapi.PositionImpl;
 import io.typefox.lsapi.RangeImpl;
 import io.typefox.lsapi.util.LsapiFactories;
@@ -30,6 +31,7 @@ import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import org.junit.Rule;
@@ -47,7 +49,7 @@ public final class GroovycWrapperTest {
     @Test
     public void testWorkspaceRootNotFolder() throws IOException {
         expectedException.expect(IllegalArgumentException.class);
-        new GroovycWrapper(root.newFile().toPath());
+        GroovycWrapper.of(root.newFile().toPath());
     }
 
     @Test
@@ -75,12 +77,32 @@ public final class GroovycWrapperTest {
                 + "if (idx == 0) latitude\n"
                 + "else if (idx == 1) longitude\n"
                 + "else throw new ExceptionNew(\"Wrong coordinate index, use 0 or 1\")}}");
-        addFileToRootFolder("test4.groovy", "class ExceptionNew {}");
+        addFileToFolder(root.getRoot(), "test4.groovy", "class ExceptionNew {}");
 
-        GroovycWrapper wrapper = new GroovycWrapper(root.getRoot().toPath());
-        wrapper.compile();
+        GroovycWrapper wrapper = GroovycWrapper.of(root.getRoot().toPath());
+        List<DiagnosticImpl> diagnostics = wrapper.compile();
 
-        assertEquals(0, wrapper.getDiagnostics().size());
+        assertEquals(0, diagnostics.size());
+    }
+
+    @Test
+    public void testCompile_withExtraFiles() throws InterruptedException, ExecutionException, IOException {
+        File newFolder1 = root.newFolder();
+        File newFolder2 = root.newFolder();
+        addFileToFolder(newFolder1, "coordinates.groovy", "class Coordinates {\n"
+                + "double latitude\n"
+                + "double longitude\n"
+                + "double getAt(int idx) {\n"
+                + "if (idx == 0) latitude\n"
+                + "else if (idx == 1) longitude\n"
+                + "else throw new Exception(\"Wrong coordinate index, use 0 or 1\")}}");
+        addFileToFolder(newFolder2, "file.txt", "Something that is not groovy");
+        addFileToFolder(newFolder2, "Test.java", "public class Test {}");
+
+        GroovycWrapper wrapper = GroovycWrapper.of(root.getRoot().toPath());
+        List<DiagnosticImpl> diagnostics = wrapper.compile();
+
+        assertEquals(0, diagnostics.size());
     }
 
     @Test
@@ -108,29 +130,19 @@ public final class GroovycWrapperTest {
                 + "if (idx == 0) latitude\n"
                 + "else if (idx == 1) longitude\n"
                 + "else throw new ExceptionNew(\"Wrong coordinate index, use 0 or 1\")}}");
-        addFileToRootFolder("test4.groovy", "class ExceptionNew {}");
+        addFileToFolder(root.getRoot(), "test4.groovy", "class ExceptionNew {}");
 
-        GroovycWrapper wrapper = new GroovycWrapper(root.getRoot().toPath());
-        wrapper.compile();
+        GroovycWrapper wrapper = GroovycWrapper.of(root.getRoot().toPath());
+        List<DiagnosticImpl> diagnostics = wrapper.compile();
 
-        assertEquals(2, wrapper.getDiagnostics().size());
-        Set<Diagnostic> actualDiagnostics = Sets.newHashSet();
-        actualDiagnostics.add(wrapper.getDiagnostics().get(0));
-        actualDiagnostics.add(wrapper.getDiagnostics().get(1));
+        assertEquals(2, diagnostics.size());
+        Set<Diagnostic> actualDiagnostics = Sets.newHashSet(diagnostics);
         Set<Diagnostic> expectedDiagnostics = Sets.newHashSet();
         expectedDiagnostics.add(new DiagnosticBuilder("unable to resolve class ExceptionNew1 \n @ line 7, column 12.",
                 Diagnostic.SEVERITY_ERROR).range(makeRange(7, 12, 7, 67)).source(test1.getAbsolutePath()).build());
         expectedDiagnostics.add(new DiagnosticBuilder("unable to resolve class ExceptionNew222 \n @ line 7, column 12.",
                 Diagnostic.SEVERITY_ERROR).range(makeRange(7, 12, 7, 69)).source(test2.getAbsolutePath()).build());
         assertEquals(expectedDiagnostics, actualDiagnostics);
-    }
-
-    private File addFileToRootFolder(String filename, String contents) throws IOException {
-        File file = root.newFile(filename);
-        PrintWriter writer = new PrintWriter(file, StandardCharsets.UTF_8.toString());
-        writer.println(contents);
-        writer.close();
-        return file;
     }
 
     private File addFileToFolder(File parent, String filename, String contents) throws IOException {

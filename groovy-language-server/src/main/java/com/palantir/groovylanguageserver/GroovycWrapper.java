@@ -29,6 +29,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.codehaus.groovy.control.CompilationUnit;
 import org.codehaus.groovy.control.ErrorCollector;
 import org.codehaus.groovy.control.MultipleCompilationErrorsException;
@@ -41,15 +42,18 @@ public final class GroovycWrapper implements CompilerWrapper {
     private static final String GROOVY_EXTENSION = "groovy";
     private final Path workspaceRoot;
     private CompilationUnit unit;
-    private List<DiagnosticImpl> diagnostics;
 
-    public GroovycWrapper(Path workspaceRoot) {
-        Preconditions.checkNotNull(workspaceRoot, "workspaceRoot must not be null");
-        Preconditions.checkArgument(Files.isDirectory().apply(workspaceRoot.toFile()),
-                "workspaceRoot must be a directory");
+    private GroovycWrapper(Path workspaceRoot) {
         this.workspaceRoot = workspaceRoot;
-        unit = new CompilationUnit();
-        addAllSourcesToCompilationUnit();
+    }
+
+    public static GroovycWrapper of(Path workspaceRoot) {
+        Preconditions.checkNotNull(workspaceRoot, "workspaceRoot must not be null");
+        Preconditions.checkArgument(workspaceRoot.toFile().isDirectory(), "workspaceRoot must be a directory");
+        GroovycWrapper wrapper = new GroovycWrapper(workspaceRoot);
+        wrapper.unit = new CompilationUnit();
+        wrapper.addAllSourcesToCompilationUnit();
+        return wrapper;
     }
 
     @Override
@@ -58,13 +62,14 @@ public final class GroovycWrapper implements CompilerWrapper {
     }
 
     @Override
-    public void compile() {
-        diagnostics = Lists.newArrayList();
+    public List<DiagnosticImpl> compile() {
+        List<DiagnosticImpl> diagnostics = Lists.newArrayList();
         try {
             unit.compile();
         } catch (MultipleCompilationErrorsException e) {
-            parseErrors(e.getErrorCollector());
+            parseErrors(e.getErrorCollector(), diagnostics);
         }
+        return diagnostics;
     }
 
     private void addAllSourcesToCompilationUnit() {
@@ -72,7 +77,9 @@ public final class GroovycWrapper implements CompilerWrapper {
             if (file.isDirectory()) {
                 List<File> children = Lists.newArrayList(file.listFiles());
                 if (!children.isEmpty()) {
-                    children.addAll(children);
+                    children.addAll(children.stream()
+                            .filter(child -> Files.getFileExtension(child.getAbsolutePath()).equals(GROOVY_EXTENSION))
+                            .collect(Collectors.toList()));
                 }
             } else if (file.isFile() && Files.getFileExtension(file.getAbsolutePath()).equals(GROOVY_EXTENSION)) {
                 unit.addSource(file);
@@ -80,24 +87,21 @@ public final class GroovycWrapper implements CompilerWrapper {
         }
     }
 
-    private void parseErrors(ErrorCollector collector) {
-        if (collector.hasWarnings()) {
-            for (int i = 0; i < collector.getWarningCount(); i++) {
-                WarningMessage message = collector.getWarning(i);
-                diagnostics.add(new DiagnosticBuilder(message.getMessage(), Diagnostic.SEVERITY_WARNING).build());
-            }
+    private void parseErrors(ErrorCollector collector, List<DiagnosticImpl> diagnostics) {
+        for (int i = 0; i < collector.getWarningCount(); i++) {
+            WarningMessage message = collector.getWarning(i);
+            diagnostics.add(new DiagnosticBuilder(message.getMessage(), Diagnostic.SEVERITY_WARNING).build());
         }
         for (int i = 0; i < collector.getErrorCount(); i++) {
             Message message = collector.getError(i);
-            DiagnosticImpl diagnostic = null;
+            DiagnosticImpl diagnostic;
             if (message instanceof SyntaxErrorMessage) {
                 SyntaxErrorMessage syntaxErrorMessage = (SyntaxErrorMessage) message;
                 SyntaxException cause = syntaxErrorMessage.getCause();
 
-                RangeImpl range =
-                        LsapiFactories.newRange(
-                                LsapiFactories.newPosition(cause.getStartLine(), cause.getStartColumn()),
-                                LsapiFactories.newPosition(cause.getEndLine(), cause.getEndColumn()));
+                RangeImpl range = LsapiFactories.newRange(
+                                    LsapiFactories.newPosition(cause.getStartLine(), cause.getStartColumn()),
+                                    LsapiFactories.newPosition(cause.getEndLine(), cause.getEndColumn()));
                 diagnostic =
                         new DiagnosticBuilder(cause.getMessage(), Diagnostic.SEVERITY_ERROR).range(range)
                                 .source(cause.getSourceLocator()).build();
@@ -109,11 +113,6 @@ public final class GroovycWrapper implements CompilerWrapper {
             }
             diagnostics.add(diagnostic);
         }
-    }
-
-    @Override
-    public List<DiagnosticImpl> getDiagnostics() {
-        return diagnostics;
     }
 
 }
