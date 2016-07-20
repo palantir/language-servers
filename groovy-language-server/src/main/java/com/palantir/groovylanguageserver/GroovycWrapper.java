@@ -29,7 +29,6 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.stream.Collectors;
 import org.codehaus.groovy.control.CompilationUnit;
 import org.codehaus.groovy.control.CompilerConfiguration;
 import org.codehaus.groovy.control.ErrorCollector;
@@ -39,24 +38,35 @@ import org.codehaus.groovy.control.messages.SyntaxErrorMessage;
 import org.codehaus.groovy.control.messages.WarningMessage;
 import org.codehaus.groovy.syntax.SyntaxException;
 
+/**
+ * Wraps the Groovy compiler and provides Language Server Protocol diagnostics on compile.
+ */
 public final class GroovycWrapper implements CompilerWrapper {
 
     private static final String GROOVY_EXTENSION = "groovy";
     private final Path workspaceRoot;
-    private CompilationUnit unit;
+    private final CompilationUnit unit;
 
-    private GroovycWrapper(Path workspaceRoot) {
+    private GroovycWrapper(CompilationUnit unit, Path workspaceRoot) {
+        this.unit = unit;
         this.workspaceRoot = workspaceRoot;
     }
 
+    /**
+     * Creates a new instance of GroovycWrapper.
+     * @param targetDirectory the directory in which to put generated files
+     * @param workspaceRoot the directory to compile
+     * @return the newly created GroovycWrapper
+     */
     public static GroovycWrapper of(Path targetDirectory, Path workspaceRoot) {
         Preconditions.checkNotNull(workspaceRoot, "workspaceRoot must not be null");
         Preconditions.checkArgument(workspaceRoot.toFile().isDirectory(), "workspaceRoot must be a directory");
-        GroovycWrapper wrapper = new GroovycWrapper(workspaceRoot);
+
         CompilerConfiguration config = new CompilerConfiguration();
         config.setTargetDirectory(targetDirectory.toFile());
-        wrapper.unit = new CompilationUnit(config);
+        GroovycWrapper wrapper = new GroovycWrapper(new CompilationUnit(config), workspaceRoot);
         wrapper.addAllSourcesToCompilationUnit();
+
         return wrapper;
     }
 
@@ -78,14 +88,7 @@ public final class GroovycWrapper implements CompilerWrapper {
 
     private void addAllSourcesToCompilationUnit() {
         for (File file : Files.fileTreeTraverser().preOrderTraversal(workspaceRoot.toFile())) {
-            if (file.isDirectory()) {
-                List<File> children = Lists.newArrayList(file.listFiles());
-                if (!children.isEmpty()) {
-                    children.addAll(children.stream()
-                            .filter(child -> Files.getFileExtension(child.getAbsolutePath()).equals(GROOVY_EXTENSION))
-                            .collect(Collectors.toList()));
-                }
-            } else if (file.isFile() && Files.getFileExtension(file.getAbsolutePath()).equals(GROOVY_EXTENSION)) {
+            if (file.isFile() && Files.getFileExtension(file.getAbsolutePath()).equals(GROOVY_EXTENSION)) {
                 unit.addSource(file);
             }
         }

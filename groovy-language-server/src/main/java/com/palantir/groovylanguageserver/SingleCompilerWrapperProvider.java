@@ -18,6 +18,9 @@ package com.palantir.groovylanguageserver;
 
 import com.google.common.base.Preconditions;
 
+/**
+ * Holds and provides a {@link CompilerWrapper} which should be initialized only once.
+ */
 public final class SingleCompilerWrapperProvider implements CompilerWrapperProvider {
 
     private CompilerWrapper compilerWrapper = null;

@@ -16,6 +16,9 @@
 
 package com.palantir.groovylanguageserver;
 
+/**
+ * Holds and provides a {@link CompilerWrapper}.
+ */
 public interface CompilerWrapperProvider {
 
     void set(CompilerWrapper compilerWrapper);

@@ -17,12 +17,15 @@
 package com.palantir.groovylanguageserver;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.when;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.palantir.groovylanguageserver.util.DiagnosticBuilder;
 import io.typefox.lsapi.Diagnostic;
 import io.typefox.lsapi.DiagnosticImpl;
+import io.typefox.lsapi.DidChangeTextDocumentParamsImpl;
+import io.typefox.lsapi.DidCloseTextDocumentParamsImpl;
 import io.typefox.lsapi.DidOpenTextDocumentParamsImpl;
 import io.typefox.lsapi.DidSaveTextDocumentParamsImpl;
 import io.typefox.lsapi.PublishDiagnosticsParams;
@@ -34,26 +37,31 @@ import java.util.Set;
 import java.util.function.Consumer;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.Mockito;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 
 public final class GroovyTextDocumentServiceTest {
 
-    private CompilerWrapperProvider provider;
     private GroovyTextDocumentService service;
     private List<PublishDiagnosticsParams> publishedDiagnostics = Lists.newArrayList();
     private Set<DiagnosticImpl> expectedDiagnostics = Sets.newHashSet();
 
+    @Mock
+    private CompilerWrapper compilerWrapper;
+    @Mock
+    private CompilerWrapperProvider provider;
+
     @Before
     public void setup() {
+        MockitoAnnotations.initMocks(this);
+
         expectedDiagnostics.add(new DiagnosticBuilder("Some message", Diagnostic.SEVERITY_ERROR).build());
         List<DiagnosticImpl> diagnostics = Lists.newArrayList(expectedDiagnostics);
 
-        CompilerWrapper compilerWrapper = Mockito.mock(CompilerWrapper.class);
-        Mockito.when(compilerWrapper.getWorkspaceRoot()).thenReturn(Paths.get("some/path/that/may/exist"));
-        Mockito.when(compilerWrapper.compile()).thenReturn(diagnostics);
+        when(compilerWrapper.getWorkspaceRoot()).thenReturn(Paths.get("some/path/that/may/exist"));
+        when(compilerWrapper.compile()).thenReturn(diagnostics);
 
-        provider = Mockito.mock(CompilerWrapperProvider.class);
-        Mockito.when(provider.get()).thenReturn(compilerWrapper);
+        when(provider.get()).thenReturn(compilerWrapper);
 
         service = new GroovyTextDocumentService(provider);
 
@@ -78,6 +86,32 @@ public final class GroovyTextDocumentServiceTest {
         textDocument.setText("something");
         params.setTextDocument(textDocument);
         service.didOpen(params);
+        // assert diagnostics were published
+        assertEquals(1, publishedDiagnostics.size());
+        assertEquals(expectedDiagnostics, Sets.newHashSet(publishedDiagnostics.get(0).getDiagnostics()));
+        assertEquals(Paths.get("some/path/that/may/exist").toAbsolutePath().toString(),
+                publishedDiagnostics.get(0).getUri());
+    }
+
+    @Test
+    public void testDidChange() {
+        DidChangeTextDocumentParamsImpl params = new DidChangeTextDocumentParamsImpl();
+        params.setUri("some/path/that/may/exists/something.groovy");
+        service.didChange(params);
+        // assert diagnostics were published
+        assertEquals(1, publishedDiagnostics.size());
+        assertEquals(expectedDiagnostics, Sets.newHashSet(publishedDiagnostics.get(0).getDiagnostics()));
+        assertEquals(Paths.get("some/path/that/may/exist").toAbsolutePath().toString(),
+                publishedDiagnostics.get(0).getUri());
+    }
+
+    @Test
+    public void testDidClose() {
+        DidCloseTextDocumentParamsImpl params = new DidCloseTextDocumentParamsImpl();
+        TextDocumentIdentifierImpl textDocument = new TextDocumentIdentifierImpl();
+        textDocument.setUri("some/path/that/may/exists/something.groovy");
+        params.setTextDocument(textDocument);
+        service.didClose(params);
         // assert diagnostics were published
         assertEquals(1, publishedDiagnostics.size());
         assertEquals(expectedDiagnostics, Sets.newHashSet(publishedDiagnostics.get(0).getDiagnostics()));

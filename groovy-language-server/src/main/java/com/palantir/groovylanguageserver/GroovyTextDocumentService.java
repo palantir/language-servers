@@ -140,12 +140,12 @@ public final class GroovyTextDocumentService implements TextDocumentService {
 
     @Override
     public void didChange(DidChangeTextDocumentParams params) {
-        throw new UnsupportedOperationException();
+        publishDiagnostics(provider.get().compile());
     }
 
     @Override
     public void didClose(DidCloseTextDocumentParams params) {
-        throw new UnsupportedOperationException();
+        publishDiagnostics(provider.get().compile());
     }
 
     @Override

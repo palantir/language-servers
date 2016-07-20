@@ -22,8 +22,15 @@ import java.util.List;
 
 public interface CompilerWrapper {
 
+    /**
+     * Returns the root of the compiled workspace.
+     */
     Path getWorkspaceRoot();
 
+    /**
+     * Compiles all relevant files in the workspace.
+     * @return the compilation warnings and errors
+     */
     List<DiagnosticImpl> compile();
 
 }
