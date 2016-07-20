@@ -22,6 +22,7 @@ import io.typefox.lsapi.CodeLensParams;
 import io.typefox.lsapi.Command;
 import io.typefox.lsapi.CompletionItem;
 import io.typefox.lsapi.CompletionList;
+import io.typefox.lsapi.DiagnosticImpl;
 import io.typefox.lsapi.DidChangeTextDocumentParams;
 import io.typefox.lsapi.DidCloseTextDocumentParams;
 import io.typefox.lsapi.DidOpenTextDocumentParams;
@@ -34,6 +35,7 @@ import io.typefox.lsapi.DocumentSymbolParams;
 import io.typefox.lsapi.Hover;
 import io.typefox.lsapi.Location;
 import io.typefox.lsapi.PublishDiagnosticsParams;
+import io.typefox.lsapi.PublishDiagnosticsParamsImpl;
 import io.typefox.lsapi.ReferenceParams;
 import io.typefox.lsapi.RenameParams;
 import io.typefox.lsapi.SignatureHelp;
@@ -47,6 +49,14 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
 public final class GroovyTextDocumentService implements TextDocumentService {
+
+    private final CompilerWrapperProvider provider;
+
+    private Consumer<PublishDiagnosticsParams> publishDiagnostics = p -> { };
+
+    public GroovyTextDocumentService(CompilerWrapperProvider provider) {
+        this.provider = provider;
+    }
 
     @Override
     public CompletableFuture<CompletionList> completion(TextDocumentPositionParams position) {
@@ -125,27 +135,34 @@ public final class GroovyTextDocumentService implements TextDocumentService {
 
     @Override
     public void didOpen(DidOpenTextDocumentParams params) {
-        throw new UnsupportedOperationException();
+        publishDiagnostics(provider.get().compile());
     }
 
     @Override
     public void didChange(DidChangeTextDocumentParams params) {
-        throw new UnsupportedOperationException();
+        publishDiagnostics(provider.get().compile());
     }
 
     @Override
     public void didClose(DidCloseTextDocumentParams params) {
-        throw new UnsupportedOperationException();
+        publishDiagnostics(provider.get().compile());
     }
 
     @Override
     public void didSave(DidSaveTextDocumentParams params) {
-        throw new UnsupportedOperationException();
+        publishDiagnostics(provider.get().compile());
     }
 
     @Override
     public void onPublishDiagnostics(Consumer<PublishDiagnosticsParams> callback) {
-        throw new UnsupportedOperationException();
+        publishDiagnostics = callback;
+    }
+
+    private void publishDiagnostics(List<DiagnosticImpl> diagnostics) {
+        PublishDiagnosticsParamsImpl publishDiagnosticsImpl = new PublishDiagnosticsParamsImpl();
+        publishDiagnosticsImpl.setDiagnostics(diagnostics);
+        publishDiagnosticsImpl.setUri(provider.get().getWorkspaceRoot().toAbsolutePath().toString());
+        publishDiagnostics.accept(publishDiagnosticsImpl);
     }
 
 }

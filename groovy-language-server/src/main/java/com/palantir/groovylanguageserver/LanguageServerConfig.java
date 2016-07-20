@@ -17,31 +17,12 @@
 package com.palantir.groovylanguageserver;
 
 import io.typefox.lsapi.MessageParams;
-import io.typefox.lsapi.ShowMessageRequestParams;
-import io.typefox.lsapi.services.WindowService;
 import java.util.function.Consumer;
 
-public final class GroovyWindowService implements WindowService {
+public interface LanguageServerConfig {
 
-    private final LanguageServerConfig config;
+    Consumer<MessageParams> getShowMessage();
 
-    public GroovyWindowService(LanguageServerConfig config) {
-        this.config = config;
-    }
-
-    @Override
-    public void onShowMessage(Consumer<MessageParams> callback) {
-        config.setShowMessage(callback);
-    }
-
-    @Override
-    public void onShowMessageRequest(Consumer<ShowMessageRequestParams> callback) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void onLogMessage(Consumer<MessageParams> callback) {
-        throw new UnsupportedOperationException();
-    }
+    void setShowMessage(Consumer<MessageParams> showMessage);
 
 }

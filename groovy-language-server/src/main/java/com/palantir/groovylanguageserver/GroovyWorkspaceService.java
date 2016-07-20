@@ -26,6 +26,12 @@ import java.util.concurrent.CompletableFuture;
 
 public final class GroovyWorkspaceService implements WorkspaceService {
 
+    private final CompilerWrapperProvider provider;
+
+    public GroovyWorkspaceService(CompilerWrapperProvider provider) {
+        this.provider = provider;
+    }
+
     @Override
     public CompletableFuture<List<? extends SymbolInformation>> symbol(WorkspaceSymbolParams params) {
         throw new UnsupportedOperationException();
