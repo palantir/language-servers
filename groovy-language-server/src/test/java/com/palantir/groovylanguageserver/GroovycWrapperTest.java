@@ -51,8 +51,16 @@ public final class GroovycWrapperTest {
     public TemporaryFolder root = new TemporaryFolder();
 
     @Test
+    public void testTargetDirectoryNotFolder() throws IOException {
+        expectedException.expect(IllegalArgumentException.class);
+        expectedException.expectMessage("targetDirectory must be a directory");
+        GroovycWrapper.of(output.newFile().toPath(), root.getRoot().toPath());
+    }
+
+    @Test
     public void testWorkspaceRootNotFolder() throws IOException {
         expectedException.expect(IllegalArgumentException.class);
+        expectedException.expectMessage("workspaceRoot must be a directory");
         GroovycWrapper.of(output.getRoot().toPath(), root.newFile().toPath());
     }
 

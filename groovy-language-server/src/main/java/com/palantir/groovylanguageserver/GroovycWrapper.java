@@ -60,7 +60,9 @@ public final class GroovycWrapper implements CompilerWrapper {
      */
     public static GroovycWrapper of(Path targetDirectory, Path workspaceRoot) {
         Preconditions.checkNotNull(workspaceRoot, "workspaceRoot must not be null");
+        Preconditions.checkNotNull(targetDirectory, "targetDirectory must not be null");
         Preconditions.checkArgument(workspaceRoot.toFile().isDirectory(), "workspaceRoot must be a directory");
+        Preconditions.checkArgument(targetDirectory.toFile().isDirectory(), "targetDirectory must be a directory");
 
         CompilerConfiguration config = new CompilerConfiguration();
         config.setTargetDirectory(targetDirectory.toFile());
