@@ -34,7 +34,7 @@ public final class GroovyWorkspaceService implements WorkspaceService {
 
     @Override
     public CompletableFuture<List<? extends SymbolInformation>> symbol(WorkspaceSymbolParams params) {
-        throw new UnsupportedOperationException();
+        return CompletableFuture.completedFuture(provider.get().getFilteredSymbols(params.getQuery()));
     }
 
     @Override

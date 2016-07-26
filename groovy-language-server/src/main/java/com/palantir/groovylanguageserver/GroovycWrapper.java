@@ -16,19 +16,30 @@
 
 package com.palantir.groovylanguageserver;
 
+import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.io.Files;
 import com.palantir.groovylanguageserver.util.DiagnosticBuilder;
 import io.typefox.lsapi.Diagnostic;
 import io.typefox.lsapi.DiagnosticImpl;
+import io.typefox.lsapi.LocationImpl;
 import io.typefox.lsapi.RangeImpl;
+import io.typefox.lsapi.SymbolInformation;
+import io.typefox.lsapi.SymbolInformationImpl;
 import io.typefox.lsapi.util.LsapiFactories;
 import java.io.File;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
+import java.util.stream.Collectors;
+import org.codehaus.groovy.ast.ASTNode;
+import org.codehaus.groovy.ast.ClassNode;
 import org.codehaus.groovy.control.CompilationUnit;
 import org.codehaus.groovy.control.CompilerConfiguration;
 import org.codehaus.groovy.control.ErrorCollector;
@@ -37,15 +48,20 @@ import org.codehaus.groovy.control.messages.Message;
 import org.codehaus.groovy.control.messages.SyntaxErrorMessage;
 import org.codehaus.groovy.control.messages.WarningMessage;
 import org.codehaus.groovy.syntax.SyntaxException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Wraps the Groovy compiler and provides Language Server Protocol diagnostics on compile.
  */
 public final class GroovycWrapper implements CompilerWrapper {
 
+    private static final Logger log = LoggerFactory.getLogger(GroovycWrapper.class);
+
     private static final String GROOVY_EXTENSION = "groovy";
     private final Path workspaceRoot;
     private final CompilationUnit unit;
+    private Map<String, List<SymbolInformation>> fileSymbols;
 
     private GroovycWrapper(CompilationUnit unit, Path workspaceRoot) {
         this.unit = unit;
@@ -82,10 +98,42 @@ public final class GroovycWrapper implements CompilerWrapper {
         List<DiagnosticImpl> diagnostics = Lists.newArrayList();
         try {
             unit.compile();
+            // Symbols are only re-parsed if compilation was successful
+            parseAllSymbols();
         } catch (MultipleCompilationErrorsException e) {
             parseErrors(e.getErrorCollector(), diagnostics);
         }
         return diagnostics;
+    }
+
+    @Override
+    public Map<String, List<SymbolInformation>> getFileSymbols() {
+        return fileSymbols;
+    }
+
+    @Override
+    public List<SymbolInformation> getFilteredSymbols(String query) {
+        Optional<Pattern> optionalPattern = getQueryPattern(query);
+        return fileSymbols.values().stream().flatMap(list -> list.stream())
+                .filter(symbol -> optionalPattern.isPresent()
+                        ? optionalPattern.get().matcher(symbol.getName()).matches()
+                        : symbol.getName().startsWith(query))
+                .collect(Collectors.toList());
+    }
+
+    private  Optional<Pattern> getQueryPattern(String query) {
+        String newQuery = query;
+        newQuery = newQuery.replaceAll("\\.", "\\\\.");
+        newQuery = newQuery.replaceAll("\\?", ".");
+        newQuery = newQuery.replaceAll("\\*", ".*");
+        newQuery = "^" + newQuery;
+        Pattern queryPattern = null;
+        try {
+            queryPattern = Pattern.compile(newQuery);
+        } catch (PatternSyntaxException e) {
+            log.warn("Could not create valid pattern from query {}", query);
+        }
+        return Optional.fromNullable(queryPattern);
     }
 
     private void addAllSourcesToCompilationUnit() {
@@ -121,6 +169,58 @@ public final class GroovycWrapper implements CompilerWrapper {
             }
             diagnostics.add(diagnostic);
         }
+    }
+
+    private void parseAllSymbols() {
+        fileSymbols = Maps.newHashMap();
+        unit.iterator().forEachRemaining(sourceUnit -> {
+            List<SymbolInformation> symbols = Lists.newArrayList();
+            String sourcePath = sourceUnit.getSource().getURI().getPath();
+            // This will iterate through all classes, interfaces and enums, including inner ones.
+            sourceUnit.getAST().getClasses().forEach(clazz -> {
+                // Add class symbol
+                symbols.add(makeSymbolInformation(clazz.getName(), getKind(clazz), makeLocationImpl(sourcePath, clazz),
+                        Optional.fromNullable(clazz.getOuterClass())));
+                // Add all the class's field symbols
+                clazz.getFields().forEach(field -> symbols.add(makeSymbolInformation(field.getName(),
+                        SymbolInformation.KIND_FIELD, makeLocationImpl(sourcePath, field), Optional.of(clazz))));
+                // Add all method symbols
+                clazz.getAllDeclaredMethods().forEach(method -> symbols.add(makeSymbolInformation(method.getName(),
+                        SymbolInformation.KIND_METHOD, makeLocationImpl(sourcePath, method), Optional.of(clazz))));
+            });
+            // TODO(#28) Add symbols declared within the statement block variable scope which includes script
+            // defined variables.
+            fileSymbols.put(sourcePath, symbols);
+        });
+    }
+
+    private static int getKind(ClassNode node) {
+        int kind = SymbolInformation.KIND_CLASS;
+        if (node.isInterface()) {
+            kind = SymbolInformation.KIND_INTERFACE;
+        } else if (node.isEnum()) {
+            kind = SymbolInformation.KIND_ENUM;
+        }
+        return kind;
+    }
+
+    private static LocationImpl makeLocationImpl(String uri, ASTNode node) {
+        LocationImpl location = new LocationImpl();
+        location.setRange(
+                LsapiFactories.newRange(LsapiFactories.newPosition(node.getLineNumber(), node.getColumnNumber()),
+                        LsapiFactories.newPosition(node.getLastLineNumber(), node.getLastColumnNumber())));
+        location.setUri(uri);
+        return location;
+    }
+
+    private static SymbolInformationImpl makeSymbolInformation(String name, int kind, LocationImpl location,
+            Optional<ClassNode> container) {
+        SymbolInformationImpl symbol = new SymbolInformationImpl();
+        symbol.setContainer(container.isPresent() ? container.get().getName() : null);
+        symbol.setKind(kind);
+        symbol.setLocation(location);
+        symbol.setName(name);
+        return symbol;
     }
 
 }

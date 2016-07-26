@@ -60,6 +60,8 @@ public final class GroovyLanguageServer implements LanguageServer {
         ServerCapabilitiesImpl capabilities = new ServerCapabilitiesImpl();
 
         capabilities.setTextDocumentSync(ServerCapabilities.SYNC_INCREMENTAL);
+        capabilities.setDocumentSymbolProvider(true);
+        capabilities.setWorkspaceSymbolProvider(true);
 
         InitializeResultImpl result = new InitializeResultImpl();
         result.setCapabilities(capabilities);

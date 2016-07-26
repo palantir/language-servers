@@ -20,31 +20,41 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.palantir.groovylanguageserver.util.DiagnosticBuilder;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.typefox.lsapi.Diagnostic;
 import io.typefox.lsapi.DiagnosticImpl;
 import io.typefox.lsapi.DidChangeTextDocumentParamsImpl;
 import io.typefox.lsapi.DidCloseTextDocumentParamsImpl;
 import io.typefox.lsapi.DidOpenTextDocumentParamsImpl;
 import io.typefox.lsapi.DidSaveTextDocumentParamsImpl;
+import io.typefox.lsapi.DocumentSymbolParamsImpl;
 import io.typefox.lsapi.PublishDiagnosticsParams;
+import io.typefox.lsapi.SymbolInformation;
+import io.typefox.lsapi.SymbolInformationImpl;
 import io.typefox.lsapi.TextDocumentIdentifierImpl;
 import io.typefox.lsapi.TextDocumentItemImpl;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
+@SuppressFBWarnings("DMI_HARDCODED_ABSOLUTE_FILENAME")
 public final class GroovyTextDocumentServiceTest {
 
     private GroovyTextDocumentService service;
     private List<PublishDiagnosticsParams> publishedDiagnostics = Lists.newArrayList();
     private Set<DiagnosticImpl> expectedDiagnostics = Sets.newHashSet();
+    private Map<String, List<SymbolInformation>> symbolsMap = Maps.newHashMap();
 
     @Mock
     private CompilerWrapper compilerWrapper;
@@ -58,8 +68,13 @@ public final class GroovyTextDocumentServiceTest {
         expectedDiagnostics.add(new DiagnosticBuilder("Some message", Diagnostic.SEVERITY_ERROR).build());
         List<DiagnosticImpl> diagnostics = Lists.newArrayList(expectedDiagnostics);
 
-        when(compilerWrapper.getWorkspaceRoot()).thenReturn(Paths.get("some/path/that/may/exist"));
+        SymbolInformationImpl symbol = new SymbolInformationImpl();
+        symbol.setName("ThisIsASymbol");
+        symbolsMap.put("/some/path/that/may/exist/something.groovy", Lists.newArrayList(symbol));
+
+        when(compilerWrapper.getWorkspaceRoot()).thenReturn(Paths.get("/some/path/that/may/exist"));
         when(compilerWrapper.compile()).thenReturn(diagnostics);
+        when(compilerWrapper.getFileSymbols()).thenReturn(symbolsMap);
 
         when(provider.get()).thenReturn(compilerWrapper);
 
@@ -80,7 +95,7 @@ public final class GroovyTextDocumentServiceTest {
     public void testDidOpen() {
         DidOpenTextDocumentParamsImpl params = new DidOpenTextDocumentParamsImpl();
         TextDocumentItemImpl textDocument = new TextDocumentItemImpl();
-        textDocument.setUri("some/path/that/may/exists/something.groovy");
+        textDocument.setUri("/some/path/that/may/exist/something.groovy");
         textDocument.setLanguageId("groovy");
         textDocument.setVersion(1);
         textDocument.setText("something");
@@ -89,19 +104,19 @@ public final class GroovyTextDocumentServiceTest {
         // assert diagnostics were published
         assertEquals(1, publishedDiagnostics.size());
         assertEquals(expectedDiagnostics, Sets.newHashSet(publishedDiagnostics.get(0).getDiagnostics()));
-        assertEquals(Paths.get("some/path/that/may/exist").toAbsolutePath().toString(),
+        assertEquals(Paths.get("/some/path/that/may/exist").toAbsolutePath().toString(),
                 publishedDiagnostics.get(0).getUri());
     }
 
     @Test
     public void testDidChange() {
         DidChangeTextDocumentParamsImpl params = new DidChangeTextDocumentParamsImpl();
-        params.setUri("some/path/that/may/exists/something.groovy");
+        params.setUri("/some/path/that/may/exist/something.groovy");
         service.didChange(params);
         // assert diagnostics were published
         assertEquals(1, publishedDiagnostics.size());
         assertEquals(expectedDiagnostics, Sets.newHashSet(publishedDiagnostics.get(0).getDiagnostics()));
-        assertEquals(Paths.get("some/path/that/may/exist").toAbsolutePath().toString(),
+        assertEquals(Paths.get("/some/path/that/may/exist").toAbsolutePath().toString(),
                 publishedDiagnostics.get(0).getUri());
     }
 
@@ -109,13 +124,13 @@ public final class GroovyTextDocumentServiceTest {
     public void testDidClose() {
         DidCloseTextDocumentParamsImpl params = new DidCloseTextDocumentParamsImpl();
         TextDocumentIdentifierImpl textDocument = new TextDocumentIdentifierImpl();
-        textDocument.setUri("some/path/that/may/exists/something.groovy");
+        textDocument.setUri("/some/path/that/may/exist/something.groovy");
         params.setTextDocument(textDocument);
         service.didClose(params);
         // assert diagnostics were published
         assertEquals(1, publishedDiagnostics.size());
         assertEquals(expectedDiagnostics, Sets.newHashSet(publishedDiagnostics.get(0).getDiagnostics()));
-        assertEquals(Paths.get("some/path/that/may/exist").toAbsolutePath().toString(),
+        assertEquals(Paths.get("/some/path/that/may/exist").toAbsolutePath().toString(),
                 publishedDiagnostics.get(0).getUri());
     }
 
@@ -123,14 +138,36 @@ public final class GroovyTextDocumentServiceTest {
     public void testDidSave() {
         DidSaveTextDocumentParamsImpl params = new DidSaveTextDocumentParamsImpl();
         TextDocumentIdentifierImpl textDocument = new TextDocumentIdentifierImpl();
-        textDocument.setUri("some/path/that/may/exists/something.groovy");
+        textDocument.setUri("/some/path/that/may/exist/something.groovy");
         params.setTextDocument(textDocument);
         service.didSave(params);
         // assert diagnostics were published
         assertEquals(1, publishedDiagnostics.size());
         assertEquals(expectedDiagnostics, Sets.newHashSet(publishedDiagnostics.get(0).getDiagnostics()));
-        assertEquals(Paths.get("some/path/that/may/exist").toAbsolutePath().toString(),
+        assertEquals(Paths.get("/some/path/that/may/exist").toAbsolutePath().toString(),
                 publishedDiagnostics.get(0).getUri());
+    }
+
+    @Test
+    public void testDocumentSymbols_absolutePath() throws InterruptedException, ExecutionException {
+        String absolutePath = "/some/path/that/may/exist/something.groovy";
+        DocumentSymbolParamsImpl params = new DocumentSymbolParamsImpl();
+        TextDocumentIdentifierImpl textDocument = new TextDocumentIdentifierImpl();
+        textDocument.setUri(absolutePath);
+        params.setTextDocument(textDocument);
+        CompletableFuture<List<? extends SymbolInformation>> response = service.documentSymbol(params);
+        response.get().equals(symbolsMap.get(absolutePath));
+    }
+
+    @Test
+    public void testDocumentSymbols_relativePath() throws InterruptedException, ExecutionException {
+        String absolutePath = "/some/path/that/may/exist/something.groovy";
+        DocumentSymbolParamsImpl params = new DocumentSymbolParamsImpl();
+        TextDocumentIdentifierImpl textDocument = new TextDocumentIdentifierImpl();
+        textDocument.setUri("something.groovy");
+        params.setTextDocument(textDocument);
+        CompletableFuture<List<? extends SymbolInformation>> response = service.documentSymbol(params);
+        response.get().equals(symbolsMap.get(absolutePath));
     }
 
 }

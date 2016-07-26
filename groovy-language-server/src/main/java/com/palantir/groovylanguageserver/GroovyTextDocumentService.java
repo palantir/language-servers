@@ -16,6 +16,8 @@
 
 package com.palantir.groovylanguageserver;
 
+import com.google.common.base.Optional;
+import com.google.common.collect.Lists;
 import io.typefox.lsapi.CodeActionParams;
 import io.typefox.lsapi.CodeLens;
 import io.typefox.lsapi.CodeLensParams;
@@ -44,6 +46,8 @@ import io.typefox.lsapi.TextDocumentPositionParams;
 import io.typefox.lsapi.TextEdit;
 import io.typefox.lsapi.WorkspaceEdit;
 import io.typefox.lsapi.services.TextDocumentService;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
@@ -95,7 +99,14 @@ public final class GroovyTextDocumentService implements TextDocumentService {
 
     @Override
     public CompletableFuture<List<? extends SymbolInformation>> documentSymbol(DocumentSymbolParams params) {
-        throw new UnsupportedOperationException();
+        String uri = params.getTextDocument().getUri();
+        Path filePath = Paths.get(uri);
+        if (!filePath.isAbsolute()) {
+            uri = provider.get().getWorkspaceRoot().resolve(uri).toAbsolutePath().toString();
+        }
+        List<SymbolInformation> symbols = Optional.fromNullable(
+                provider.get().getFileSymbols().get(uri)).or(Lists.newArrayList());
+        return CompletableFuture.completedFuture(symbols);
     }
 
     @Override
