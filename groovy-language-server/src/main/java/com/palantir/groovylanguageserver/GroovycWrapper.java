@@ -33,6 +33,7 @@ import java.io.File;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -114,26 +115,25 @@ public final class GroovycWrapper implements CompilerWrapper {
     @Override
     public List<SymbolInformation> getFilteredSymbols(String query) {
         Optional<Pattern> optionalPattern = getQueryPattern(query);
-        return fileSymbols.values().stream().flatMap(list -> list.stream())
+        return fileSymbols.values().stream().flatMap(Collection::stream)
                 .filter(symbol -> optionalPattern.isPresent()
                         ? optionalPattern.get().matcher(symbol.getName()).matches()
                         : symbol.getName().startsWith(query))
                 .collect(Collectors.toList());
     }
 
-    private  Optional<Pattern> getQueryPattern(String query) {
+    private Optional<Pattern> getQueryPattern(String query) {
         String newQuery = query;
         newQuery = newQuery.replaceAll("\\.", "\\\\.");
         newQuery = newQuery.replaceAll("\\?", ".");
         newQuery = newQuery.replaceAll("\\*", ".*");
         newQuery = "^" + newQuery;
-        Pattern queryPattern = null;
         try {
-            queryPattern = Pattern.compile(newQuery);
+            return Optional.of(Pattern.compile(newQuery));
         } catch (PatternSyntaxException e) {
             log.warn("Could not create valid pattern from query {}", query);
         }
-        return Optional.fromNullable(queryPattern);
+        return Optional.absent();
     }
 
     private void addAllSourcesToCompilationUnit() {
@@ -172,26 +172,27 @@ public final class GroovycWrapper implements CompilerWrapper {
     }
 
     private void parseAllSymbols() {
-        fileSymbols = Maps.newHashMap();
+        Map<String, List<SymbolInformation>> newFileSymbols = Maps.newHashMap();
         unit.iterator().forEachRemaining(sourceUnit -> {
             List<SymbolInformation> symbols = Lists.newArrayList();
             String sourcePath = sourceUnit.getSource().getURI().getPath();
             // This will iterate through all classes, interfaces and enums, including inner ones.
             sourceUnit.getAST().getClasses().forEach(clazz -> {
                 // Add class symbol
-                symbols.add(makeSymbolInformation(clazz.getName(), getKind(clazz), makeLocationImpl(sourcePath, clazz),
-                        Optional.fromNullable(clazz.getOuterClass())));
+                symbols.add(constructSymbolInformation(clazz.getName(), getKind(clazz),
+                        constructLocationImpl(sourcePath, clazz), Optional.fromNullable(clazz.getOuterClass())));
                 // Add all the class's field symbols
-                clazz.getFields().forEach(field -> symbols.add(makeSymbolInformation(field.getName(),
-                        SymbolInformation.KIND_FIELD, makeLocationImpl(sourcePath, field), Optional.of(clazz))));
+                clazz.getFields().forEach(field -> symbols.add(constructSymbolInformation(field.getName(),
+                        SymbolInformation.KIND_FIELD, constructLocationImpl(sourcePath, field), Optional.of(clazz))));
                 // Add all method symbols
-                clazz.getAllDeclaredMethods().forEach(method -> symbols.add(makeSymbolInformation(method.getName(),
-                        SymbolInformation.KIND_METHOD, makeLocationImpl(sourcePath, method), Optional.of(clazz))));
+                clazz.getAllDeclaredMethods().forEach(method -> symbols.add(constructSymbolInformation(method.getName(),
+                        SymbolInformation.KIND_METHOD, constructLocationImpl(sourcePath, method), Optional.of(clazz))));
             });
             // TODO(#28) Add symbols declared within the statement block variable scope which includes script
             // defined variables.
-            fileSymbols.put(sourcePath, symbols);
+            newFileSymbols.put(sourcePath, symbols);
         });
+        fileSymbols = newFileSymbols;
     }
 
     private static int getKind(ClassNode node) {
@@ -204,7 +205,7 @@ public final class GroovycWrapper implements CompilerWrapper {
         return kind;
     }
 
-    private static LocationImpl makeLocationImpl(String uri, ASTNode node) {
+    private static LocationImpl constructLocationImpl(String uri, ASTNode node) {
         LocationImpl location = new LocationImpl();
         location.setRange(
                 LsapiFactories.newRange(LsapiFactories.newPosition(node.getLineNumber(), node.getColumnNumber()),
@@ -213,7 +214,7 @@ public final class GroovycWrapper implements CompilerWrapper {
         return location;
     }
 
-    private static SymbolInformationImpl makeSymbolInformation(String name, int kind, LocationImpl location,
+    private static SymbolInformation constructSymbolInformation(String name, int kind, LocationImpl location,
             Optional<ClassNode> container) {
         SymbolInformationImpl symbol = new SymbolInformationImpl();
         symbol.setContainer(container.isPresent() ? container.get().getName() : null);
