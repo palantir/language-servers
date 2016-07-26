@@ -62,7 +62,7 @@ public final class GroovycWrapper implements CompilerWrapper {
     private static final String GROOVY_EXTENSION = "groovy";
     private final Path workspaceRoot;
     private final CompilationUnit unit;
-    private Map<String, List<SymbolInformation>> fileSymbols;
+    private Map<String, List<SymbolInformation>> fileSymbols = Maps.newHashMap();
 
     private GroovycWrapper(CompilationUnit unit, Path workspaceRoot) {
         this.unit = unit;
