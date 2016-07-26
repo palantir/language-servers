@@ -16,7 +16,9 @@
 
 package com.palantir.groovylanguageserver;
 
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.Lists;
@@ -156,7 +158,7 @@ public final class GroovyTextDocumentServiceTest {
         textDocument.setUri(absolutePath);
         params.setTextDocument(textDocument);
         CompletableFuture<List<? extends SymbolInformation>> response = service.documentSymbol(params);
-        response.get().equals(symbolsMap.get(absolutePath));
+        assertThat(response.get(), is(symbolsMap.get(absolutePath)));
     }
 
     @Test
@@ -167,7 +169,7 @@ public final class GroovyTextDocumentServiceTest {
         textDocument.setUri("something.groovy");
         params.setTextDocument(textDocument);
         CompletableFuture<List<? extends SymbolInformation>> response = service.documentSymbol(params);
-        response.get().equals(symbolsMap.get(absolutePath));
+        assertThat(response.get(), is(symbolsMap.get(absolutePath)));
     }
 
 }
