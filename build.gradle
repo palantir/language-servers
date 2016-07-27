@@ -26,8 +26,8 @@ plugins {
 }
 
 apply plugin: 'com.palantir.baseline-config' // provides baselineUpdateConfig task
+apply plugin: 'com.palantir.baseline-eclipse'
 apply plugin: 'com.palantir.baseline-idea'
-apply plugin: 'eclipse'
 
 repositories {
     jcenter() // needed for baselineUpdateConfig task
