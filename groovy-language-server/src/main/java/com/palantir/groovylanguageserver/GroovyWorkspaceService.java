@@ -23,6 +23,7 @@ import io.typefox.lsapi.WorkspaceSymbolParams;
 import io.typefox.lsapi.services.WorkspaceService;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 public final class GroovyWorkspaceService implements WorkspaceService {
 
@@ -34,7 +35,8 @@ public final class GroovyWorkspaceService implements WorkspaceService {
 
     @Override
     public CompletableFuture<List<? extends SymbolInformation>> symbol(WorkspaceSymbolParams params) {
-        return CompletableFuture.completedFuture(provider.get().getFilteredSymbols(params.getQuery()));
+        return CompletableFuture.completedFuture(
+                provider.get().getFilteredSymbols(params.getQuery()).stream().collect(Collectors.toList()));
     }
 
     @Override

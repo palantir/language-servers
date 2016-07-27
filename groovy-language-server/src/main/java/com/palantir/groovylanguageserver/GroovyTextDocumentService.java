@@ -51,6 +51,7 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 public final class GroovyTextDocumentService implements TextDocumentService {
 
@@ -104,8 +105,9 @@ public final class GroovyTextDocumentService implements TextDocumentService {
         if (!filePath.isAbsolute()) {
             uri = provider.get().getWorkspaceRoot().resolve(uri).toAbsolutePath().toString();
         }
-        List<SymbolInformation> symbols = Optional.fromNullable(
-                provider.get().getFileSymbols().get(uri)).or(Lists.newArrayList());
+        List<SymbolInformation> symbols =
+                Optional.fromNullable(provider.get().getFileSymbols().get(uri).stream().collect(Collectors.toList()))
+                        .or(Lists.newArrayList());
         return CompletableFuture.completedFuture(symbols);
     }
 

@@ -21,6 +21,7 @@ import io.typefox.lsapi.SymbolInformation;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public interface CompilerWrapper {
 
@@ -39,7 +40,7 @@ public interface CompilerWrapper {
      * Returns a mapping from absolute path of source file to symbols located within these source files.
      * @return the list of symbols
      */
-    Map<String, List<SymbolInformation>> getFileSymbols();
+    Map<String, Set<SymbolInformation>> getFileSymbols();
 
     /**
      * Returns a list of symbols filtered based on a wildcard query.
@@ -49,6 +50,6 @@ public interface CompilerWrapper {
      * @param query the query
      * @return the list of symbols
      */
-    List<SymbolInformation> getFilteredSymbols(String query);
+    Set<SymbolInformation> getFilteredSymbols(String query);
 
 }

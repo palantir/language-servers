@@ -20,6 +20,7 @@ import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import com.google.common.io.Files;
 import com.palantir.groovylanguageserver.util.DiagnosticBuilder;
 import io.typefox.lsapi.Diagnostic;
@@ -36,6 +37,7 @@ import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import java.util.stream.Collectors;
@@ -62,7 +64,7 @@ public final class GroovycWrapper implements CompilerWrapper {
     private static final String GROOVY_EXTENSION = "groovy";
     private final Path workspaceRoot;
     private final CompilationUnit unit;
-    private Map<String, List<SymbolInformation>> fileSymbols = Maps.newHashMap();
+    private Map<String, Set<SymbolInformation>> fileSymbols = Maps.newHashMap();
 
     private GroovycWrapper(CompilationUnit unit, Path workspaceRoot) {
         this.unit = unit;
@@ -108,33 +110,31 @@ public final class GroovycWrapper implements CompilerWrapper {
     }
 
     @Override
-    public Map<String, List<SymbolInformation>> getFileSymbols() {
+    public Map<String, Set<SymbolInformation>> getFileSymbols() {
         return fileSymbols;
     }
 
     @Override
-    public List<SymbolInformation> getFilteredSymbols(String query) {
-        Optional<Pattern> optionalPattern = getQueryPattern(query);
+    public Set<SymbolInformation> getFilteredSymbols(String query) {
+        Pattern pattern = getQueryPattern(query);
         return fileSymbols.values().stream().flatMap(Collection::stream)
-                .filter(symbol -> optionalPattern.isPresent()
-                        ? optionalPattern.get().matcher(symbol.getName()).matches()
-                        : symbol.getName().startsWith(query))
-                .collect(Collectors.toList());
+                .filter(symbol -> pattern.matcher(symbol.getName()).matches())
+                .collect(Collectors.toSet());
     }
 
-    private Optional<Pattern> getQueryPattern(String query) {
-        String newQuery = query;
-        newQuery = newQuery.replaceAll("\\.", "\\\\.");
-        newQuery = newQuery.replaceAll("\\?", ".");
-        newQuery = newQuery.replaceAll("\\*", ".*");
+    private Pattern getQueryPattern(String query) {
+        String escaped = Pattern.quote(query);
+        String newQuery = escaped.replaceAll("\\*", "\\\\E.*\\\\Q").replaceAll("\\?", "\\\\E.\\\\Q");
         newQuery = "^" + newQuery;
         try {
-            return Optional.of(Pattern.compile(newQuery));
+            return Pattern.compile(newQuery);
         } catch (PatternSyntaxException e) {
             log.warn("Could not create valid pattern from query {}", query);
         }
-        return Optional.absent();
+        return Pattern.compile("^" + escaped);
     }
+
+
 
     private void addAllSourcesToCompilationUnit() {
         for (File file : Files.fileTreeTraverser().preOrderTraversal(workspaceRoot.toFile())) {
@@ -172,9 +172,9 @@ public final class GroovycWrapper implements CompilerWrapper {
     }
 
     private void parseAllSymbols() {
-        Map<String, List<SymbolInformation>> newFileSymbols = Maps.newHashMap();
+        Map<String, Set<SymbolInformation>> newFileSymbols = Maps.newHashMap();
         unit.iterator().forEachRemaining(sourceUnit -> {
-            List<SymbolInformation> symbols = Lists.newArrayList();
+            Set<SymbolInformation> symbols = Sets.newHashSet();
             String sourcePath = sourceUnit.getSource().getURI().getPath();
             // This will iterate through all classes, interfaces and enums, including inner ones.
             sourceUnit.getAST().getClasses().forEach(clazz -> {
@@ -196,13 +196,12 @@ public final class GroovycWrapper implements CompilerWrapper {
     }
 
     private static int getKind(ClassNode node) {
-        int kind = SymbolInformation.KIND_CLASS;
         if (node.isInterface()) {
-            kind = SymbolInformation.KIND_INTERFACE;
+            return SymbolInformation.KIND_INTERFACE;
         } else if (node.isEnum()) {
-            kind = SymbolInformation.KIND_ENUM;
+            return SymbolInformation.KIND_ENUM;
         }
-        return kind;
+        return SymbolInformation.KIND_CLASS;
     }
 
     private static LocationImpl constructLocationImpl(String uri, ASTNode node) {
@@ -217,7 +216,7 @@ public final class GroovycWrapper implements CompilerWrapper {
     private static SymbolInformation constructSymbolInformation(String name, int kind, LocationImpl location,
             Optional<ClassNode> container) {
         SymbolInformationImpl symbol = new SymbolInformationImpl();
-        symbol.setContainer(container.isPresent() ? container.get().getName() : null);
+        symbol.setContainer(container.transform(ClassNode::getName).orNull());
         symbol.setKind(kind);
         symbol.setLocation(location);
         symbol.setName(name);
