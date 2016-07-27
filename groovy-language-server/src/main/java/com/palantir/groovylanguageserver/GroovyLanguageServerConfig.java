@@ -17,11 +17,14 @@
 package com.palantir.groovylanguageserver;
 
 import io.typefox.lsapi.MessageParams;
+import io.typefox.lsapi.ShowMessageRequestParams;
 import java.util.function.Consumer;
 
 public final class GroovyLanguageServerConfig implements LanguageServerConfig {
 
     private Consumer<MessageParams> showMessage = m -> { };
+    private Consumer<ShowMessageRequestParams> showMessageRequest = m -> { };
+    private Consumer<MessageParams> logMessage = m -> { };
 
     @Override
     public Consumer<MessageParams> getShowMessage() {
@@ -29,8 +32,28 @@ public final class GroovyLanguageServerConfig implements LanguageServerConfig {
     }
 
     @Override
-    public void setShowMessage(Consumer<MessageParams> showMessage) {
-        this.showMessage = showMessage;
+    public void setShowMessage(Consumer<MessageParams> callback) {
+        this.showMessage = callback;
+    }
+
+    @Override
+    public Consumer<ShowMessageRequestParams> getShowMessageRequest() {
+        return showMessageRequest;
+    }
+
+    @Override
+    public void setShowMessageRequest(Consumer<ShowMessageRequestParams> callback) {
+        this.showMessageRequest = callback;
+    }
+
+    @Override
+    public Consumer<MessageParams> getLogMessage() {
+        return logMessage;
+    }
+
+    @Override
+    public void setLogMessage(Consumer<MessageParams> callback) {
+        this.logMessage = callback;
     }
 
 }

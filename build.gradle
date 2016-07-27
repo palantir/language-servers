@@ -26,6 +26,7 @@ plugins {
 }
 
 apply plugin: 'com.palantir.baseline-config' // provides baselineUpdateConfig task
+apply plugin: 'com.palantir.baseline-eclipse'
 apply plugin: 'com.palantir.baseline-idea'
 
 repositories {
@@ -59,11 +60,5 @@ allprojects {
                 }
             }
         }
-    }
-}
-
-configurations.all {
-    resolutionStrategy {
-        force "com.netflix.feign:feign-slf4j:${feignVersion}"
     }
 }
