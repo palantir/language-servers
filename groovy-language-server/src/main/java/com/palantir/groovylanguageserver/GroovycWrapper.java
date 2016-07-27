@@ -134,8 +134,6 @@ public final class GroovycWrapper implements CompilerWrapper {
         return Pattern.compile("^" + escaped);
     }
 
-
-
     private void addAllSourcesToCompilationUnit() {
         for (File file : Files.fileTreeTraverser().preOrderTraversal(workspaceRoot.toFile())) {
             if (file.isFile() && Files.getFileExtension(file.getAbsolutePath()).equals(GROOVY_EXTENSION)) {
