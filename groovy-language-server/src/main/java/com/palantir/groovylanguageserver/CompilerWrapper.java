@@ -17,8 +17,11 @@
 package com.palantir.groovylanguageserver;
 
 import io.typefox.lsapi.DiagnosticImpl;
+import io.typefox.lsapi.SymbolInformation;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 public interface CompilerWrapper {
 
@@ -32,5 +35,21 @@ public interface CompilerWrapper {
      * @return the compilation warnings and errors
      */
     List<DiagnosticImpl> compile();
+
+    /**
+     * Returns a mapping from absolute path of source file to symbols located within these source files.
+     * @return the list of symbols
+     */
+    Map<String, Set<SymbolInformation>> getFileSymbols();
+
+    /**
+     * Returns a list of symbols filtered based on a wildcard query.
+     *
+     * The character * designates zero or more of any character. The character ? designates exactly one character.
+     *
+     * @param query the query
+     * @return the list of symbols
+     */
+    Set<SymbolInformation> getFilteredSymbols(String query);
 
 }

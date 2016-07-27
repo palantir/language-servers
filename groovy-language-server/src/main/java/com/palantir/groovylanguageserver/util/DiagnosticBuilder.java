@@ -23,6 +23,7 @@ import io.typefox.lsapi.RangeImpl;
 import io.typefox.lsapi.util.LsapiFactories;
 
 public final class DiagnosticBuilder {
+
     private final String message;
     private final int severity;
 

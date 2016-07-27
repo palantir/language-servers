@@ -21,6 +21,7 @@ dependencies {
     compile "javax.ws.rs:javax.ws.rs-api:${javaxRsVersion}"
     compile "org.codehaus.groovy:groovy-all:${groovyAllVersion}"
 
+    testCompile "com.google.code.findbugs:annotations:${findbugsAnnotationsVersion}"
     testCompile "junit:junit:${junitVersion}"
     testCompile "org.hamcrest:hamcrest-all:${hamcrestVersion}"
     testCompile "org.mockito:mockito-core:${mockitoVersion}"
