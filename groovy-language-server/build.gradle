@@ -14,7 +14,8 @@ distribution {
 dependencies {
     compile "com.fasterxml.jackson.core:jackson-databind:${jacksonDatabindVersion}"
     compile "com.google.guava:guava:${guavaVersion}"
-    compile "com.netflix.feign:feign-slf4j:${feignVersion}"
+    compile "org.slf4j:slf4j-api:${slf4jApiVersion}"
+    compile "org.slf4j:slf4j-simple:${slf4jSimpleVersion}"
     compile "io.typefox.lsapi:io.typefox.lsapi:${typefoxLsApiVersion}"
     compile "io.typefox.lsapi:io.typefox.lsapi.annotations:${typefoxLsApiVersion}"
     compile "io.typefox.lsapi:io.typefox.lsapi.services:${typefoxLsApiVersion}"

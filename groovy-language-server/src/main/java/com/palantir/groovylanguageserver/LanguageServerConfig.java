@@ -17,12 +17,24 @@
 package com.palantir.groovylanguageserver;
 
 import io.typefox.lsapi.MessageParams;
+import io.typefox.lsapi.ShowMessageRequestParams;
 import java.util.function.Consumer;
 
+/**
+ * Used to share message callbacks between Language Server services.
+ */
 public interface LanguageServerConfig {
 
     Consumer<MessageParams> getShowMessage();
 
-    void setShowMessage(Consumer<MessageParams> showMessage);
+    void setShowMessage(Consumer<MessageParams> callback);
+
+    Consumer<ShowMessageRequestParams> getShowMessageRequest();
+
+    void setShowMessageRequest(Consumer<ShowMessageRequestParams> callback);
+
+    Consumer<MessageParams> getLogMessage();
+
+    void setLogMessage(Consumer<MessageParams> callback);
 
 }
