@@ -20,7 +20,6 @@ import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import io.typefox.lsapi.DiagnosticImpl;
 import io.typefox.lsapi.RangeImpl;
-import io.typefox.lsapi.util.LsapiFactories;
 
 public final class DiagnosticBuilder {
 
@@ -57,8 +56,7 @@ public final class DiagnosticBuilder {
         diagnostic.setMessage(message);
         diagnostic.setSeverity(severity);
         diagnostic.setCode(code.orNull()); // this is not required by the language server protocol
-        diagnostic.setRange(range
-                .or(LsapiFactories.newRange(LsapiFactories.newPosition(-1, -1), LsapiFactories.newPosition(-1, -1))));
+        diagnostic.setRange(range.or(PositionUtil.createRange(-1, -1, -1, -1)));
         diagnostic.setSource(source.or("groovyc"));
         return diagnostic;
     }

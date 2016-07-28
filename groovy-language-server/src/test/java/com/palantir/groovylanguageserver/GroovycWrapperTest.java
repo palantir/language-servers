@@ -25,12 +25,10 @@ import com.google.common.base.Optional;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import com.palantir.groovylanguageserver.util.DiagnosticBuilder;
+import com.palantir.groovylanguageserver.util.PositionUtil;
 import io.typefox.lsapi.Diagnostic;
 import io.typefox.lsapi.DiagnosticImpl;
-import io.typefox.lsapi.PositionImpl;
-import io.typefox.lsapi.RangeImpl;
 import io.typefox.lsapi.SymbolInformation;
-import io.typefox.lsapi.util.LsapiFactories;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -377,9 +375,11 @@ public final class GroovycWrapperTest {
         Set<Diagnostic> actualDiagnostics = Sets.newHashSet(diagnostics);
         Set<Diagnostic> expectedDiagnostics = Sets.newHashSet();
         expectedDiagnostics.add(new DiagnosticBuilder("unable to resolve class ExceptionNew1 \n @ line 7, column 18.",
-                Diagnostic.SEVERITY_ERROR).range(makeRange(7, 18, 7, 73)).source(test1.getAbsolutePath()).build());
+                Diagnostic.SEVERITY_ERROR).range(PositionUtil.createRange(7, 18, 7, 73)).source(test1.getAbsolutePath())
+                        .build());
         expectedDiagnostics.add(new DiagnosticBuilder("unable to resolve class ExceptionNew222 \n @ line 7, column 18.",
-                Diagnostic.SEVERITY_ERROR).range(makeRange(7, 18, 7, 75)).source(test2.getAbsolutePath()).build());
+                Diagnostic.SEVERITY_ERROR).range(PositionUtil.createRange(7, 18, 7, 75)).source(test2.getAbsolutePath())
+                        .build());
         assertEquals(expectedDiagnostics, actualDiagnostics);
     }
 
@@ -397,12 +397,6 @@ public final class GroovycWrapperTest {
         writer.println(contents);
         writer.close();
         return file;
-    }
-
-    private static RangeImpl makeRange(int startLine, int startColumn, int endLine, int endColumn) {
-        PositionImpl start = LsapiFactories.newPosition(startLine, startColumn);
-        PositionImpl end = LsapiFactories.newPosition(endLine, endColumn);
-        return LsapiFactories.newRange(start, end);
     }
 
 }
