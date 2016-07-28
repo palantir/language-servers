@@ -55,17 +55,11 @@ public final class Ranges {
      * negative number. If position1 is after position2, returns a positive number.
      */
     public static int compareTo(Position position1, Position position2) {
-        if (position1.getLine() < position2.getLine()) {
-            return position1.getLine() - position2.getLine();
-        }
-        if (position1.getLine() > position2.getLine()) {
+        if (position1.getLine() != position2.getLine()) {
             return position1.getLine() - position2.getLine();
         }
         // The two positions are on the same line
-        if (position1.getCharacter() < position2.getCharacter()) {
-            return position1.getCharacter() - position2.getCharacter();
-        }
-        if (position1.getCharacter() > position2.getCharacter()) {
+        if (position1.getCharacter() != position2.getCharacter()) {
             return position1.getCharacter() - position2.getCharacter();
         }
         return 0;
