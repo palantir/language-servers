@@ -55,11 +55,21 @@ public final class RangesTest {
 
     @Test
     public void testCompareTo() {
-        assertThat(Ranges.compareTo(LsapiFactories.newPosition(1, 1), LsapiFactories.newPosition(1, 1)), is(0));
-        assertThat(Ranges.compareTo(LsapiFactories.newPosition(1, 1), LsapiFactories.newPosition(1, 2)), is(-1));
-        assertThat(Ranges.compareTo(LsapiFactories.newPosition(1, 1), LsapiFactories.newPosition(3, 2)), is(-2));
-        assertThat(Ranges.compareTo(LsapiFactories.newPosition(1, 2), LsapiFactories.newPosition(1, 1)), is(1));
-        assertThat(Ranges.compareTo(LsapiFactories.newPosition(3, 2), LsapiFactories.newPosition(1, 1)), is(2));
+        assertThat(
+                Ranges.POSITION_COMPARATOR.compare(LsapiFactories.newPosition(1, 1), LsapiFactories.newPosition(1, 1)),
+                is(0));
+        assertThat(
+                Ranges.POSITION_COMPARATOR.compare(LsapiFactories.newPosition(1, 1), LsapiFactories.newPosition(1, 2)),
+                is(-1));
+        assertThat(
+                Ranges.POSITION_COMPARATOR.compare(LsapiFactories.newPosition(1, 1), LsapiFactories.newPosition(3, 2)),
+                is(-2));
+        assertThat(
+                Ranges.POSITION_COMPARATOR.compare(LsapiFactories.newPosition(1, 2), LsapiFactories.newPosition(1, 1)),
+                is(1));
+        assertThat(
+                Ranges.POSITION_COMPARATOR.compare(LsapiFactories.newPosition(3, 2), LsapiFactories.newPosition(1, 1)),
+                is(2));
     }
 
     @Test
@@ -70,15 +80,21 @@ public final class RangesTest {
         assertTrue(Ranges.contains(Ranges.createRange(4, 4, 6, 6), LsapiFactories.newPosition(5, 5)));
         assertFalse(Ranges.contains(Ranges.createRange(4, 4, 6, 6), LsapiFactories.newPosition(4, 3)));
         assertFalse(Ranges.contains(Ranges.createRange(4, 4, 6, 6), LsapiFactories.newPosition(6, 7)));
+    }
 
+    @Test
+    public void testContains_invalidRange() {
         Range range = Ranges.createRange(6, 6, 4, 4);
         expectedException.expect(IllegalArgumentException.class);
         expectedException.expectMessage(String.format("range is not valid: %s", range.toString()));
         Ranges.contains(range, LsapiFactories.newPosition(6, 7));
+    }
 
+    @Test
+    public void testContains_invalidPosition() {
         Position position = LsapiFactories.newPosition(-1, -1);
         expectedException.expect(IllegalArgumentException.class);
-        expectedException.expectMessage(String.format("point is not valid: %s", position.toString()));
+        expectedException.expectMessage(String.format("position is not valid: %s", position.toString()));
         Ranges.contains(Ranges.createRange(4, 4, 4, 4), position);
     }
 
