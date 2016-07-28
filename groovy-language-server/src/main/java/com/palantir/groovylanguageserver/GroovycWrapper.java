@@ -23,7 +23,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.io.Files;
 import com.palantir.groovylanguageserver.util.DiagnosticBuilder;
-import com.palantir.groovylanguageserver.util.PositionUtil;
+import com.palantir.groovylanguageserver.util.Ranges;
 import io.typefox.lsapi.Diagnostic;
 import io.typefox.lsapi.DiagnosticImpl;
 import io.typefox.lsapi.LocationImpl;
@@ -154,7 +154,7 @@ public final class GroovycWrapper implements CompilerWrapper {
                 SyntaxErrorMessage syntaxErrorMessage = (SyntaxErrorMessage) message;
                 SyntaxException cause = syntaxErrorMessage.getCause();
 
-                RangeImpl range = PositionUtil.createRange(
+                RangeImpl range = Ranges.createRange(
                         cause.getStartLine(), cause.getStartColumn(), cause.getEndLine(), cause.getEndColumn());
                 diagnostic = new DiagnosticBuilder(cause.getMessage(), Diagnostic.SEVERITY_ERROR)
                                     .range(range).source(cause.getSourceLocator()).build();
@@ -204,7 +204,7 @@ public final class GroovycWrapper implements CompilerWrapper {
 
     private static LocationImpl createLocationImpl(String uri, ASTNode node) {
         LocationImpl location = new LocationImpl();
-        location.setRange(PositionUtil.createRange(node.getLineNumber(), node.getColumnNumber(),
+        location.setRange(Ranges.createRange(node.getLineNumber(), node.getColumnNumber(),
                 node.getLastLineNumber(), node.getLastColumnNumber()));
         location.setUri(uri);
         return location;

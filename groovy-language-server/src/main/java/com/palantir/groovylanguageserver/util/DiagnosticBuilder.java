@@ -56,7 +56,7 @@ public final class DiagnosticBuilder {
         diagnostic.setMessage(message);
         diagnostic.setSeverity(severity);
         diagnostic.setCode(code.orNull()); // this is not required by the language server protocol
-        diagnostic.setRange(range.or(PositionUtil.createRange(-1, -1, -1, -1)));
+        diagnostic.setRange(range.or(Ranges.createRange(-1, -1, -1, -1)));
         diagnostic.setSource(source.or("groovyc"));
         return diagnostic;
     }

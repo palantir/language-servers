@@ -25,7 +25,7 @@ import com.google.common.base.Optional;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import com.palantir.groovylanguageserver.util.DiagnosticBuilder;
-import com.palantir.groovylanguageserver.util.PositionUtil;
+import com.palantir.groovylanguageserver.util.Ranges;
 import io.typefox.lsapi.Diagnostic;
 import io.typefox.lsapi.DiagnosticImpl;
 import io.typefox.lsapi.SymbolInformation;
@@ -375,10 +375,10 @@ public final class GroovycWrapperTest {
         Set<Diagnostic> actualDiagnostics = Sets.newHashSet(diagnostics);
         Set<Diagnostic> expectedDiagnostics = Sets.newHashSet();
         expectedDiagnostics.add(new DiagnosticBuilder("unable to resolve class ExceptionNew1 \n @ line 7, column 18.",
-                Diagnostic.SEVERITY_ERROR).range(PositionUtil.createRange(7, 18, 7, 73)).source(test1.getAbsolutePath())
+                Diagnostic.SEVERITY_ERROR).range(Ranges.createRange(7, 18, 7, 73)).source(test1.getAbsolutePath())
                         .build());
         expectedDiagnostics.add(new DiagnosticBuilder("unable to resolve class ExceptionNew222 \n @ line 7, column 18.",
-                Diagnostic.SEVERITY_ERROR).range(PositionUtil.createRange(7, 18, 7, 75)).source(test2.getAbsolutePath())
+                Diagnostic.SEVERITY_ERROR).range(Ranges.createRange(7, 18, 7, 75)).source(test2.getAbsolutePath())
                         .build());
         assertEquals(expectedDiagnostics, actualDiagnostics);
     }
