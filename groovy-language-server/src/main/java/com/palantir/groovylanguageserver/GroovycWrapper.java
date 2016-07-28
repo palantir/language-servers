@@ -18,24 +18,22 @@ package com.palantir.groovylanguageserver;
 
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.io.Files;
 import com.palantir.groovylanguageserver.util.DiagnosticBuilder;
+import com.palantir.groovylanguageserver.util.Ranges;
 import io.typefox.lsapi.Diagnostic;
 import io.typefox.lsapi.DiagnosticImpl;
 import io.typefox.lsapi.LocationImpl;
 import io.typefox.lsapi.RangeImpl;
 import io.typefox.lsapi.SymbolInformation;
 import io.typefox.lsapi.SymbolInformationImpl;
-import io.typefox.lsapi.util.LsapiFactories;
 import java.io.File;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.nio.file.Path;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -97,16 +95,15 @@ public final class GroovycWrapper implements CompilerWrapper {
     }
 
     @Override
-    public List<DiagnosticImpl> compile() {
-        List<DiagnosticImpl> diagnostics = Lists.newArrayList();
+    public Set<DiagnosticImpl> compile() {
         try {
             unit.compile();
             // Symbols are only re-parsed if compilation was successful
             parseAllSymbols();
         } catch (MultipleCompilationErrorsException e) {
-            parseErrors(e.getErrorCollector(), diagnostics);
+            return parseErrors(e.getErrorCollector());
         }
-        return diagnostics;
+        return Sets.newHashSet();
     }
 
     @Override
@@ -142,7 +139,8 @@ public final class GroovycWrapper implements CompilerWrapper {
         }
     }
 
-    private void parseErrors(ErrorCollector collector, List<DiagnosticImpl> diagnostics) {
+    private Set<DiagnosticImpl> parseErrors(ErrorCollector collector) {
+        Set<DiagnosticImpl> diagnostics = Sets.newHashSet();
         for (int i = 0; i < collector.getWarningCount(); i++) {
             WarningMessage message = collector.getWarning(i);
             diagnostics.add(new DiagnosticBuilder(message.getMessage(), Diagnostic.SEVERITY_WARNING).build());
@@ -154,9 +152,8 @@ public final class GroovycWrapper implements CompilerWrapper {
                 SyntaxErrorMessage syntaxErrorMessage = (SyntaxErrorMessage) message;
                 SyntaxException cause = syntaxErrorMessage.getCause();
 
-                RangeImpl range = LsapiFactories.newRange(
-                                    LsapiFactories.newPosition(cause.getStartLine(), cause.getStartColumn()),
-                                    LsapiFactories.newPosition(cause.getEndLine(), cause.getEndColumn()));
+                RangeImpl range = Ranges.createRange(
+                        cause.getStartLine(), cause.getStartColumn(), cause.getEndLine(), cause.getEndColumn());
                 diagnostic = new DiagnosticBuilder(cause.getMessage(), Diagnostic.SEVERITY_ERROR)
                                     .range(range).source(cause.getSourceLocator()).build();
             } else {
@@ -167,6 +164,7 @@ public final class GroovycWrapper implements CompilerWrapper {
             }
             diagnostics.add(diagnostic);
         }
+        return diagnostics;
     }
 
     private void parseAllSymbols() {
@@ -177,14 +175,14 @@ public final class GroovycWrapper implements CompilerWrapper {
             // This will iterate through all classes, interfaces and enums, including inner ones.
             sourceUnit.getAST().getClasses().forEach(clazz -> {
                 // Add class symbol
-                symbols.add(constructSymbolInformation(clazz.getName(), getKind(clazz),
-                        constructLocationImpl(sourcePath, clazz), Optional.fromNullable(clazz.getOuterClass())));
+                symbols.add(createSymbolInformation(clazz.getName(), getKind(clazz),
+                        createLocationImpl(sourcePath, clazz), Optional.fromNullable(clazz.getOuterClass())));
                 // Add all the class's field symbols
-                clazz.getFields().forEach(field -> symbols.add(constructSymbolInformation(field.getName(),
-                        SymbolInformation.KIND_FIELD, constructLocationImpl(sourcePath, field), Optional.of(clazz))));
+                clazz.getFields().forEach(field -> symbols.add(createSymbolInformation(field.getName(),
+                        SymbolInformation.KIND_FIELD, createLocationImpl(sourcePath, field), Optional.of(clazz))));
                 // Add all method symbols
-                clazz.getAllDeclaredMethods().forEach(method -> symbols.add(constructSymbolInformation(method.getName(),
-                        SymbolInformation.KIND_METHOD, constructLocationImpl(sourcePath, method), Optional.of(clazz))));
+                clazz.getAllDeclaredMethods().forEach(method -> symbols.add(createSymbolInformation(method.getName(),
+                        SymbolInformation.KIND_METHOD, createLocationImpl(sourcePath, method), Optional.of(clazz))));
             });
             // TODO(#28) Add symbols declared within the statement block variable scope which includes script
             // defined variables.
@@ -202,16 +200,15 @@ public final class GroovycWrapper implements CompilerWrapper {
         return SymbolInformation.KIND_CLASS;
     }
 
-    private static LocationImpl constructLocationImpl(String uri, ASTNode node) {
+    private static LocationImpl createLocationImpl(String uri, ASTNode node) {
         LocationImpl location = new LocationImpl();
-        location.setRange(
-                LsapiFactories.newRange(LsapiFactories.newPosition(node.getLineNumber(), node.getColumnNumber()),
-                        LsapiFactories.newPosition(node.getLastLineNumber(), node.getLastColumnNumber())));
+        location.setRange(Ranges.createRange(node.getLineNumber(), node.getColumnNumber(),
+                node.getLastLineNumber(), node.getLastColumnNumber()));
         location.setUri(uri);
         return location;
     }
 
-    private static SymbolInformation constructSymbolInformation(String name, int kind, LocationImpl location,
+    private static SymbolInformation createSymbolInformation(String name, int kind, LocationImpl location,
             Optional<ClassNode> container) {
         SymbolInformationImpl symbol = new SymbolInformationImpl();
         symbol.setContainer(container.transform(ClassNode::getName).orNull());

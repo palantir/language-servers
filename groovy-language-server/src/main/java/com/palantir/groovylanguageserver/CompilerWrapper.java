@@ -19,7 +19,6 @@ package com.palantir.groovylanguageserver;
 import io.typefox.lsapi.DiagnosticImpl;
 import io.typefox.lsapi.SymbolInformation;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -34,7 +33,7 @@ public interface CompilerWrapper {
      * Compiles all relevant files in the workspace.
      * @return the compilation warnings and errors
      */
-    List<DiagnosticImpl> compile();
+    Set<DiagnosticImpl> compile();
 
     /**
      * Returns a mapping from absolute path of source file to symbols located within these source files.
