@@ -49,6 +49,7 @@ import io.typefox.lsapi.services.TextDocumentService;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -171,9 +172,9 @@ public final class GroovyTextDocumentService implements TextDocumentService {
         publishDiagnostics = callback;
     }
 
-    private void publishDiagnostics(List<DiagnosticImpl> diagnostics) {
+    private void publishDiagnostics(Set<DiagnosticImpl> diagnostics) {
         PublishDiagnosticsParamsImpl publishDiagnosticsImpl = new PublishDiagnosticsParamsImpl();
-        publishDiagnosticsImpl.setDiagnostics(diagnostics);
+        publishDiagnosticsImpl.setDiagnostics(Lists.newArrayList(diagnostics));
         publishDiagnosticsImpl.setUri(provider.get().getWorkspaceRoot().toAbsolutePath().toString());
         publishDiagnostics.accept(publishDiagnosticsImpl);
     }

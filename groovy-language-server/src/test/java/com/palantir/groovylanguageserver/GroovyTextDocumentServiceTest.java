@@ -72,7 +72,7 @@ public final class GroovyTextDocumentServiceTest {
         MockitoAnnotations.initMocks(this);
 
         expectedDiagnostics.add(new DiagnosticBuilder("Some message", Diagnostic.SEVERITY_ERROR).build());
-        List<DiagnosticImpl> diagnostics = Lists.newArrayList(expectedDiagnostics);
+        Set<DiagnosticImpl> diagnostics = Sets.newHashSet(expectedDiagnostics);
 
         SymbolInformationImpl symbol = new SymbolInformationImpl();
         symbol.setName("ThisIsASymbol");

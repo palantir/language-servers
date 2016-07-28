@@ -36,7 +36,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
@@ -74,7 +73,7 @@ public final class GroovycWrapperTest {
     @Test
     public void testEmptyWorkspace() throws InterruptedException, ExecutionException, IOException {
         GroovycWrapper wrapper = GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath());
-        List<DiagnosticImpl> diagnostics = wrapper.compile();
+        Set<DiagnosticImpl> diagnostics = wrapper.compile();
         assertEquals(0, diagnostics.size());
         Map<String, Set<SymbolInformation>> symbols = wrapper.getFileSymbols();
         assertEquals(0, symbols.values().size());
@@ -117,7 +116,7 @@ public final class GroovycWrapperTest {
         addFileToFolder(root.getRoot(), "test4.groovy", "class ExceptionNew {}");
 
         GroovycWrapper wrapper = GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath());
-        List<DiagnosticImpl> diagnostics = wrapper.compile();
+        Set<DiagnosticImpl> diagnostics = wrapper.compile();
 
         assertEquals(0, diagnostics.size());
     }
@@ -140,7 +139,7 @@ public final class GroovycWrapperTest {
                 + "}\n");
 
         GroovycWrapper wrapper = GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath());
-        List<DiagnosticImpl> diagnostics = wrapper.compile();
+        Set<DiagnosticImpl> diagnostics = wrapper.compile();
         assertEquals(0, diagnostics.size());
         Map<String, Set<SymbolInformation>> symbols = wrapper.getFileSymbols();
         // The symbols will contain a lot of inherited fields and methods, so we just check to make sure it contains our
@@ -161,7 +160,7 @@ public final class GroovycWrapperTest {
                 + "}\n");
 
         GroovycWrapper wrapper = GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath());
-        List<DiagnosticImpl> diagnostics = wrapper.compile();
+        Set<DiagnosticImpl> diagnostics = wrapper.compile();
         assertEquals(0, diagnostics.size());
         Map<String, Set<SymbolInformation>> symbols = wrapper.getFileSymbols();
         // The symbols will contain a lot of inherited and default fields and methods, so we just check to make sure it
@@ -178,7 +177,7 @@ public final class GroovycWrapperTest {
                 + "}\n");
 
         GroovycWrapper wrapper = GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath());
-        List<DiagnosticImpl> diagnostics = wrapper.compile();
+        Set<DiagnosticImpl> diagnostics = wrapper.compile();
         assertEquals(0, diagnostics.size());
         Map<String, Set<SymbolInformation>> symbols = wrapper.getFileSymbols();
         // The symbols will contain a lot of inherited and default fields and methods, so we just check to make sure it
@@ -212,7 +211,7 @@ public final class GroovycWrapperTest {
                 + "}\n");
 
         GroovycWrapper wrapper = GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath());
-        List<DiagnosticImpl> diagnostics = wrapper.compile();
+        Set<DiagnosticImpl> diagnostics = wrapper.compile();
         assertEquals(0, diagnostics.size());
         Map<String, Set<SymbolInformation>> symbols = wrapper.getFileSymbols();
         // The symbols will contain a lot of inherited fields and methods, so we just check to make sure it contains our
@@ -245,7 +244,7 @@ public final class GroovycWrapperTest {
                 + "myMethod()\n");
 
         GroovycWrapper wrapper = GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath());
-        List<DiagnosticImpl> diagnostics = wrapper.compile();
+        Set<DiagnosticImpl> diagnostics = wrapper.compile();
         assertEquals(0, diagnostics.size());
         Map<String, Set<SymbolInformation>> symbols = wrapper.getFileSymbols();
         assertTrue(mapHasSymbol(symbols, Optional.of("test"), "myMethod", SymbolInformation.KIND_METHOD));
@@ -273,7 +272,7 @@ public final class GroovycWrapperTest {
                 + "   abstract double getAt(int idx);\n"
                 + "}\n");
         GroovycWrapper wrapper = GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath());
-        List<DiagnosticImpl> diagnostics = wrapper.compile();
+        Set<DiagnosticImpl> diagnostics = wrapper.compile();
         assertEquals(0, diagnostics.size());
 
         Set<SymbolInformation> filteredSymbols = wrapper.getFilteredSymbols("Coordinates");
@@ -327,7 +326,7 @@ public final class GroovycWrapperTest {
         addFileToFolder(newFolder2, "Test.java", "public class Test {}\n");
 
         GroovycWrapper wrapper = GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath());
-        List<DiagnosticImpl> diagnostics = wrapper.compile();
+        Set<DiagnosticImpl> diagnostics = wrapper.compile();
 
         assertEquals(0, diagnostics.size());
     }
@@ -369,7 +368,7 @@ public final class GroovycWrapperTest {
         addFileToFolder(root.getRoot(), "test4.groovy", "class ExceptionNew {}\n");
 
         GroovycWrapper wrapper = GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath());
-        List<DiagnosticImpl> diagnostics = wrapper.compile();
+        Set<DiagnosticImpl> diagnostics = wrapper.compile();
 
         assertEquals(2, diagnostics.size());
         Set<Diagnostic> actualDiagnostics = Sets.newHashSet(diagnostics);

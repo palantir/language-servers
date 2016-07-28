@@ -18,7 +18,6 @@ package com.palantir.groovylanguageserver;
 
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.io.Files;
@@ -35,7 +34,6 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.nio.file.Path;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -97,7 +95,7 @@ public final class GroovycWrapper implements CompilerWrapper {
     }
 
     @Override
-    public List<DiagnosticImpl> compile() {
+    public Set<DiagnosticImpl> compile() {
         try {
             unit.compile();
             // Symbols are only re-parsed if compilation was successful
@@ -105,7 +103,7 @@ public final class GroovycWrapper implements CompilerWrapper {
         } catch (MultipleCompilationErrorsException e) {
             return parseErrors(e.getErrorCollector());
         }
-        return Lists.newArrayList();
+        return Sets.newHashSet();
     }
 
     @Override
@@ -141,8 +139,8 @@ public final class GroovycWrapper implements CompilerWrapper {
         }
     }
 
-    private List<DiagnosticImpl> parseErrors(ErrorCollector collector) {
-        List<DiagnosticImpl> diagnostics = Lists.newArrayList();
+    private Set<DiagnosticImpl> parseErrors(ErrorCollector collector) {
+        Set<DiagnosticImpl> diagnostics = Sets.newHashSet();
         for (int i = 0; i < collector.getWarningCount(); i++) {
             WarningMessage message = collector.getWarning(i);
             diagnostics.add(new DiagnosticBuilder(message.getMessage(), Diagnostic.SEVERITY_WARNING).build());
