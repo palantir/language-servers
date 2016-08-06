@@ -247,7 +247,7 @@ public final class GroovycWrapperTest {
         assertEquals(0, diagnostics.size());
         Map<String, Set<SymbolInformation>> symbols = wrapper.getFileSymbols();
         assertTrue(mapHasSymbol(symbols, Optional.of("test"), "myMethod", SymbolKind.Method));
-        // TODO(#28) add check for name variable once we support script declared variables
+        assertTrue(mapHasSymbol(symbols, Optional.of("test"), "name", SymbolKind.Variable));
     }
 
     @Test

@@ -44,6 +44,8 @@ import java.util.regex.PatternSyntaxException;
 import java.util.stream.Collectors;
 import org.codehaus.groovy.ast.ASTNode;
 import org.codehaus.groovy.ast.ClassNode;
+import org.codehaus.groovy.ast.MethodNode;
+import org.codehaus.groovy.ast.Variable;
 import org.codehaus.groovy.control.CompilationUnit;
 import org.codehaus.groovy.control.CompilerConfiguration;
 import org.codehaus.groovy.control.ErrorCollector;
@@ -187,11 +189,17 @@ public final class GroovycWrapper implements CompilerWrapper {
                 clazz.getFields().forEach(field -> symbols.add(createSymbolInformation(field.getName(),
                         SymbolKind.Field, createLocation(sourcePath, field), Optional.of(clazz))));
                 // Add all method symbols
-                clazz.getAllDeclaredMethods().forEach(method -> symbols.add(createSymbolInformation(method.getName(),
-                        SymbolKind.Method, createLocation(sourcePath, method), Optional.of(clazz))));
+                clazz.getAllDeclaredMethods()
+                        .forEach(method -> symbols.addAll(getMethodSymbolInformations(sourcePath, clazz, method)));
             });
-            // TODO(#28) Add symbols declared within the statement block variable scope which includes script
+            // Add symbols declared within the statement block variable scope which includes script
             // defined variables.
+            ClassNode scriptClass = sourceUnit.getAST().getScriptClassDummy();
+            if (scriptClass != null) {
+                sourceUnit.getAST().getStatementBlock().getVariableScope().getDeclaredVariables().values()
+                        .forEach(variable -> symbols.add(getVariableSymbolInformation(scriptClass.getName(),
+                                createLocation(sourcePath, scriptClass), variable)));
+            }
             newFileSymbols.put(sourcePath, symbols);
         });
         fileSymbols = newFileSymbols;
@@ -203,8 +211,25 @@ public final class GroovycWrapper implements CompilerWrapper {
         } else if (node.isEnum()) {
             return SymbolKind.Enum;
         }
-
         return SymbolKind.Class;
+    }
+
+    private Set<SymbolInformation> getMethodSymbolInformations(String sourcePath, ClassNode parent, MethodNode method) {
+        Set<SymbolInformation> symbols = Sets.newHashSet();
+        symbols.add(createSymbolInformation(method.getName(), SymbolKind.Method, createLocation(sourcePath, method),
+                Optional.of(parent)));
+        method.getVariableScope().getDeclaredVariables().values().forEach(variable -> symbols
+                .add(getVariableSymbolInformation(method.getName(), createLocation(sourcePath, method), variable)));
+        return symbols;
+    }
+
+    private SymbolInformation getVariableSymbolInformation(String parentName, Location location, Variable var) {
+        return new SymbolInformationBuilder()
+                .containerName(parentName)
+                .kind(SymbolKind.Variable)
+                .location(location)
+                .name(var.getName())
+                .build();
     }
 
     private static Location createLocation(String uri, ASTNode node) {
