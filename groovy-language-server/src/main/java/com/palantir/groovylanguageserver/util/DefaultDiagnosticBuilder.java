@@ -18,47 +18,49 @@ package com.palantir.groovylanguageserver.util;
 
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
-import io.typefox.lsapi.DiagnosticImpl;
-import io.typefox.lsapi.RangeImpl;
+import io.typefox.lsapi.Diagnostic;
+import io.typefox.lsapi.DiagnosticSeverity;
+import io.typefox.lsapi.Range;
+import io.typefox.lsapi.builders.DiagnosticBuilder;
 
-public final class DiagnosticBuilder {
+public final class DefaultDiagnosticBuilder {
 
     private final String message;
-    private final int severity;
+    private final DiagnosticSeverity severity;
 
     private Optional<String> code = Optional.absent();
-    private Optional<RangeImpl> range = Optional.absent();
+    private Optional<Range> range = Optional.absent();
     private Optional<String> source = Optional.absent();
 
-    public DiagnosticBuilder(String message, int severity) {
+    public DefaultDiagnosticBuilder(String message, DiagnosticSeverity warning) {
         Preconditions.checkNotNull(message, "message cannot be null");
         this.message = message;
-        this.severity = severity;
+        this.severity = warning;
     }
 
-    public DiagnosticBuilder code(String codeStr) {
+    public DefaultDiagnosticBuilder code(String codeStr) {
         this.code = Optional.fromNullable(codeStr);
         return this;
     }
 
-    public DiagnosticBuilder range(RangeImpl rangeImpl) {
-        this.range = Optional.fromNullable(rangeImpl);
+    public DefaultDiagnosticBuilder range(Range rangeVal) {
+        this.range = Optional.fromNullable(rangeVal);
         return this;
     }
 
-    public DiagnosticBuilder source(String sourceStr) {
+    public DefaultDiagnosticBuilder source(String sourceStr) {
         this.source = Optional.fromNullable(sourceStr);
         return this;
     }
 
-    public DiagnosticImpl build() {
-        DiagnosticImpl diagnostic = new DiagnosticImpl();
-        diagnostic.setMessage(message);
-        diagnostic.setSeverity(severity);
-        diagnostic.setCode(code.orNull()); // this is not required by the language server protocol
-        diagnostic.setRange(range.or(Ranges.createRange(-1, -1, -1, -1)));
-        diagnostic.setSource(source.or("groovyc"));
-        return diagnostic;
+    public Diagnostic build() {
+        DiagnosticBuilder builder =
+                new DiagnosticBuilder().message(message).severity(severity)
+                        .range(range.or(Ranges.createRange(-1, -1, -1, -1))).source(source.or("groovyc"));
+        if (code.isPresent()) {
+            builder.code(code.get());
+        }
+        return builder.build();
     }
 
 }

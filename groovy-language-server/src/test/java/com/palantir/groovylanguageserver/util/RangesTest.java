@@ -23,7 +23,7 @@ import static org.junit.Assert.assertTrue;
 
 import io.typefox.lsapi.Position;
 import io.typefox.lsapi.Range;
-import io.typefox.lsapi.util.LsapiFactories;
+import io.typefox.lsapi.builders.PositionBuilder;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -46,40 +46,38 @@ public final class RangesTest {
 
     @Test
     public void testIsValidPosition() {
-        assertFalse(Ranges.isValid(LsapiFactories.newPosition(-1, 1)));
-        assertFalse(Ranges.isValid(LsapiFactories.newPosition(1, -1)));
-        assertFalse(Ranges.isValid(LsapiFactories.newPosition(-1, -1)));
-        assertTrue(Ranges.isValid(LsapiFactories.newPosition(0, 0)));
-        assertTrue(Ranges.isValid(LsapiFactories.newPosition(1, 1)));
+
+        assertFalse(Ranges.isValid(new PositionBuilder().line(-1).character(1).build()));
+        assertFalse(Ranges.isValid(new PositionBuilder().line(1).character(-1).build()));
+        assertFalse(Ranges.isValid(new PositionBuilder().line(-1).character(-1).build()));
+        assertTrue(Ranges.isValid(new PositionBuilder().line(0).character(0).build()));
+        assertTrue(Ranges.isValid(new PositionBuilder().line(1).character(1).build()));
     }
 
     @Test
     public void testCompareTo() {
-        assertThat(
-                Ranges.POSITION_COMPARATOR.compare(LsapiFactories.newPosition(1, 1), LsapiFactories.newPosition(1, 1)),
-                is(0));
-        assertThat(
-                Ranges.POSITION_COMPARATOR.compare(LsapiFactories.newPosition(1, 1), LsapiFactories.newPosition(1, 2)),
-                is(-1));
-        assertThat(
-                Ranges.POSITION_COMPARATOR.compare(LsapiFactories.newPosition(1, 1), LsapiFactories.newPosition(3, 2)),
-                is(-2));
-        assertThat(
-                Ranges.POSITION_COMPARATOR.compare(LsapiFactories.newPosition(1, 2), LsapiFactories.newPosition(1, 1)),
-                is(1));
-        assertThat(
-                Ranges.POSITION_COMPARATOR.compare(LsapiFactories.newPosition(3, 2), LsapiFactories.newPosition(1, 1)),
-                is(2));
+        assertThat(Ranges.POSITION_COMPARATOR.compare(new PositionBuilder().line(1).character(1).build(),
+                new PositionBuilder().line(1).character(1).build()), is(0));
+        assertThat(Ranges.POSITION_COMPARATOR.compare(new PositionBuilder().line(1).character(1).build(),
+                new PositionBuilder().line(1).character(2).build()), is(-1));
+        assertThat(Ranges.POSITION_COMPARATOR.compare(new PositionBuilder().line(1).character(1).build(),
+                new PositionBuilder().line(3).character(2).build()), is(-2));
+        assertThat(Ranges.POSITION_COMPARATOR.compare(new PositionBuilder().line(1).character(2).build(),
+                new PositionBuilder().line(1).character(1).build()), is(1));
+        assertThat(Ranges.POSITION_COMPARATOR.compare(new PositionBuilder().line(3).character(2).build(),
+                new PositionBuilder().line(1).character(1).build()), is(2));
     }
 
     @Test
     public void testContains() {
-        assertTrue(Ranges.contains(Ranges.createRange(4, 4, 4, 4), LsapiFactories.newPosition(4, 4)));
-        assertTrue(Ranges.contains(Ranges.createRange(4, 4, 6, 6), LsapiFactories.newPosition(4, 4)));
-        assertTrue(Ranges.contains(Ranges.createRange(4, 4, 6, 6), LsapiFactories.newPosition(6, 6)));
-        assertTrue(Ranges.contains(Ranges.createRange(4, 4, 6, 6), LsapiFactories.newPosition(5, 5)));
-        assertFalse(Ranges.contains(Ranges.createRange(4, 4, 6, 6), LsapiFactories.newPosition(4, 3)));
-        assertFalse(Ranges.contains(Ranges.createRange(4, 4, 6, 6), LsapiFactories.newPosition(6, 7)));
+        assertTrue(Ranges.contains(Ranges.createRange(4, 4, 4, 4), new PositionBuilder().line(4).character(4).build()));
+        assertTrue(Ranges.contains(Ranges.createRange(4, 4, 6, 6), new PositionBuilder().line(4).character(4).build()));
+        assertTrue(Ranges.contains(Ranges.createRange(4, 4, 6, 6), new PositionBuilder().line(6).character(6).build()));
+        assertTrue(Ranges.contains(Ranges.createRange(4, 4, 6, 6), new PositionBuilder().line(5).character(5).build()));
+        assertFalse(
+                Ranges.contains(Ranges.createRange(4, 4, 6, 6), new PositionBuilder().line(4).character(3).build()));
+        assertFalse(
+                Ranges.contains(Ranges.createRange(4, 4, 6, 6), new PositionBuilder().line(6).character(7).build()));
     }
 
     @Test
@@ -87,12 +85,12 @@ public final class RangesTest {
         Range range = Ranges.createRange(6, 6, 4, 4);
         expectedException.expect(IllegalArgumentException.class);
         expectedException.expectMessage(String.format("range is not valid: %s", range.toString()));
-        Ranges.contains(range, LsapiFactories.newPosition(6, 7));
+        Ranges.contains(range, new PositionBuilder().line(6).character(7).build());
     }
 
     @Test
     public void testContains_invalidPosition() {
-        Position position = LsapiFactories.newPosition(-1, -1);
+        Position position = new PositionBuilder().line(-1).character(-1).build();
         expectedException.expect(IllegalArgumentException.class);
         expectedException.expectMessage(String.format("position is not valid: %s", position.toString()));
         Ranges.contains(Ranges.createRange(4, 4, 4, 4), position);

@@ -20,10 +20,11 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
-import io.typefox.lsapi.ClientCapabilitiesImpl;
-import io.typefox.lsapi.InitializeParamsImpl;
+import io.typefox.lsapi.InitializeParams;
 import io.typefox.lsapi.InitializeResult;
-import io.typefox.lsapi.ServerCapabilities;
+import io.typefox.lsapi.TextDocumentSyncKind;
+import io.typefox.lsapi.builders.InitializeParamsBuilder;
+import io.typefox.lsapi.impl.ClientCapabilitiesImpl;
 import io.typefox.lsapi.services.TextDocumentService;
 import io.typefox.lsapi.services.WindowService;
 import io.typefox.lsapi.services.WorkspaceService;
@@ -49,17 +50,14 @@ public final class GroovyLanguageServerTest {
                     public CompilerWrapper get() {
                         return Mockito.mock(CompilerWrapper.class);
                     }
-                }, Mockito.mock(TextDocumentService.class), Mockito.mock(WorkspaceService.class),
-                        Mockito.mock(WindowService.class));
-        InitializeParamsImpl params = new InitializeParamsImpl();
-        ClientCapabilitiesImpl capabilities = new ClientCapabilitiesImpl();
-        params.setCapabilities(capabilities);
-        params.setClientName("Test");
-        params.setProcessId(1);
-        params.setRootPath(folder.getRoot().toPath().toAbsolutePath().toString());
+                }, Mockito.mock(LanguageServerConfig.class), Mockito.mock(TextDocumentService.class),
+                        Mockito.mock(WorkspaceService.class), Mockito.mock(WindowService.class));
+        InitializeParams params =
+                new InitializeParamsBuilder().capabilities(new ClientCapabilitiesImpl()).processId(1)
+                        .rootPath(folder.getRoot().toPath().toAbsolutePath().toString()).build();
         InitializeResult result = server.initialize(params).get();
         assertThat(server.getWorkspaceRoot(), is(folder.getRoot().toPath().toAbsolutePath().normalize()));
-        assertThat(result.getCapabilities().getTextDocumentSync(), is(ServerCapabilities.SYNC_INCREMENTAL));
+        assertThat(result.getCapabilities().getTextDocumentSync(), is(TextDocumentSyncKind.Incremental));
         assertTrue(result.getCapabilities().isDocumentSymbolProvider());
         assertTrue(result.getCapabilities().isWorkspaceSymbolProvider());
     }
