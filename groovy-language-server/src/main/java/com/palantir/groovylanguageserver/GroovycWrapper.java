@@ -44,6 +44,7 @@ import java.util.regex.PatternSyntaxException;
 import java.util.stream.Collectors;
 import org.codehaus.groovy.ast.ASTNode;
 import org.codehaus.groovy.ast.ClassNode;
+import org.codehaus.groovy.ast.MethodNode;
 import org.codehaus.groovy.control.CompilationUnit;
 import org.codehaus.groovy.control.CompilerConfiguration;
 import org.codehaus.groovy.control.ErrorCollector;
@@ -181,17 +182,23 @@ public final class GroovycWrapper implements CompilerWrapper {
             // This will iterate through all classes, interfaces and enums, including inner ones.
             sourceUnit.getAST().getClasses().forEach(clazz -> {
                 // Add class symbol
-                symbols.add(createSymbolInformation(clazz.getName(), getKind(clazz),
-                        createLocation(sourcePath, clazz), Optional.fromNullable(clazz.getOuterClass())));
+                symbols.add(createSymbolInformation(clazz.getName(), getKind(clazz), createLocation(sourcePath, clazz),
+                        Optional.fromNullable(clazz.getOuterClass()).transform(ClassNode::getName)));
                 // Add all the class's field symbols
                 clazz.getFields().forEach(field -> symbols.add(createSymbolInformation(field.getName(),
-                        SymbolKind.Field, createLocation(sourcePath, field), Optional.of(clazz))));
+                        SymbolKind.Field, createLocation(sourcePath, field), Optional.of(clazz.getName()))));
                 // Add all method symbols
-                clazz.getAllDeclaredMethods().forEach(method -> symbols.add(createSymbolInformation(method.getName(),
-                        SymbolKind.Method, createLocation(sourcePath, method), Optional.of(clazz))));
+                clazz.getAllDeclaredMethods()
+                        .forEach(method -> symbols.addAll(getMethodSymbolInformations(sourcePath, clazz, method)));
             });
-            // TODO(#28) Add symbols declared within the statement block variable scope which includes script
+            // Add symbols declared within the statement block variable scope which includes script
             // defined variables.
+            ClassNode scriptClass = sourceUnit.getAST().getScriptClassDummy();
+            if (scriptClass != null) {
+                sourceUnit.getAST().getStatementBlock().getVariableScope().getDeclaredVariables().values().forEach(
+                        variable -> symbols.add(createSymbolInformation(variable.getName(), SymbolKind.Variable,
+                                createLocation(sourcePath, scriptClass), Optional.of(scriptClass.getName()))));
+            }
             newFileSymbols.put(sourcePath, symbols);
         });
         fileSymbols = newFileSymbols;
@@ -203,8 +210,28 @@ public final class GroovycWrapper implements CompilerWrapper {
         } else if (node.isEnum()) {
             return SymbolKind.Enum;
         }
-
         return SymbolKind.Class;
+    }
+
+    private Set<SymbolInformation> getMethodSymbolInformations(String sourcePath, ClassNode parent, MethodNode method) {
+        Set<SymbolInformation> symbols = Sets.newHashSet();
+        symbols.add(createSymbolInformation(method.getName(), SymbolKind.Method, createLocation(sourcePath, method),
+                Optional.of(parent.getName())));
+        method.getVariableScope().getDeclaredVariables().values().forEach(variable -> {
+            symbols.add(createSymbolInformation(variable.getName(), SymbolKind.Variable,
+                    createLocation(sourcePath, method), Optional.of(method.getName())));
+        });
+        return symbols;
+    }
+
+    private static SymbolInformation createSymbolInformation(String name, SymbolKind kind, Location location,
+            Optional<String> parentName) {
+        return new SymbolInformationBuilder()
+                .containerName(parentName.orNull())
+                .kind(kind)
+                .location(location)
+                .name(name)
+                .build();
     }
 
     private static Location createLocation(String uri, ASTNode node) {
@@ -214,16 +241,6 @@ public final class GroovycWrapper implements CompilerWrapper {
                         .start(node.getLineNumber(), node.getColumnNumber())
                         .end(node.getLastLineNumber(), node.getLastColumnNumber())
                         .build())
-                .build();
-    }
-
-    private static SymbolInformation createSymbolInformation(String name, SymbolKind kind, Location location,
-            Optional<ClassNode> container) {
-        return new SymbolInformationBuilder()
-                .containerName(container.transform(ClassNode::getName).orNull())
-                .kind(kind)
-                .location(location)
-                .name(name)
                 .build();
     }
 
