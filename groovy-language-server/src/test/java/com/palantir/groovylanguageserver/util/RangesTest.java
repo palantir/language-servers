@@ -23,7 +23,7 @@ import static org.junit.Assert.assertTrue;
 
 import io.typefox.lsapi.Position;
 import io.typefox.lsapi.Range;
-import io.typefox.lsapi.builders.PositionBuilder;
+import io.typefox.lsapi.impl.PositionImpl;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -77,7 +77,7 @@ public final class RangesTest {
         Range range = Ranges.createRange(6, 6, 4, 4);
         expectedException.expect(IllegalArgumentException.class);
         expectedException.expectMessage(String.format("range is not valid: %s", range.toString()));
-        Ranges.contains(range, new PositionBuilder().line(6).character(7).build());
+        Ranges.contains(range, position(6, 7));
     }
 
     @Test
@@ -89,7 +89,7 @@ public final class RangesTest {
     }
 
     private static Position position(int line, int character) {
-        return new PositionBuilder().line(line).character(character).build();
+        return new PositionImpl(line, character);
     }
 
 }

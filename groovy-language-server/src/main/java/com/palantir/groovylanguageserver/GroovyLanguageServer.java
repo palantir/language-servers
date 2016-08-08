@@ -35,6 +35,7 @@ import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+// TODO(#39): Determine which non-deprecated adapter to use.
 @SuppressWarnings("deprecation")
 public final class GroovyLanguageServer implements LanguageServer {
 
