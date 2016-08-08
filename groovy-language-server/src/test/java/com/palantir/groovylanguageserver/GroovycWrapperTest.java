@@ -373,13 +373,17 @@ public final class GroovycWrapperTest {
         Set<Diagnostic> actualDiagnostics = Sets.newHashSet(diagnostics);
         Set<Diagnostic> expectedDiagnostics = Sets.newHashSet();
         expectedDiagnostics
-                .add(new DefaultDiagnosticBuilder("unable to resolve class ExceptionNew1 \n @ line 7, column 18.",
-                        DiagnosticSeverity.Error).range(Ranges.createRange(7, 18, 7, 73))
-                                .source(test1.getAbsolutePath()).build());
+                .add(new DefaultDiagnosticBuilder(
+                        "unable to resolve class ExceptionNew1 \n @ line 7, column 18.", DiagnosticSeverity.Error)
+                        .range(Ranges.createRange(7, 18, 7, 73))
+                        .source(test1.getAbsolutePath())
+                        .build());
         expectedDiagnostics
-                .add(new DefaultDiagnosticBuilder("unable to resolve class ExceptionNew222 \n @ line 7, column 18.",
-                        DiagnosticSeverity.Error).range(Ranges.createRange(7, 18, 7, 75))
-                                .source(test2.getAbsolutePath()).build());
+                .add(new DefaultDiagnosticBuilder(
+                        "unable to resolve class ExceptionNew222 \n @ line 7, column 18.", DiagnosticSeverity.Error)
+                        .range(Ranges.createRange(7, 18, 7, 75))
+                        .source(test2.getAbsolutePath())
+                        .build());
         assertEquals(expectedDiagnostics, actualDiagnostics);
     }
 

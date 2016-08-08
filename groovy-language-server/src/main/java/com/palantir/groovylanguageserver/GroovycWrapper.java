@@ -159,7 +159,9 @@ public final class GroovycWrapper implements CompilerWrapper {
                 Range range = Ranges.createRange(
                         cause.getStartLine(), cause.getStartColumn(), cause.getEndLine(), cause.getEndColumn());
                 diagnostic = new DefaultDiagnosticBuilder(cause.getMessage(), DiagnosticSeverity.Error)
-                                    .range(range).source(cause.getSourceLocator()).build();
+                                .range(range)
+                                .source(cause.getSourceLocator())
+                                .build();
             } else {
                 StringWriter data = new StringWriter();
                 PrintWriter writer = new PrintWriter(data);
@@ -206,16 +208,23 @@ public final class GroovycWrapper implements CompilerWrapper {
     }
 
     private static Location createLocation(String uri, ASTNode node) {
-        return new LocationBuilder().uri(uri)
-                .range(new RangeBuilder().start(node.getLineNumber(), node.getColumnNumber())
-                        .end(node.getLastLineNumber(), node.getLastColumnNumber()).build())
+        return new LocationBuilder()
+                .uri(uri)
+                .range(new RangeBuilder()
+                        .start(node.getLineNumber(), node.getColumnNumber())
+                        .end(node.getLastLineNumber(), node.getLastColumnNumber())
+                        .build())
                 .build();
     }
 
     private static SymbolInformation createSymbolInformation(String name, SymbolKind kind, Location location,
             Optional<ClassNode> container) {
-        return new SymbolInformationBuilder().containerName(container.transform(ClassNode::getName).orNull()).kind(kind)
-                .location(location).name(name).build();
+        return new SymbolInformationBuilder()
+                .containerName(container.transform(ClassNode::getName).orNull())
+                .kind(kind)
+                .location(location)
+                .name(name)
+                .build();
     }
 
 }

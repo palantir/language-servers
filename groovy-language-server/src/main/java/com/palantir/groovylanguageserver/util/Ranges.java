@@ -38,8 +38,16 @@ public final class Ranges {
      * Returns a newly created range.
      */
     public static Range createRange(int startLine, int startColumn, int endLine, int endColumn) {
-        return new RangeBuilder().start(new PositionBuilder().line(startLine).character(startColumn).build())
-                .end(new PositionBuilder().line(endLine).character(endColumn).build()).build();
+        return new RangeBuilder()
+                .start(new PositionBuilder()
+                        .line(startLine)
+                        .character(startColumn)
+                        .build())
+                .end(new PositionBuilder()
+                        .line(endLine)
+                        .character(endColumn)
+                        .build())
+                .build();
     }
 
     /**

@@ -61,9 +61,11 @@ public final class GroovyLanguageServer implements LanguageServer {
     public CompletableFuture<InitializeResult> initialize(InitializeParams params) {
         workspaceRoot = Paths.get(params.getRootPath()).toAbsolutePath().normalize();
 
-        ServerCapabilities capabilities =
-                new ServerCapabilitiesBuilder().textDocumentSync(TextDocumentSyncKind.Incremental)
-                        .documentSymbolProvider(true).workspaceSymbolProvider(true).build();
+        ServerCapabilities capabilities = new ServerCapabilitiesBuilder()
+                                            .textDocumentSync(TextDocumentSyncKind.Incremental)
+                                            .documentSymbolProvider(true)
+                                            .workspaceSymbolProvider(true)
+                                            .build();
         InitializeResult result = new InitializeResultBuilder().capabilities(capabilities).build();
 
         GroovycWrapper groovycWrapper = GroovycWrapper.of(Files.createTempDir().toPath(), workspaceRoot);

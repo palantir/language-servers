@@ -46,38 +46,30 @@ public final class RangesTest {
 
     @Test
     public void testIsValidPosition() {
-
-        assertFalse(Ranges.isValid(new PositionBuilder().line(-1).character(1).build()));
-        assertFalse(Ranges.isValid(new PositionBuilder().line(1).character(-1).build()));
-        assertFalse(Ranges.isValid(new PositionBuilder().line(-1).character(-1).build()));
-        assertTrue(Ranges.isValid(new PositionBuilder().line(0).character(0).build()));
-        assertTrue(Ranges.isValid(new PositionBuilder().line(1).character(1).build()));
+        assertFalse(Ranges.isValid(position(-1, 1)));
+        assertFalse(Ranges.isValid(position(1, -1)));
+        assertFalse(Ranges.isValid(position(-1, -1)));
+        assertTrue(Ranges.isValid(position(0, 0)));
+        assertTrue(Ranges.isValid(position(1, 1)));
     }
 
     @Test
-    public void testCompareTo() {
-        assertThat(Ranges.POSITION_COMPARATOR.compare(new PositionBuilder().line(1).character(1).build(),
-                new PositionBuilder().line(1).character(1).build()), is(0));
-        assertThat(Ranges.POSITION_COMPARATOR.compare(new PositionBuilder().line(1).character(1).build(),
-                new PositionBuilder().line(1).character(2).build()), is(-1));
-        assertThat(Ranges.POSITION_COMPARATOR.compare(new PositionBuilder().line(1).character(1).build(),
-                new PositionBuilder().line(3).character(2).build()), is(-2));
-        assertThat(Ranges.POSITION_COMPARATOR.compare(new PositionBuilder().line(1).character(2).build(),
-                new PositionBuilder().line(1).character(1).build()), is(1));
-        assertThat(Ranges.POSITION_COMPARATOR.compare(new PositionBuilder().line(3).character(2).build(),
-                new PositionBuilder().line(1).character(1).build()), is(2));
+    public void testPositionComparator() {
+        assertThat(Ranges.POSITION_COMPARATOR.compare(position(1, 1), position(1, 1)), is(0));
+        assertThat(Ranges.POSITION_COMPARATOR.compare(position(1, 1), position(1, 2)), is(-1));
+        assertThat(Ranges.POSITION_COMPARATOR.compare(position(1, 1), position(3, 2)), is(-2));
+        assertThat(Ranges.POSITION_COMPARATOR.compare(position(1, 2), position(1, 1)), is(1));
+        assertThat(Ranges.POSITION_COMPARATOR.compare(position(3, 2), position(1, 1)), is(2));
     }
 
     @Test
     public void testContains() {
-        assertTrue(Ranges.contains(Ranges.createRange(4, 4, 4, 4), new PositionBuilder().line(4).character(4).build()));
-        assertTrue(Ranges.contains(Ranges.createRange(4, 4, 6, 6), new PositionBuilder().line(4).character(4).build()));
-        assertTrue(Ranges.contains(Ranges.createRange(4, 4, 6, 6), new PositionBuilder().line(6).character(6).build()));
-        assertTrue(Ranges.contains(Ranges.createRange(4, 4, 6, 6), new PositionBuilder().line(5).character(5).build()));
-        assertFalse(
-                Ranges.contains(Ranges.createRange(4, 4, 6, 6), new PositionBuilder().line(4).character(3).build()));
-        assertFalse(
-                Ranges.contains(Ranges.createRange(4, 4, 6, 6), new PositionBuilder().line(6).character(7).build()));
+        assertTrue(Ranges.contains(Ranges.createRange(4, 4, 4, 4), position(4, 4)));
+        assertTrue(Ranges.contains(Ranges.createRange(4, 4, 6, 6), position(4, 4)));
+        assertTrue(Ranges.contains(Ranges.createRange(4, 4, 6, 6), position(6, 6)));
+        assertTrue(Ranges.contains(Ranges.createRange(4, 4, 6, 6), position(5, 5)));
+        assertFalse(Ranges.contains(Ranges.createRange(4, 4, 6, 6), position(4, 3)));
+        assertFalse(Ranges.contains(Ranges.createRange(4, 4, 6, 6), position(6, 7)));
     }
 
     @Test
@@ -90,10 +82,14 @@ public final class RangesTest {
 
     @Test
     public void testContains_invalidPosition() {
-        Position position = new PositionBuilder().line(-1).character(-1).build();
+        Position position = position(-1, -1);
         expectedException.expect(IllegalArgumentException.class);
         expectedException.expectMessage(String.format("position is not valid: %s", position.toString()));
         Ranges.contains(Ranges.createRange(4, 4, 4, 4), position);
+    }
+
+    private static Position position(int line, int character) {
+        return new PositionBuilder().line(line).character(character).build();
     }
 
 }

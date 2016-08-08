@@ -175,7 +175,7 @@ public final class GroovyTextDocumentService implements TextDocumentService {
     private void publishDiagnostics(Set<Diagnostic> diagnostics) {
         PublishDiagnosticsParamsBuilder paramsBuilder =
                 new PublishDiagnosticsParamsBuilder()
-                        .uri(provider.get().getWorkspaceRoot().toAbsolutePath().toString());
+                    .uri(provider.get().getWorkspaceRoot().toAbsolutePath().toString());
         diagnostics.stream().forEach(d -> paramsBuilder.diagnostic(d));
         publishDiagnostics.accept(paramsBuilder.build());
     }
