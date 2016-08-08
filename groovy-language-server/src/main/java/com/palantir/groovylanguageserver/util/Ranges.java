@@ -18,10 +18,9 @@ package com.palantir.groovylanguageserver.util;
 
 import com.google.common.base.Preconditions;
 import io.typefox.lsapi.Position;
-import io.typefox.lsapi.PositionImpl;
 import io.typefox.lsapi.Range;
-import io.typefox.lsapi.RangeImpl;
-import io.typefox.lsapi.util.LsapiFactories;
+import io.typefox.lsapi.builders.RangeBuilder;
+import io.typefox.lsapi.impl.PositionImpl;
 import java.util.Comparator;
 
 public final class Ranges {
@@ -38,10 +37,11 @@ public final class Ranges {
     /**
      * Returns a newly created range.
      */
-    public static RangeImpl createRange(int startLine, int startColumn, int endLine, int endColumn) {
-        PositionImpl start = LsapiFactories.newPosition(startLine, startColumn);
-        PositionImpl end = LsapiFactories.newPosition(endLine, endColumn);
-        return LsapiFactories.newRange(start, end);
+    public static Range createRange(int startLine, int startColumn, int endLine, int endColumn) {
+        return new RangeBuilder()
+                .start(new PositionImpl(startLine, startColumn))
+                .end(new PositionImpl(endLine, endColumn))
+                .build();
     }
 
     /**

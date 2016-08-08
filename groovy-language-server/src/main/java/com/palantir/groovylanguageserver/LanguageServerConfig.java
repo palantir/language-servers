@@ -37,4 +37,8 @@ public interface LanguageServerConfig {
 
     void setLogMessage(Consumer<MessageParams> callback);
 
+    Consumer<Object> getTelemetryEvent();
+
+    void setTelemetryEvent(Consumer<Object> callback);
+
 }

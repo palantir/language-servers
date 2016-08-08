@@ -24,20 +24,22 @@ import static org.mockito.Mockito.when;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import com.palantir.groovylanguageserver.util.DiagnosticBuilder;
+import com.palantir.groovylanguageserver.util.DefaultDiagnosticBuilder;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.typefox.lsapi.Diagnostic;
-import io.typefox.lsapi.DiagnosticImpl;
-import io.typefox.lsapi.DidChangeTextDocumentParamsImpl;
-import io.typefox.lsapi.DidCloseTextDocumentParamsImpl;
-import io.typefox.lsapi.DidOpenTextDocumentParamsImpl;
-import io.typefox.lsapi.DidSaveTextDocumentParamsImpl;
-import io.typefox.lsapi.DocumentSymbolParamsImpl;
+import io.typefox.lsapi.DiagnosticSeverity;
 import io.typefox.lsapi.PublishDiagnosticsParams;
 import io.typefox.lsapi.SymbolInformation;
-import io.typefox.lsapi.SymbolInformationImpl;
-import io.typefox.lsapi.TextDocumentIdentifierImpl;
-import io.typefox.lsapi.TextDocumentItemImpl;
+import io.typefox.lsapi.TextDocumentIdentifier;
+import io.typefox.lsapi.TextDocumentItem;
+import io.typefox.lsapi.builders.DidChangeTextDocumentParamsBuilder;
+import io.typefox.lsapi.builders.DidCloseTextDocumentParamsBuilder;
+import io.typefox.lsapi.builders.DidOpenTextDocumentParamsBuilder;
+import io.typefox.lsapi.builders.DidSaveTextDocumentParamsBuilder;
+import io.typefox.lsapi.builders.DocumentSymbolParamsBuilder;
+import io.typefox.lsapi.builders.SymbolInformationBuilder;
+import io.typefox.lsapi.builders.TextDocumentIdentifierBuilder;
+import io.typefox.lsapi.builders.TextDocumentItemBuilder;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
@@ -59,7 +61,7 @@ public final class GroovyTextDocumentServiceTest {
 
     private GroovyTextDocumentService service;
     private List<PublishDiagnosticsParams> publishedDiagnostics = Lists.newArrayList();
-    private Set<DiagnosticImpl> expectedDiagnostics = Sets.newHashSet();
+    private Set<Diagnostic> expectedDiagnostics = Sets.newHashSet();
     private Map<String, Set<SymbolInformation>> symbolsMap = Maps.newHashMap();
 
     @Mock
@@ -71,11 +73,11 @@ public final class GroovyTextDocumentServiceTest {
     public void setup() {
         MockitoAnnotations.initMocks(this);
 
-        expectedDiagnostics.add(new DiagnosticBuilder("Some message", Diagnostic.SEVERITY_ERROR).build());
-        Set<DiagnosticImpl> diagnostics = Sets.newHashSet(expectedDiagnostics);
+        expectedDiagnostics.add(new DefaultDiagnosticBuilder("Some message", DiagnosticSeverity.Error).build());
+        expectedDiagnostics.add(new DefaultDiagnosticBuilder("Some other message", DiagnosticSeverity.Warning).build());
+        Set<Diagnostic> diagnostics = Sets.newHashSet(expectedDiagnostics);
 
-        SymbolInformationImpl symbol = new SymbolInformationImpl();
-        symbol.setName("ThisIsASymbol");
+        SymbolInformation symbol = new SymbolInformationBuilder().name("ThisIsASymbol").build();
         symbolsMap.put(WORKSPACE_PATH.resolve("something.groovy").toString(), Sets.newHashSet(symbol));
 
         when(compilerWrapper.getWorkspaceRoot()).thenReturn(WORKSPACE_PATH);
@@ -99,14 +101,10 @@ public final class GroovyTextDocumentServiceTest {
 
     @Test
     public void testDidOpen() {
-        DidOpenTextDocumentParamsImpl params = new DidOpenTextDocumentParamsImpl();
-        TextDocumentItemImpl textDocument = new TextDocumentItemImpl();
-        textDocument.setUri(WORKSPACE_PATH.resolve("something.groovy").toString());
-        textDocument.setLanguageId("groovy");
-        textDocument.setVersion(1);
-        textDocument.setText("something");
-        params.setTextDocument(textDocument);
-        service.didOpen(params);
+        TextDocumentItem textDocument =
+                new TextDocumentItemBuilder().uri(WORKSPACE_PATH.resolve("something.groovy").toString())
+                        .languageId("groovy").version(1).text("something").build();
+        service.didOpen(new DidOpenTextDocumentParamsBuilder().textDocument(textDocument).build());
         // assert diagnostics were published
         assertEquals(1, publishedDiagnostics.size());
         assertEquals(expectedDiagnostics, Sets.newHashSet(publishedDiagnostics.get(0).getDiagnostics()));
@@ -115,9 +113,8 @@ public final class GroovyTextDocumentServiceTest {
 
     @Test
     public void testDidChange() {
-        DidChangeTextDocumentParamsImpl params = new DidChangeTextDocumentParamsImpl();
-        params.setUri(WORKSPACE_PATH.resolve("something.groovy").toString());
-        service.didChange(params);
+        service.didChange(new DidChangeTextDocumentParamsBuilder()
+                .uri(WORKSPACE_PATH.resolve("something.groovy").toString()).build());
         // assert diagnostics were published
         assertEquals(1, publishedDiagnostics.size());
         assertEquals(expectedDiagnostics, Sets.newHashSet(publishedDiagnostics.get(0).getDiagnostics()));
@@ -126,11 +123,9 @@ public final class GroovyTextDocumentServiceTest {
 
     @Test
     public void testDidClose() {
-        DidCloseTextDocumentParamsImpl params = new DidCloseTextDocumentParamsImpl();
-        TextDocumentIdentifierImpl textDocument = new TextDocumentIdentifierImpl();
-        textDocument.setUri(WORKSPACE_PATH.resolve("something.groovy").toString());
-        params.setTextDocument(textDocument);
-        service.didClose(params);
+        TextDocumentIdentifier textDocument =
+                new TextDocumentIdentifierBuilder().uri(WORKSPACE_PATH.resolve("something.groovy").toString()).build();
+        service.didClose(new DidCloseTextDocumentParamsBuilder().textDocument(textDocument).build());
         // assert diagnostics were published
         assertEquals(1, publishedDiagnostics.size());
         assertEquals(expectedDiagnostics, Sets.newHashSet(publishedDiagnostics.get(0).getDiagnostics()));
@@ -139,11 +134,9 @@ public final class GroovyTextDocumentServiceTest {
 
     @Test
     public void testDidSave() {
-        DidSaveTextDocumentParamsImpl params = new DidSaveTextDocumentParamsImpl();
-        TextDocumentIdentifierImpl textDocument = new TextDocumentIdentifierImpl();
-        textDocument.setUri(WORKSPACE_PATH.resolve("something.groovy").toString());
-        params.setTextDocument(textDocument);
-        service.didSave(params);
+        TextDocumentIdentifier textDocument =
+                new TextDocumentIdentifierBuilder().uri(WORKSPACE_PATH.resolve("something.groovy").toString()).build();
+        service.didSave(new DidSaveTextDocumentParamsBuilder().textDocument(textDocument).build());
         // assert diagnostics were published
         assertEquals(1, publishedDiagnostics.size());
         assertEquals(expectedDiagnostics, Sets.newHashSet(publishedDiagnostics.get(0).getDiagnostics()));
@@ -152,22 +145,19 @@ public final class GroovyTextDocumentServiceTest {
 
     @Test
     public void testDocumentSymbols_absolutePath() throws InterruptedException, ExecutionException {
-        DocumentSymbolParamsImpl params = new DocumentSymbolParamsImpl();
-        TextDocumentIdentifierImpl textDocument = new TextDocumentIdentifierImpl();
-        textDocument.setUri(WORKSPACE_PATH.resolve("something.groovy").toString());
-        params.setTextDocument(textDocument);
-        CompletableFuture<List<? extends SymbolInformation>> response = service.documentSymbol(params);
+        TextDocumentIdentifier textDocument =
+                new TextDocumentIdentifierBuilder().uri(WORKSPACE_PATH.resolve("something.groovy").toString()).build();
+        CompletableFuture<List<? extends SymbolInformation>> response =
+                service.documentSymbol(new DocumentSymbolParamsBuilder().textDocument(textDocument).build());
         assertThat(response.get().stream().collect(Collectors.toSet()),
                 is(symbolsMap.get(WORKSPACE_PATH.resolve("something.groovy").toString())));
     }
 
     @Test
     public void testDocumentSymbols_relativePath() throws InterruptedException, ExecutionException {
-        DocumentSymbolParamsImpl params = new DocumentSymbolParamsImpl();
-        TextDocumentIdentifierImpl textDocument = new TextDocumentIdentifierImpl();
-        textDocument.setUri("something.groovy");
-        params.setTextDocument(textDocument);
-        CompletableFuture<List<? extends SymbolInformation>> response = service.documentSymbol(params);
+        TextDocumentIdentifier textDocument = new TextDocumentIdentifierBuilder().uri("something.groovy").build();
+        CompletableFuture<List<? extends SymbolInformation>> response =
+                service.documentSymbol(new DocumentSymbolParamsBuilder().textDocument(textDocument).build());
         assertThat(response.get().stream().collect(Collectors.toSet()),
                 is(symbolsMap.get(WORKSPACE_PATH.resolve("something.groovy").toString())));
     }

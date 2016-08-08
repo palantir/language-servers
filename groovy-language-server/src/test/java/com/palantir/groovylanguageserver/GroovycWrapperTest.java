@@ -24,11 +24,12 @@ import static org.junit.Assert.assertTrue;
 import com.google.common.base.Optional;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
-import com.palantir.groovylanguageserver.util.DiagnosticBuilder;
+import com.palantir.groovylanguageserver.util.DefaultDiagnosticBuilder;
 import com.palantir.groovylanguageserver.util.Ranges;
 import io.typefox.lsapi.Diagnostic;
-import io.typefox.lsapi.DiagnosticImpl;
+import io.typefox.lsapi.DiagnosticSeverity;
 import io.typefox.lsapi.SymbolInformation;
+import io.typefox.lsapi.SymbolKind;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -73,7 +74,7 @@ public final class GroovycWrapperTest {
     @Test
     public void testEmptyWorkspace() throws InterruptedException, ExecutionException, IOException {
         GroovycWrapper wrapper = GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath());
-        Set<DiagnosticImpl> diagnostics = wrapper.compile();
+        Set<Diagnostic> diagnostics = wrapper.compile();
         assertEquals(0, diagnostics.size());
         Map<String, Set<SymbolInformation>> symbols = wrapper.getFileSymbols();
         assertEquals(0, symbols.values().size());
@@ -116,7 +117,7 @@ public final class GroovycWrapperTest {
         addFileToFolder(root.getRoot(), "test4.groovy", "class ExceptionNew {}");
 
         GroovycWrapper wrapper = GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath());
-        Set<DiagnosticImpl> diagnostics = wrapper.compile();
+        Set<Diagnostic> diagnostics = wrapper.compile();
 
         assertEquals(0, diagnostics.size());
     }
@@ -139,16 +140,16 @@ public final class GroovycWrapperTest {
                 + "}\n");
 
         GroovycWrapper wrapper = GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath());
-        Set<DiagnosticImpl> diagnostics = wrapper.compile();
+        Set<Diagnostic> diagnostics = wrapper.compile();
         assertEquals(0, diagnostics.size());
         Map<String, Set<SymbolInformation>> symbols = wrapper.getFileSymbols();
         // The symbols will contain a lot of inherited fields and methods, so we just check to make sure it contains our
         // custom fields and methods.
-        assertTrue(mapHasSymbol(symbols, Optional.absent(), "Coordinates", SymbolInformation.KIND_CLASS));
-        assertTrue(mapHasSymbol(symbols, Optional.of("Coordinates"), "getAt", SymbolInformation.KIND_METHOD));
-        assertTrue(mapHasSymbol(symbols, Optional.of("Coordinates"), "latitude", SymbolInformation.KIND_FIELD));
-        assertTrue(mapHasSymbol(symbols, Optional.of("Coordinates"), "longitude", SymbolInformation.KIND_FIELD));
-        assertTrue(mapHasSymbol(symbols, Optional.of("Coordinates"), "name", SymbolInformation.KIND_FIELD));
+        assertTrue(mapHasSymbol(symbols, Optional.absent(), "Coordinates", SymbolKind.Class));
+        assertTrue(mapHasSymbol(symbols, Optional.of("Coordinates"), "getAt", SymbolKind.Method));
+        assertTrue(mapHasSymbol(symbols, Optional.of("Coordinates"), "latitude", SymbolKind.Field));
+        assertTrue(mapHasSymbol(symbols, Optional.of("Coordinates"), "longitude", SymbolKind.Field));
+        assertTrue(mapHasSymbol(symbols, Optional.of("Coordinates"), "name", SymbolKind.Field));
     }
 
     @Test
@@ -160,13 +161,13 @@ public final class GroovycWrapperTest {
                 + "}\n");
 
         GroovycWrapper wrapper = GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath());
-        Set<DiagnosticImpl> diagnostics = wrapper.compile();
+        Set<Diagnostic> diagnostics = wrapper.compile();
         assertEquals(0, diagnostics.size());
         Map<String, Set<SymbolInformation>> symbols = wrapper.getFileSymbols();
         // The symbols will contain a lot of inherited and default fields and methods, so we just check to make sure it
         // contains our custom fields and methods.
-        assertTrue(mapHasSymbol(symbols, Optional.absent(), "ICoordinates", SymbolInformation.KIND_INTERFACE));
-        assertTrue(mapHasSymbol(symbols, Optional.of("ICoordinates"), "getAt", SymbolInformation.KIND_METHOD));
+        assertTrue(mapHasSymbol(symbols, Optional.absent(), "ICoordinates", SymbolKind.Interface));
+        assertTrue(mapHasSymbol(symbols, Optional.of("ICoordinates"), "getAt", SymbolKind.Method));
     }
 
     @Test
@@ -177,15 +178,15 @@ public final class GroovycWrapperTest {
                 + "}\n");
 
         GroovycWrapper wrapper = GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath());
-        Set<DiagnosticImpl> diagnostics = wrapper.compile();
+        Set<Diagnostic> diagnostics = wrapper.compile();
         assertEquals(0, diagnostics.size());
         Map<String, Set<SymbolInformation>> symbols = wrapper.getFileSymbols();
         // The symbols will contain a lot of inherited and default fields and methods, so we just check to make sure it
         // contains our custom fields and methods.
-        assertTrue(mapHasSymbol(symbols, Optional.absent(), "Type", SymbolInformation.KIND_ENUM));
-        assertTrue(mapHasSymbol(symbols, Optional.of("Type"), "ONE", SymbolInformation.KIND_FIELD));
-        assertTrue(mapHasSymbol(symbols, Optional.of("Type"), "TWO", SymbolInformation.KIND_FIELD));
-        assertTrue(mapHasSymbol(symbols, Optional.of("Type"), "THREE", SymbolInformation.KIND_FIELD));
+        assertTrue(mapHasSymbol(symbols, Optional.absent(), "Type", SymbolKind.Enum));
+        assertTrue(mapHasSymbol(symbols, Optional.of("Type"), "ONE", SymbolKind.Field));
+        assertTrue(mapHasSymbol(symbols, Optional.of("Type"), "TWO", SymbolKind.Field));
+        assertTrue(mapHasSymbol(symbols, Optional.of("Type"), "THREE", SymbolKind.Field));
     }
 
     @Test
@@ -211,24 +212,22 @@ public final class GroovycWrapperTest {
                 + "}\n");
 
         GroovycWrapper wrapper = GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath());
-        Set<DiagnosticImpl> diagnostics = wrapper.compile();
+        Set<Diagnostic> diagnostics = wrapper.compile();
         assertEquals(0, diagnostics.size());
         Map<String, Set<SymbolInformation>> symbols = wrapper.getFileSymbols();
         // The symbols will contain a lot of inherited fields and methods, so we just check to make sure it contains our
         // custom fields and methods.
-        assertTrue(mapHasSymbol(symbols, Optional.absent(), "Coordinates", SymbolInformation.KIND_CLASS));
-        assertTrue(mapHasSymbol(symbols, Optional.of("Coordinates"), "getAt", SymbolInformation.KIND_METHOD));
-        assertTrue(mapHasSymbol(symbols, Optional.of("Coordinates"), "latitude", SymbolInformation.KIND_FIELD));
-        assertTrue(mapHasSymbol(symbols, Optional.of("Coordinates"), "longitude", SymbolInformation.KIND_FIELD));
-        assertTrue(mapHasSymbol(symbols, Optional.of("Coordinates"), "name", SymbolInformation.KIND_FIELD));
-        assertTrue(mapHasSymbol(symbols, Optional.of("Coordinates"), "Coordinates$MyInnerClass",
-                SymbolInformation.KIND_CLASS));
+        assertTrue(mapHasSymbol(symbols, Optional.absent(), "Coordinates", SymbolKind.Class));
+        assertTrue(mapHasSymbol(symbols, Optional.of("Coordinates"), "getAt", SymbolKind.Method));
+        assertTrue(mapHasSymbol(symbols, Optional.of("Coordinates"), "latitude", SymbolKind.Field));
+        assertTrue(mapHasSymbol(symbols, Optional.of("Coordinates"), "longitude", SymbolKind.Field));
+        assertTrue(mapHasSymbol(symbols, Optional.of("Coordinates"), "name", SymbolKind.Field));
+        assertTrue(mapHasSymbol(symbols, Optional.of("Coordinates"), "Coordinates$MyInnerClass", SymbolKind.Class));
         assertTrue(mapHasSymbol(symbols, Optional.of("Coordinates"), "Coordinates$MyInnerInterface",
-                SymbolInformation.KIND_INTERFACE));
-        assertTrue(mapHasSymbol(symbols, Optional.of("Coordinates"), "Coordinates$MyInnerEnum",
-                SymbolInformation.KIND_ENUM));
-        assertTrue(mapHasSymbol(symbols, Optional.of("Coordinates$MyInnerEnum"), "ONE", SymbolInformation.KIND_FIELD));
-        assertTrue(mapHasSymbol(symbols, Optional.of("Coordinates$MyInnerEnum"), "TWO", SymbolInformation.KIND_FIELD));
+                SymbolKind.Interface));
+        assertTrue(mapHasSymbol(symbols, Optional.of("Coordinates"), "Coordinates$MyInnerEnum", SymbolKind.Enum));
+        assertTrue(mapHasSymbol(symbols, Optional.of("Coordinates$MyInnerEnum"), "ONE", SymbolKind.Field));
+        assertTrue(mapHasSymbol(symbols, Optional.of("Coordinates$MyInnerEnum"), "TWO", SymbolKind.Field));
     }
 
 
@@ -244,10 +243,10 @@ public final class GroovycWrapperTest {
                 + "myMethod()\n");
 
         GroovycWrapper wrapper = GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath());
-        Set<DiagnosticImpl> diagnostics = wrapper.compile();
+        Set<Diagnostic> diagnostics = wrapper.compile();
         assertEquals(0, diagnostics.size());
         Map<String, Set<SymbolInformation>> symbols = wrapper.getFileSymbols();
-        assertTrue(mapHasSymbol(symbols, Optional.of("test"), "myMethod", SymbolInformation.KIND_METHOD));
+        assertTrue(mapHasSymbol(symbols, Optional.of("test"), "myMethod", SymbolKind.Method));
         // TODO(#28) add check for name variable once we support script declared variables
     }
 
@@ -272,14 +271,14 @@ public final class GroovycWrapperTest {
                 + "   abstract double getAt(int idx);\n"
                 + "}\n");
         GroovycWrapper wrapper = GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath());
-        Set<DiagnosticImpl> diagnostics = wrapper.compile();
+        Set<Diagnostic> diagnostics = wrapper.compile();
         assertEquals(0, diagnostics.size());
 
         Set<SymbolInformation> filteredSymbols = wrapper.getFilteredSymbols("Coordinates");
         assertEquals(1, filteredSymbols.size());
         SymbolInformation foundSymbol = Iterables.getOnlyElement(filteredSymbols);
         assertThat(foundSymbol.getName(), is("Coordinates"));
-        assertThat(foundSymbol.getKind(), is(SymbolInformation.KIND_CLASS));
+        assertThat(foundSymbol.getKind(), is(SymbolKind.Class));
 
         filteredSymbols = wrapper.getFilteredSymbols("Coordinates*");
         assertEquals(2, filteredSymbols.size());
@@ -298,7 +297,7 @@ public final class GroovycWrapperTest {
         assertEquals(1, filteredSymbols.size());
         foundSymbol = Iterables.getOnlyElement(filteredSymbols);
         assertThat(foundSymbol.getName(), is("CoordinatesVar"));
-        assertThat(foundSymbol.getKind(), is(SymbolInformation.KIND_FIELD));
+        assertThat(foundSymbol.getKind(), is(SymbolKind.Field));
 
         filteredSymbols = wrapper.getFilteredSymbols("Coordinates...");
         assertEquals(0, filteredSymbols.size());
@@ -326,7 +325,7 @@ public final class GroovycWrapperTest {
         addFileToFolder(newFolder2, "Test.java", "public class Test {}\n");
 
         GroovycWrapper wrapper = GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath());
-        Set<DiagnosticImpl> diagnostics = wrapper.compile();
+        Set<Diagnostic> diagnostics = wrapper.compile();
 
         assertEquals(0, diagnostics.size());
     }
@@ -368,25 +367,31 @@ public final class GroovycWrapperTest {
         addFileToFolder(root.getRoot(), "test4.groovy", "class ExceptionNew {}\n");
 
         GroovycWrapper wrapper = GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath());
-        Set<DiagnosticImpl> diagnostics = wrapper.compile();
+        Set<Diagnostic> diagnostics = wrapper.compile();
 
         assertEquals(2, diagnostics.size());
         Set<Diagnostic> actualDiagnostics = Sets.newHashSet(diagnostics);
         Set<Diagnostic> expectedDiagnostics = Sets.newHashSet();
-        expectedDiagnostics.add(new DiagnosticBuilder("unable to resolve class ExceptionNew1 \n @ line 7, column 18.",
-                Diagnostic.SEVERITY_ERROR).range(Ranges.createRange(7, 18, 7, 73)).source(test1.getAbsolutePath())
+        expectedDiagnostics
+                .add(new DefaultDiagnosticBuilder(
+                        "unable to resolve class ExceptionNew1 \n @ line 7, column 18.", DiagnosticSeverity.Error)
+                        .range(Ranges.createRange(7, 18, 7, 73))
+                        .source(test1.getAbsolutePath())
                         .build());
-        expectedDiagnostics.add(new DiagnosticBuilder("unable to resolve class ExceptionNew222 \n @ line 7, column 18.",
-                Diagnostic.SEVERITY_ERROR).range(Ranges.createRange(7, 18, 7, 75)).source(test2.getAbsolutePath())
+        expectedDiagnostics
+                .add(new DefaultDiagnosticBuilder(
+                        "unable to resolve class ExceptionNew222 \n @ line 7, column 18.", DiagnosticSeverity.Error)
+                        .range(Ranges.createRange(7, 18, 7, 75))
+                        .source(test2.getAbsolutePath())
                         .build());
         assertEquals(expectedDiagnostics, actualDiagnostics);
     }
 
     private boolean mapHasSymbol(Map<String, Set<SymbolInformation>> map, Optional<String> container, String fieldName,
-            int kind) {
+            SymbolKind kind) {
         return map.values().stream().flatMap(Collection::stream)
                 .anyMatch(symbol -> symbol.getKind() == kind
-                        && container.transform(c -> c.equals(symbol.getContainer())).or(true)
+                        && container.transform(c -> c.equals(symbol.getContainerName())).or(true)
                         && symbol.getName().equals(fieldName));
     }
 

@@ -19,9 +19,10 @@ package com.palantir.groovylanguageserver;
 import com.google.common.io.Files;
 import io.typefox.lsapi.InitializeParams;
 import io.typefox.lsapi.InitializeResult;
-import io.typefox.lsapi.InitializeResultImpl;
 import io.typefox.lsapi.ServerCapabilities;
-import io.typefox.lsapi.ServerCapabilitiesImpl;
+import io.typefox.lsapi.TextDocumentSyncKind;
+import io.typefox.lsapi.builders.InitializeResultBuilder;
+import io.typefox.lsapi.builders.ServerCapabilitiesBuilder;
 import io.typefox.lsapi.services.LanguageServer;
 import io.typefox.lsapi.services.TextDocumentService;
 import io.typefox.lsapi.services.WindowService;
@@ -30,24 +31,28 @@ import io.typefox.lsapi.services.json.LanguageServerToJsonAdapter;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
+import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+// TODO(#39): Determine which non-deprecated adapter to use.
+@SuppressWarnings("deprecation")
 public final class GroovyLanguageServer implements LanguageServer {
 
     private static final Logger log = LoggerFactory.getLogger(GroovyLanguageServer.class);
 
     private final CompilerWrapperProvider provider;
+    private final LanguageServerConfig config;
     private final TextDocumentService textDocumentService;
     private final WorkspaceService workspaceService;
     private final WindowService windowService;
 
     private Path workspaceRoot;
 
-    public GroovyLanguageServer(CompilerWrapperProvider provider, TextDocumentService textDocumentService,
-            WorkspaceService workspaceService, WindowService windowService) {
+    public GroovyLanguageServer(CompilerWrapperProvider provider, LanguageServerConfig config,
+            TextDocumentService textDocumentService, WorkspaceService workspaceService, WindowService windowService) {
         this.provider = provider;
+        this.config = config;
         this.textDocumentService = textDocumentService;
         this.workspaceService = workspaceService;
         this.windowService = windowService;
@@ -57,14 +62,12 @@ public final class GroovyLanguageServer implements LanguageServer {
     public CompletableFuture<InitializeResult> initialize(InitializeParams params) {
         workspaceRoot = Paths.get(params.getRootPath()).toAbsolutePath().normalize();
 
-        ServerCapabilitiesImpl capabilities = new ServerCapabilitiesImpl();
-
-        capabilities.setTextDocumentSync(ServerCapabilities.SYNC_INCREMENTAL);
-        capabilities.setDocumentSymbolProvider(true);
-        capabilities.setWorkspaceSymbolProvider(true);
-
-        InitializeResultImpl result = new InitializeResultImpl();
-        result.setCapabilities(capabilities);
+        ServerCapabilities capabilities = new ServerCapabilitiesBuilder()
+                                            .textDocumentSync(TextDocumentSyncKind.Incremental)
+                                            .documentSymbolProvider(true)
+                                            .workspaceSymbolProvider(true)
+                                            .build();
+        InitializeResult result = new InitializeResultBuilder().capabilities(capabilities).build();
 
         GroovycWrapper groovycWrapper = GroovycWrapper.of(Files.createTempDir().toPath(), workspaceRoot);
         provider.set(groovycWrapper);
@@ -93,6 +96,11 @@ public final class GroovyLanguageServer implements LanguageServer {
         return windowService;
     }
 
+    @Override
+    public void onTelemetryEvent(Consumer<Object> callback) {
+        config.setTelemetryEvent(callback);
+    }
+
     public Path getWorkspaceRoot() {
         return workspaceRoot;
     }
@@ -100,19 +108,15 @@ public final class GroovyLanguageServer implements LanguageServer {
     public static void main(String[] args) {
         CompilerWrapperProvider provider = new SingleCompilerWrapperProvider();
         LanguageServerConfig config = new GroovyLanguageServerConfig();
-        GroovyLanguageServer server =
-                new GroovyLanguageServer(provider, new GroovyTextDocumentService(provider),
+        LanguageServer server =
+                new GroovyLanguageServer(provider, config, new GroovyTextDocumentService(provider),
                         new GroovyWorkspaceService(provider), new GroovyWindowService(config));
 
         LanguageServerToJsonAdapter adapter = new LanguageServerToJsonAdapter(server);
         adapter.connect(System.in, System.out);
         adapter.getProtocol().addErrorListener((message, err) -> log.error(message, err));
 
-        try {
-            adapter.join();
-        } catch (InterruptedException | ExecutionException e) {
-            throw new RuntimeException(e);
-        }
+        adapter.join();
     }
 
 }

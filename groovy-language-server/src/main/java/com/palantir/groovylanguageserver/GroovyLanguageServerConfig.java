@@ -25,6 +25,7 @@ public final class GroovyLanguageServerConfig implements LanguageServerConfig {
     private Consumer<MessageParams> showMessage = m -> { };
     private Consumer<ShowMessageRequestParams> showMessageRequest = m -> { };
     private Consumer<MessageParams> logMessage = m -> { };
+    private Consumer<Object> telemetryEvent = e -> { };
 
     @Override
     public Consumer<MessageParams> getShowMessage() {
@@ -54,6 +55,16 @@ public final class GroovyLanguageServerConfig implements LanguageServerConfig {
     @Override
     public void setLogMessage(Consumer<MessageParams> callback) {
         this.logMessage = callback;
+    }
+
+    @Override
+    public Consumer<Object> getTelemetryEvent() {
+        return telemetryEvent;
+    }
+
+    @Override
+    public void setTelemetryEvent(Consumer<Object> telemetryEvent) {
+        this.telemetryEvent = telemetryEvent;
     }
 
 }
