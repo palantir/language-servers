@@ -130,11 +130,11 @@ public final class GroovycWrapperTest {
                 + "   double latitude\n"
                 + "   double longitude\n"
                 + "   def name = \"Natacha\"\n"
-                + "   double getAt(int idx) {\n"
+                + "   double getAt(int idx1, int idx2) {\n"
                 + "      def someString = \"Not in symbols\"\n"
                 + "      println someString\n"
-                + "      if (idx == 0) latitude\n"
-                + "      else if (idx == 1) longitude\n"
+                + "      if (idx1 == 0) latitude\n"
+                + "      else if (idx1 == 1) longitude\n"
                 + "      else throw new Exception(\"Wrong coordinate index, use 0 or 1 \")\n"
                 + "   }\n"
                 + "}\n");
@@ -150,6 +150,8 @@ public final class GroovycWrapperTest {
         assertTrue(mapHasSymbol(symbols, Optional.of("Coordinates"), "latitude", SymbolKind.Field));
         assertTrue(mapHasSymbol(symbols, Optional.of("Coordinates"), "longitude", SymbolKind.Field));
         assertTrue(mapHasSymbol(symbols, Optional.of("Coordinates"), "name", SymbolKind.Field));
+        assertTrue(mapHasSymbol(symbols, Optional.of("getAt"), "idx1", SymbolKind.Variable));
+        assertTrue(mapHasSymbol(symbols, Optional.of("getAt"), "idx2", SymbolKind.Variable));
     }
 
     @Test
@@ -168,6 +170,7 @@ public final class GroovycWrapperTest {
         // contains our custom fields and methods.
         assertTrue(mapHasSymbol(symbols, Optional.absent(), "ICoordinates", SymbolKind.Interface));
         assertTrue(mapHasSymbol(symbols, Optional.of("ICoordinates"), "getAt", SymbolKind.Method));
+        assertTrue(mapHasSymbol(symbols, Optional.of("getAt"), "idx", SymbolKind.Variable));
     }
 
     @Test
@@ -228,6 +231,7 @@ public final class GroovycWrapperTest {
         assertTrue(mapHasSymbol(symbols, Optional.of("Coordinates"), "Coordinates$MyInnerEnum", SymbolKind.Enum));
         assertTrue(mapHasSymbol(symbols, Optional.of("Coordinates$MyInnerEnum"), "ONE", SymbolKind.Field));
         assertTrue(mapHasSymbol(symbols, Optional.of("Coordinates$MyInnerEnum"), "TWO", SymbolKind.Field));
+        assertTrue(mapHasSymbol(symbols, Optional.of("getAt"), "idx", SymbolKind.Variable));
     }
 
 
