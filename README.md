@@ -6,4 +6,18 @@ A groovy implementation of the [Microsoft Language Server Protocol](https://gith
 
 Uses the Java API definition in [typefox/ls-api](https://github.com/TypeFox/ls-api)
 
+## Dev setup
+- `git clone <repo link>`
+- `cd groovy-language-server`
+- `./gradlew eclipse` This generates an eclipse project
+- Import projects into eclipse
+
+## Building and Testing
+- `./gradlew build` Compiles, runs tests, checkstyle and findbugs
+- `./gradlew test` Runs all unit tests
+- `./gradlew distTar` Creates a jar under groovy-language-server/groovy-language-server/build/libs/groovy-language-server-\<version\>.jar
+
+## Debug
+- `./gradlew clean cleanEclipse` Deletes gradle generated files
+
 
