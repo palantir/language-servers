@@ -80,7 +80,7 @@ public final class GroovycWrapper implements CompilerWrapper {
     // Maps from source file -> set of symbols in that file
     private Map<String, Set<SymbolInformation>> fileSymbols = Maps.newHashMap();
     // Maps from type -> set of references of this type
-    private Map<String, Set<SymbolInformation>> references = Maps.newHashMap();
+    private Map<String, Set<SymbolInformation>> typeReferences = Maps.newHashMap();
 
     private GroovycWrapper(CompilationUnit unit, Path workspaceRoot) {
         this.unit = unit;
@@ -130,8 +130,8 @@ public final class GroovycWrapper implements CompilerWrapper {
     }
 
     @Override
-    public Map<String, Set<SymbolInformation>> getReferences() {
-        return references;
+    public Map<String, Set<SymbolInformation>> getTypeReferences() {
+        return typeReferences;
     }
 
     @Override
@@ -165,8 +165,8 @@ public final class GroovycWrapper implements CompilerWrapper {
         if (params.getContext().isIncludeDeclaration()) {
             foundReferences.add(foundSymbol);
         }
-        if (references.containsKey(foundSymbol.getName())) {
-            foundReferences.addAll(references.get(foundSymbol.getName()));
+        if (typeReferences.containsKey(foundSymbol.getName())) {
+            foundReferences.addAll(typeReferences.get(foundSymbol.getName()));
         }
 
         return foundReferences;
@@ -289,7 +289,7 @@ public final class GroovycWrapper implements CompilerWrapper {
             newFileSymbols.put(sourcePath, symbols);
         });
         // Set the new references and new symbols
-        references = newReferences;
+        typeReferences = newReferences;
         fileSymbols = newFileSymbols;
     }
 

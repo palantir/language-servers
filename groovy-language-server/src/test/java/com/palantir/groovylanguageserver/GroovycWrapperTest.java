@@ -501,7 +501,7 @@ public final class GroovycWrapperTest {
         GroovycWrapper wrapper = GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath());
         Set<Diagnostic> diagnostics = wrapper.compile();
         assertEquals(0, diagnostics.size());
-        Map<String, Set<SymbolInformation>> references = wrapper.getReferences();
+        Map<String, Set<SymbolInformation>> references = wrapper.getTypeReferences();
         // ExtendedCoordinates should have no references
         assertNull(references.get("ExtendedCoordinates"));
         // ExtendedCoordinates2 should have no references
@@ -643,7 +643,7 @@ public final class GroovycWrapperTest {
         Set<Diagnostic> diagnostics = wrapper.compile();
         assertEquals(0, diagnostics.size());
 
-        Map<String, Set<SymbolInformation>> references = wrapper.getReferences();
+        Map<String, Set<SymbolInformation>> references = wrapper.getTypeReferences();
         // Dog should have no references
         assertNull(references.get("Dog"));
         assertEquals(Sets.newHashSet(
@@ -743,7 +743,7 @@ public final class GroovycWrapperTest {
         Set<Diagnostic> diagnostics = wrapper.compile();
         assertEquals(0, diagnostics.size());
 
-        Map<String, Set<SymbolInformation>> references = wrapper.getReferences();
+        Map<String, Set<SymbolInformation>> references = wrapper.getTypeReferences();
         assertEquals(Sets.newHashSet(
                 createSymbolInformation("friend1", scriptFile.getAbsolutePath(),
                         SymbolKind.Variable, 1, 5, 1, 12, Optional.of("MyScript")),
@@ -807,7 +807,7 @@ public final class GroovycWrapperTest {
         Set<Diagnostic> diagnostics = wrapper.compile();
         assertEquals(0, diagnostics.size());
 
-        Map<String, Set<SymbolInformation>> references = wrapper.getReferences();
+        Map<String, Set<SymbolInformation>> references = wrapper.getTypeReferences();
         // We check the references, after filtering out the generated ones.
         assertEquals(Sets.newHashSet(
                 createSymbolInformation("CAT", animalFile.getAbsolutePath(),

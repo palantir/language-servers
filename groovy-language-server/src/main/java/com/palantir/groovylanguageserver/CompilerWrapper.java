@@ -43,9 +43,9 @@ public interface CompilerWrapper {
 
 
     /**
-     * Returns a mapping from the class or interface name to symbols which reference those types.
+     * Returns a mapping from a type name (class, interface, or enum) to symbols which reference those types.
      */
-    Map<String, Set<SymbolInformation>> getReferences();
+    Map<String, Set<SymbolInformation>> getTypeReferences();
 
     /**
      * Returns the locations of the symbols that reference the symbol defined by the given params.
