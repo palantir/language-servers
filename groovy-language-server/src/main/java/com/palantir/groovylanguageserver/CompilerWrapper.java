@@ -41,7 +41,6 @@ public interface CompilerWrapper {
      */
     Map<String, Set<SymbolInformation>> getFileSymbols();
 
-
     /**
      * Returns a mapping from a type name (class, interface, or enum) to symbols which reference those types.
      */
