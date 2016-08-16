@@ -409,21 +409,21 @@ public final class GroovycWrapperTest {
         // edge cases, intersecting ranges
         File file = addFileToFolder(newFolder1, "Dog.groovy",
                 "class Dog {\n"
-                + "   Cat friend1;\n"
-                + "   Cat2 friend2;\n"
-                + "   Cat bark(Cat enemy) {\n"
-                + "      println \"Bark! \" + enemy.name\n"
-                + "      return friend1\n"
-                + "   }\n"
-                + "}\n"
-                + "class Cat {\n"
-                + "   public String name = \"Bobby\"\n"
-                + "}\n"
-                + "class Cat2 {\n"
-                + "   InnerCat2 myFriend;\n"
-                + "   class InnerCat2 {\n"
-                + "   }\n"
-                + "}\n");
+                        + "   Cat friend1;\n"
+                        + "   Cat2 friend2;\n"
+                        + "   Cat bark(Cat enemy) {\n"
+                        + "      println \"Bark! \" + enemy.name\n"
+                        + "      return friend1\n"
+                        + "   }\n"
+                        + "}\n"
+                        + "class Cat {\n"
+                        + "   public String name = \"Bobby\"\n"
+                        + "}\n"
+                        + "class Cat2 {\n"
+                        + "   InnerCat2 myFriend;\n"
+                        + "   class InnerCat2 {\n"
+                        + "   }\n"
+                        + "}\n");
 
         GroovycWrapper wrapper = GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath());
         Set<Diagnostic> diagnostics = wrapper.compile();
@@ -498,7 +498,7 @@ public final class GroovycWrapperTest {
                 "public class A {public static class B {}\n"
                         + "A a\n"
                         + "B b\n"
-                + "}\n");
+                        + "}\n");
         GroovycWrapper wrapper = GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath());
         Set<Diagnostic> diagnostics = wrapper.compile();
         assertEquals(0, diagnostics.size());
@@ -537,40 +537,40 @@ public final class GroovycWrapperTest {
     public void testReferences_classesAndInterfaces() throws InterruptedException, ExecutionException, IOException {
         File newFolder1 = root.newFolder();
         File extendedCoordinatesFile = addFileToFolder(newFolder1, "ExtendedCoordinates.groovy",
-                        "class ExtendedCoordinates extends Coordinates{\n"
-                                + "   void somethingElse() {\n"
-                                + "      println \"Hi again!\"\n"
-                                + "   }\n"
-                                + "}\n");
+                "class ExtendedCoordinates extends Coordinates{\n"
+                        + "   void somethingElse() {\n"
+                        + "      println \"Hi again!\"\n"
+                        + "   }\n"
+                        + "}\n");
         File extendedCoordinates2File = addFileToFolder(newFolder1, "ExtendedCoordinates2.groovy",
-                        "class ExtendedCoordinates2 extends Coordinates{\n"
-                                + "   void somethingElse() {\n"
-                                + "      println \"Hi again!\"\n"
-                                + "   }\n"
-                                + "}\n");
+                "class ExtendedCoordinates2 extends Coordinates{\n"
+                        + "   void somethingElse() {\n"
+                        + "      println \"Hi again!\"\n"
+                        + "   }\n"
+                        + "}\n");
         File coordinatesFile = addFileToFolder(newFolder1, "Coordinates.groovy",
-                        "class Coordinates extends AbstractCoordinates implements ICoordinates {\n"
-                                + "   double latitude\n"
-                                + "   double longitude\n"
-                                + "   double longitude2\n"
-                                + "   private double CoordinatesVar\n"
-                                + "   double getAt(int idx) {\n"
-                                + "      def someString = \"Not in symbols\"\n"
-                                + "      if (idx == 0) latitude\n"
-                                + "      else if (idx == 1) longitude\n"
-                                + "      else throw new Exception(\"Wrong coordinate index, use 0 or 1 \")\n"
-                                + "   }\n"
-                                + "   void superInterfaceMethod() {\n"
-                                + "      println \"Hi!\"\n"
-                                + "   }\n"
-                                + "   void something() {\n"
-                                + "      println \"Hi!\"\n"
-                                + "   }\n"
-                                + "}\n");
+                "class Coordinates extends AbstractCoordinates implements ICoordinates {\n"
+                        + "   double latitude\n"
+                        + "   double longitude\n"
+                        + "   double longitude2\n"
+                        + "   private double CoordinatesVar\n"
+                        + "   double getAt(int idx) {\n"
+                        + "      def someString = \"Not in symbols\"\n"
+                        + "      if (idx == 0) latitude\n"
+                        + "      else if (idx == 1) longitude\n"
+                        + "      else throw new Exception(\"Wrong coordinate index, use 0 or 1 \")\n"
+                        + "   }\n"
+                        + "   void superInterfaceMethod() {\n"
+                        + "      println \"Hi!\"\n"
+                        + "   }\n"
+                        + "   void something() {\n"
+                        + "      println \"Hi!\"\n"
+                        + "   }\n"
+                        + "}\n");
         File icoordinatesFile = addFileToFolder(newFolder1, "ICoordinates.groovy",
-                        "interface ICoordinates extends ICoordinatesSuper{\n"
-                                + "   abstract double getAt(int idx);\n"
-                                + "}\n");
+                "interface ICoordinates extends ICoordinatesSuper{\n"
+                        + "   abstract double getAt(int idx);\n"
+                        + "}\n");
         File icoordinatesSuperFile = addFileToFolder(newFolder1, "ICoordinatesSuper.groovy",
                 "interface ICoordinatesSuper {\n"
                         + "   abstract void superInterfaceMethod()\n"
@@ -616,7 +616,7 @@ public final class GroovycWrapperTest {
                 wrapper.findReferences(createReferenceParams(icoordinatesFile.getAbsolutePath(), 1, 15, false)));
 
         // AbstractCoordinates is only referenced in Coordinates
-        Set<SymbolInformation> abstractCoordinatesExpectedResult  = Sets.newHashSet(
+        Set<SymbolInformation> abstractCoordinatesExpectedResult = Sets.newHashSet(
                 createSymbolInformation("Coordinates", SymbolKind.Class,
                         createLocation(coordinatesFile.getAbsolutePath(), Ranges.createRange(1, 1, 18, 2)),
                         Optional.absent()));
@@ -625,7 +625,7 @@ public final class GroovycWrapperTest {
                 wrapper.findReferences(createReferenceParams(abstractCoordinatesFile.getAbsolutePath(), 1, 20, false)));
 
         // ICoordinatesSuper is only referenced in ICoordinates
-        Set<SymbolInformation> icoordinatesSuperExpectedResult  = Sets.newHashSet(
+        Set<SymbolInformation> icoordinatesSuperExpectedResult = Sets.newHashSet(
                 createSymbolInformation("ICoordinates", SymbolKind.Interface,
                         createLocation(icoordinatesFile.getAbsolutePath(), Ranges.createRange(1, 1, 3, 2)),
                         Optional.absent()));
@@ -690,13 +690,13 @@ public final class GroovycWrapperTest {
     public void testReferences_script() throws IOException {
         File newFolder1 = root.newFolder();
         File scriptFile = addFileToFolder(newFolder1, "MyScript.groovy",
-                        "Cat friend1;\n"
-                                + "bark(friend1)\n"
-                                + "Cat bark(Cat enemy) {\n"
-                                + "   println \"Bark! \"\n"
-                                + "   return enemy\n"
-                                + "}\n"
-                                + "\n");
+                "Cat friend1;\n"
+                        + "bark(friend1)\n"
+                        + "Cat bark(Cat enemy) {\n"
+                        + "   println \"Bark! \"\n"
+                        + "   return enemy\n"
+                        + "}\n"
+                        + "\n");
         File catFile = addFileToFolder(newFolder1, "Cat.groovy",
                 "class Cat {\n"
                         + "}\n");
@@ -724,13 +724,13 @@ public final class GroovycWrapperTest {
     public void testReferences_enum() throws IOException {
         File newFolder1 = root.newFolder();
         File scriptFile = addFileToFolder(newFolder1, "MyScript.groovy",
-                        "Animal friend = Animal.CAT;\n"
-                                + "pet(friend1)\n"
-                                + "Animal pet(Animal animal) {\n"
-                                + "   println \"Pet the \" + animal\n"
-                                + "   return animal\n"
-                                + "}\n"
-                                + "\n");
+                "Animal friend = Animal.CAT;\n"
+                        + "pet(friend1)\n"
+                        + "Animal pet(Animal animal) {\n"
+                        + "   println \"Pet the \" + animal\n"
+                        + "   return animal\n"
+                        + "}\n"
+                        + "\n");
         File animalFile = addFileToFolder(newFolder1, "Animal.groovy",
                 "enum Animal {\n"
                         + "CAT, DOG, BUNNY\n"
@@ -787,13 +787,13 @@ public final class GroovycWrapperTest {
     public void testFindReferences_includeDeclaration() throws IOException {
         File newFolder1 = root.newFolder();
         File scriptFile = addFileToFolder(newFolder1, "MyScript.groovy",
-                        "Cat friend1;\n"
-                                + "bark(friend1)\n"
-                                + "Cat bark(Cat enemy) {\n"
-                                + "   println \"Bark! \"\n"
-                                + "   return enemy\n"
-                                + "}\n"
-                                + "\n");
+                "Cat friend1;\n"
+                        + "bark(friend1)\n"
+                        + "Cat bark(Cat enemy) {\n"
+                        + "   println \"Bark! \"\n"
+                        + "   return enemy\n"
+                        + "}\n"
+                        + "\n");
         File catFile = addFileToFolder(newFolder1, "Cat.groovy",
                 "class Cat {\n"
                         + "}\n");
