@@ -295,28 +295,27 @@ public final class GroovycWrapper implements CompilerWrapper {
     }
 
     private SymbolInformation getVariableSymbolInformation(String parentName, String sourcePath, Variable variable) {
-        Location location;
-        SymbolKind kind;
+        SymbolInformationBuilder builder =
+                new SymbolInformationBuilder().name(variable.getName()).containerName(parentName);
         if (variable instanceof DynamicVariable) {
-            kind = SymbolKind.Field;
-            location = new LocationBuilder().uri(sourcePath).range(Ranges.UNDEFINED_RANGE).build();
+            builder.kind(SymbolKind.Field);
+            builder.location(new LocationBuilder().uri(sourcePath).range(Ranges.UNDEFINED_RANGE).build());
         } else if (variable instanceof FieldNode) {
-            kind = SymbolKind.Field;
-            location = createLocation(sourcePath, (FieldNode) variable);
+            builder.kind(SymbolKind.Field);
+            builder.location(createLocation(sourcePath, (FieldNode) variable));
         } else if (variable instanceof Parameter) {
-            kind = SymbolKind.Variable;
-            location = createLocation(sourcePath, (Parameter) variable);
+            builder.kind(SymbolKind.Variable);
+            builder.location(createLocation(sourcePath, (Parameter) variable));
         } else if (variable instanceof PropertyNode) {
-            kind = SymbolKind.Field;
-            location = createLocation(sourcePath, (PropertyNode) variable);
+            builder.kind(SymbolKind.Field);
+            builder.location(createLocation(sourcePath, (PropertyNode) variable));
         } else if (variable instanceof VariableExpression) {
-            kind = SymbolKind.Variable;
-            location = createLocation(sourcePath, (VariableExpression) variable);
+            builder.kind(SymbolKind.Variable);
+            builder.location(createLocation(sourcePath, (VariableExpression) variable));
         } else {
             throw new IllegalArgumentException(String.format("Unknown type of variable: %s", variable));
         }
-        return createSymbolInformation(variable.getName(), kind, location,
-                Optional.of(parentName));
+        return builder.build();
     }
 
     private Set<SymbolInformation> getMethodSymbolInformations(Map<String, Set<SymbolInformation>> newTypeReferences,
