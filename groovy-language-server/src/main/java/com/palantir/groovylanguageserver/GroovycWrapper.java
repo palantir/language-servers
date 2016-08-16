@@ -18,6 +18,7 @@ package com.palantir.groovylanguageserver;
 
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.io.Files;
@@ -26,9 +27,11 @@ import com.palantir.groovylanguageserver.util.Ranges;
 import io.typefox.lsapi.Diagnostic;
 import io.typefox.lsapi.DiagnosticSeverity;
 import io.typefox.lsapi.Location;
+import io.typefox.lsapi.Position;
 import io.typefox.lsapi.Range;
 import io.typefox.lsapi.SymbolInformation;
 import io.typefox.lsapi.SymbolKind;
+import io.typefox.lsapi.TextDocumentPositionParams;
 import io.typefox.lsapi.builders.LocationBuilder;
 import io.typefox.lsapi.builders.RangeBuilder;
 import io.typefox.lsapi.builders.SymbolInformationBuilder;
@@ -44,7 +47,13 @@ import java.util.regex.PatternSyntaxException;
 import java.util.stream.Collectors;
 import org.codehaus.groovy.ast.ASTNode;
 import org.codehaus.groovy.ast.ClassNode;
+import org.codehaus.groovy.ast.DynamicVariable;
+import org.codehaus.groovy.ast.FieldNode;
 import org.codehaus.groovy.ast.MethodNode;
+import org.codehaus.groovy.ast.Parameter;
+import org.codehaus.groovy.ast.PropertyNode;
+import org.codehaus.groovy.ast.Variable;
+import org.codehaus.groovy.ast.expr.VariableExpression;
 import org.codehaus.groovy.control.CompilationUnit;
 import org.codehaus.groovy.control.CompilerConfiguration;
 import org.codehaus.groovy.control.ErrorCollector;
@@ -64,9 +73,15 @@ public final class GroovycWrapper implements CompilerWrapper {
     private static final Logger log = LoggerFactory.getLogger(GroovycWrapper.class);
 
     private static final String GROOVY_EXTENSION = "groovy";
+    private static final String GROOVY_DEFAULT_INTERFACE = "groovy.lang.GroovyObject";
+    private static final String JAVA_DEFAULT_OBJECT = "java.lang.Object";
+
     private final Path workspaceRoot;
     private final CompilationUnit unit;
+    // Maps from source file -> list of symbols in that file
     private Map<String, Set<SymbolInformation>> fileSymbols = Maps.newHashMap();
+    // Maps from type -> list of references of this type
+    private Map<String, Set<SymbolInformation>> references = Maps.newHashMap();
 
     private GroovycWrapper(CompilationUnit unit, Path workspaceRoot) {
         this.unit = unit;
@@ -113,6 +128,61 @@ public final class GroovycWrapper implements CompilerWrapper {
     @Override
     public Map<String, Set<SymbolInformation>> getFileSymbols() {
         return fileSymbols;
+    }
+
+    @Override
+    public Map<String, Set<SymbolInformation>> getReferences() {
+        return references;
+    }
+
+    @Override
+    public Set<Location> findReferences(TextDocumentPositionParams params) {
+        Set<SymbolInformation> symbols = fileSymbols.get(params.getTextDocument().getUri());
+        if (symbols == null) {
+            return Sets.newHashSet();
+        }
+        Set<SymbolInformation> foundSymbolInformations = symbols.stream()
+                .filter(s -> Ranges.isValid(s.getLocation().getRange())
+                        && Ranges.contains(s.getLocation().getRange(), params.getPosition())
+                        && (s.getKind() == SymbolKind.Class || s.getKind() == SymbolKind.Interface))
+                .collect(Collectors.toSet());
+
+        if (foundSymbolInformations.isEmpty()) {
+            return Sets.newHashSet();
+        }
+
+        Optional<SymbolInformation> foundSymbol;
+        if (foundSymbolInformations.size() == 1) {
+            foundSymbol = Optional.of(Iterables.getOnlyElement(foundSymbolInformations));
+        } else {
+            foundSymbol = reduceFoundSymbolsToMostSpecific(foundSymbolInformations, params.getPosition());
+        }
+
+        if (!foundSymbol.isPresent()) {
+            return Sets.newHashSet();
+        }
+
+        String symbolName = foundSymbol.get().getName();
+        if (references.get(symbolName) != null) {
+            return references.get(symbolName).stream().map(s -> s.getLocation())
+                    .filter(l -> Ranges.isValid(l.getRange())).collect(Collectors.toSet());
+        }
+
+        return Sets.newHashSet();
+    }
+
+    private Optional<SymbolInformation> reduceFoundSymbolsToMostSpecific(Set<SymbolInformation> symbols,
+            Position position) {
+        for (SymbolInformation symbol : symbols) {
+            Position startPosition = symbol.getLocation().getRange().getStart();
+            // If we are given a position that is located within the first line of this symbol's location, then this is
+            // its definition and is likely to be the symbol we are trying to find.
+            Range newRange = new RangeBuilder().start(startPosition).end(startPosition.getLine() + 1, 0).build();
+            if (Ranges.contains(newRange, position)) {
+                return Optional.of(symbol);
+            }
+        }
+        return Optional.absent();
     }
 
     @Override
@@ -176,31 +246,63 @@ public final class GroovycWrapper implements CompilerWrapper {
 
     private void parseAllSymbols() {
         Map<String, Set<SymbolInformation>> newFileSymbols = Maps.newHashMap();
+        Map<String, Set<SymbolInformation>> newReferences = Maps.newHashMap();
+
         unit.iterator().forEachRemaining(sourceUnit -> {
             Set<SymbolInformation> symbols = Sets.newHashSet();
             String sourcePath = sourceUnit.getSource().getURI().getPath();
+
             // This will iterate through all classes, interfaces and enums, including inner ones.
             sourceUnit.getAST().getClasses().forEach(clazz -> {
                 // Add class symbol
-                symbols.add(createSymbolInformation(clazz.getName(), getKind(clazz), createLocation(sourcePath, clazz),
-                        Optional.fromNullable(clazz.getOuterClass()).transform(ClassNode::getName)));
+                SymbolInformation classSymbol =
+                        createSymbolInformation(clazz.getName(), getKind(clazz), createLocation(sourcePath, clazz),
+                                Optional.fromNullable(clazz.getOuterClass()).transform(ClassNode::getName));
+                symbols.add(classSymbol);
+
+                // Add implemented interfaces reference
+                for (ClassNode node : clazz.getInterfaces()) {
+                    if (!node.getName().equals(GROOVY_DEFAULT_INTERFACE)) {
+                        newReferences.computeIfAbsent(node.getName(), (value) -> Sets.newHashSet()).add(classSymbol);
+                    }
+                }
+                // Add extended class reference
+                if (clazz.getSuperClass() != null && !clazz.getSuperClass().getName().equals(JAVA_DEFAULT_OBJECT)) {
+                    newReferences.computeIfAbsent(clazz.getSuperClass().getName(), (value) -> Sets.newHashSet())
+                            .add(classSymbol);
+                }
+
                 // Add all the class's field symbols
-                clazz.getFields().forEach(field -> symbols.add(createSymbolInformation(field.getName(),
-                        SymbolKind.Field, createLocation(sourcePath, field), Optional.of(clazz.getName()))));
+                clazz.getFields().forEach(field -> {
+                    SymbolInformation symbol = getVariableSymbolInformation(clazz.getName(), sourcePath, field);
+                    newReferences.computeIfAbsent(field.getType().getName(), (value) -> Sets.newHashSet()).add(symbol);
+                    symbols.add(symbol);
+                });
+
                 // Add all method symbols
                 clazz.getAllDeclaredMethods()
-                        .forEach(method -> symbols.addAll(getMethodSymbolInformations(sourcePath, clazz, method)));
+                        .forEach(method -> {
+                            symbols.addAll(getMethodSymbolInformations(newReferences, sourcePath, clazz, method));
+                        });
             });
+
             // Add symbols declared within the statement block variable scope which includes script
             // defined variables.
             ClassNode scriptClass = sourceUnit.getAST().getScriptClassDummy();
             if (scriptClass != null) {
                 sourceUnit.getAST().getStatementBlock().getVariableScope().getDeclaredVariables().values().forEach(
-                        variable -> symbols.add(createSymbolInformation(variable.getName(), SymbolKind.Variable,
-                                createLocation(sourcePath, scriptClass), Optional.of(scriptClass.getName()))));
+                        variable -> {
+                            SymbolInformation symbol =
+                                    getVariableSymbolInformation(scriptClass.getName(), sourcePath, variable);
+                            newReferences.computeIfAbsent(variable.getType().getName(), (value) -> Sets.newHashSet())
+                                    .add(symbol);
+                            symbols.add(symbol);
+                        });
             }
             newFileSymbols.put(sourcePath, symbols);
         });
+        // Set the new references and new symbols
+        references = newReferences;
         fileSymbols = newFileSymbols;
     }
 
@@ -213,13 +315,53 @@ public final class GroovycWrapper implements CompilerWrapper {
         return SymbolKind.Class;
     }
 
-    private Set<SymbolInformation> getMethodSymbolInformations(String sourcePath, ClassNode parent, MethodNode method) {
+    private SymbolInformation getVariableSymbolInformation(String parentName, String sourcePath, Variable variable) {
+
+        Location location;
+        SymbolKind kind;
+
+        if (variable instanceof DynamicVariable) {
+            kind = SymbolKind.Field;
+            location = new LocationBuilder().uri(sourcePath).range(Ranges.createRange(-1, -1, -1, -1)).build();
+
+        } else if (variable instanceof FieldNode) {
+            kind = SymbolKind.Field;
+            location = createLocation(sourcePath, (FieldNode) variable);
+
+        } else if (variable instanceof Parameter) {
+            kind = SymbolKind.Variable;
+            location = createLocation(sourcePath, (Parameter) variable);
+
+        } else if (variable instanceof PropertyNode) {
+            kind = SymbolKind.Field;
+            location = createLocation(sourcePath, (PropertyNode) variable);
+
+        } else if (variable instanceof VariableExpression) {
+            kind = SymbolKind.Variable;
+            location = createLocation(sourcePath, (VariableExpression) variable);
+
+        } else {
+            throw new IllegalArgumentException(String.format("Unknown type of variable: %s", variable));
+        }
+        return createSymbolInformation(variable.getName(), kind, location,
+                Optional.of(parentName));
+    }
+
+    private Set<SymbolInformation> getMethodSymbolInformations(Map<String, Set<SymbolInformation>> newReferences,
+            String sourcePath, ClassNode parent, MethodNode method) {
         Set<SymbolInformation> symbols = Sets.newHashSet();
-        symbols.add(createSymbolInformation(method.getName(), SymbolKind.Method, createLocation(sourcePath, method),
-                Optional.of(parent.getName())));
+
+        SymbolInformation methodSymbol =
+                createSymbolInformation(method.getName(), SymbolKind.Method, createLocation(sourcePath, method),
+                        Optional.of(parent.getName()));
+        symbols.add(methodSymbol);
+        newReferences.computeIfAbsent(method.getReturnType().getName(), (value) -> Sets.newHashSet()).add(methodSymbol);
+
         method.getVariableScope().getDeclaredVariables().values().forEach(variable -> {
-            symbols.add(createSymbolInformation(variable.getName(), SymbolKind.Variable,
-                    createLocation(sourcePath, method), Optional.of(method.getName())));
+            SymbolInformation variableSymbol = getVariableSymbolInformation(method.getName(), sourcePath, variable);
+            newReferences.computeIfAbsent(variable.getType().getName(), (value) -> Sets.newHashSet())
+                    .add(variableSymbol);
+            symbols.add(variableSymbol);
         });
         return symbols;
     }

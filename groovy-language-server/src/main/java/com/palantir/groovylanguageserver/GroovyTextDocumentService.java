@@ -91,7 +91,7 @@ public final class GroovyTextDocumentService implements TextDocumentService {
 
     @Override
     public CompletableFuture<List<? extends Location>> references(ReferenceParams params) {
-        throw new UnsupportedOperationException();
+        return CompletableFuture.completedFuture(Lists.newArrayList(provider.get().findReferences(params)));
     }
 
     @Override

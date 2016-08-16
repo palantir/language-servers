@@ -18,6 +18,7 @@ package com.palantir.groovylanguageserver;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
@@ -28,8 +29,14 @@ import com.palantir.groovylanguageserver.util.DefaultDiagnosticBuilder;
 import com.palantir.groovylanguageserver.util.Ranges;
 import io.typefox.lsapi.Diagnostic;
 import io.typefox.lsapi.DiagnosticSeverity;
+import io.typefox.lsapi.Location;
 import io.typefox.lsapi.SymbolInformation;
 import io.typefox.lsapi.SymbolKind;
+import io.typefox.lsapi.TextDocumentPositionParams;
+import io.typefox.lsapi.builders.LocationBuilder;
+import io.typefox.lsapi.builders.PositionBuilder;
+import io.typefox.lsapi.builders.SymbolInformationBuilder;
+import io.typefox.lsapi.builders.TextDocumentPositionParamsBuilder;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -86,34 +93,34 @@ public final class GroovycWrapperTest {
         File newFolder2 = root.newFolder();
         addFileToFolder(newFolder1, "test1.groovy",
                 "class Coordinates {\n"
-                + "   double latitude\n"
-                + "   double longitude\n"
-                + "   double getAt(int idx) {\n"
-                + "      if (idx == 0) latitude\n"
-                + "      else if (idx == 1) longitude\n"
-                + "      else throw new ExceptionNew(\"Wrong coordinate index, use 0 or 1\")\n"
-                + "   }\n"
-                + "}\n");
+                        + "   double latitude\n"
+                        + "   double longitude\n"
+                        + "   double getAt(int idx) {\n"
+                        + "      if (idx == 0) latitude\n"
+                        + "      else if (idx == 1) longitude\n"
+                        + "      else throw new ExceptionNew(\"Wrong coordinate index, use 0 or 1\")\n"
+                        + "   }\n"
+                        + "}\n");
         addFileToFolder(newFolder2, "test2.groovy",
                 "class Coordinates2 {\n"
-                + "   double latitude\n"
-                + "   double longitude\n"
-                + "   double getAt(int idx) {\n"
-                + "      if (idx == 0) latitude\n"
-                + "      else if (idx == 1) longitude\n"
-                + "      else throw new ExceptionNew(\"Wrong coordinate index, use 0 or 1\")\n"
-                + "   }\n"
-                + "}\n");
+                        + "   double latitude\n"
+                        + "   double longitude\n"
+                        + "   double getAt(int idx) {\n"
+                        + "      if (idx == 0) latitude\n"
+                        + "      else if (idx == 1) longitude\n"
+                        + "      else throw new ExceptionNew(\"Wrong coordinate index, use 0 or 1\")\n"
+                        + "   }\n"
+                        + "}\n");
         addFileToFolder(newFolder2, "test3.groovy",
                 "class Coordinates3 {\n"
-                + "   double latitude\n"
-                + "   double longitude\n"
-                + "   double getAt(int idx) {\n"
-                + "      if (idx == 0) latitude\n"
-                + "      else if (idx == 1) longitude\n"
-                + "      else throw new ExceptionNew(\"Wrong coordinate index, use 0 or 1\")\n"
-                + "   }\n"
-                + "}\n");
+                        + "   double latitude\n"
+                        + "   double longitude\n"
+                        + "   double getAt(int idx) {\n"
+                        + "      if (idx == 0) latitude\n"
+                        + "      else if (idx == 1) longitude\n"
+                        + "      else throw new ExceptionNew(\"Wrong coordinate index, use 0 or 1\")\n"
+                        + "   }\n"
+                        + "}\n");
         addFileToFolder(root.getRoot(), "test4.groovy", "class ExceptionNew {}");
 
         GroovycWrapper wrapper = GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath());
@@ -127,17 +134,17 @@ public final class GroovycWrapperTest {
         File newFolder1 = root.newFolder();
         addFileToFolder(newFolder1, "Coordinates.groovy",
                 "class Coordinates {\n"
-                + "   double latitude\n"
-                + "   double longitude\n"
-                + "   def name = \"Natacha\"\n"
-                + "   double getAt(int idx1, int idx2) {\n"
-                + "      def someString = \"Not in symbols\"\n"
-                + "      println someString\n"
-                + "      if (idx1 == 0) latitude\n"
-                + "      else if (idx1 == 1) longitude\n"
-                + "      else throw new Exception(\"Wrong coordinate index, use 0 or 1 \")\n"
-                + "   }\n"
-                + "}\n");
+                        + "   double latitude\n"
+                        + "   double longitude\n"
+                        + "   def name = \"Natacha\"\n"
+                        + "   double getAt(int idx1, int idx2) {\n"
+                        + "      def someString = \"Not in symbols\"\n"
+                        + "      println someString\n"
+                        + "      if (idx1 == 0) latitude\n"
+                        + "      else if (idx1 == 1) longitude\n"
+                        + "      else throw new Exception(\"Wrong coordinate index, use 0 or 1 \")\n"
+                        + "   }\n"
+                        + "}\n");
 
         GroovycWrapper wrapper = GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath());
         Set<Diagnostic> diagnostics = wrapper.compile();
@@ -159,8 +166,8 @@ public final class GroovycWrapperTest {
         File newFolder1 = root.newFolder();
         addFileToFolder(newFolder1, "ICoordinates.groovy",
                 "interface ICoordinates {\n"
-                + "   abstract double getAt(int idx);\n"
-                + "}\n");
+                        + "   abstract double getAt(int idx);\n"
+                        + "}\n");
 
         GroovycWrapper wrapper = GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath());
         Set<Diagnostic> diagnostics = wrapper.compile();
@@ -177,8 +184,8 @@ public final class GroovycWrapperTest {
     public void testComputeAllSymbols_enum() throws InterruptedException, ExecutionException, IOException {
         addFileToFolder(root.getRoot(), "Type.groovy",
                 "enum Type {\n"
-                + "   ONE, TWO, THREE\n"
-                + "}\n");
+                        + "   ONE, TWO, THREE\n"
+                        + "}\n");
 
         GroovycWrapper wrapper = GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath());
         Set<Diagnostic> diagnostics = wrapper.compile();
@@ -198,21 +205,21 @@ public final class GroovycWrapperTest {
         File newFolder1 = root.newFolder();
         addFileToFolder(newFolder1, "Coordinates.groovy",
                 "class Coordinates {\n"
-                + "   double latitude\n"
-                + "   double longitude\n"
-                + "   def name = \"Natacha\"\n"
-                + "   double getAt(int idx) {\n"
-                + "      def someString = \"Not in symbols\"\n"
-                + "      if (idx == 0) latitude\n"
-                + "      else if (idx == 1) longitude\n"
-                + "      else throw new Exception(\"Wrong coordinate index, use 0 or 1 \")\n"
-                + "   }\n"
-                + "   class MyInnerClass {}\n"
-                + "   interface MyInnerInterface{}\n"
-                + "   enum MyInnerEnum{\n"
-                + "      ONE, TWO\n"
-                + "   }\n"
-                + "}\n");
+                        + "   double latitude\n"
+                        + "   double longitude\n"
+                        + "   def name = \"Natacha\"\n"
+                        + "   double getAt(int idx) {\n"
+                        + "      def someString = \"Not in symbols\"\n"
+                        + "      if (idx == 0) latitude\n"
+                        + "      else if (idx == 1) longitude\n"
+                        + "      else throw new Exception(\"Wrong coordinate index, use 0 or 1 \")\n"
+                        + "   }\n"
+                        + "   class MyInnerClass {}\n"
+                        + "   interface MyInnerInterface{}\n"
+                        + "   enum MyInnerEnum{\n"
+                        + "      ONE, TWO\n"
+                        + "   }\n"
+                        + "}\n");
 
         GroovycWrapper wrapper = GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath());
         Set<Diagnostic> diagnostics = wrapper.compile();
@@ -234,17 +241,16 @@ public final class GroovycWrapperTest {
         assertTrue(mapHasSymbol(symbols, Optional.of("getAt"), "idx", SymbolKind.Variable));
     }
 
-
     @Test
     public void testComputeAllSymbols_script()
             throws InterruptedException, ExecutionException, IOException {
         addFileToFolder(root.getRoot(), "test.groovy",
-                  "def name = \"Natacha\"\n"
-                + "def myMethod() {\n"
-                + "   println \"Hello World\"\n"
-                + "}\n"
-                + "println name\n"
-                + "myMethod()\n");
+                "def name = \"Natacha\"\n"
+                        + "def myMethod() {\n"
+                        + "   println \"Hello World\"\n"
+                        + "}\n"
+                        + "println name\n"
+                        + "myMethod()\n");
 
         GroovycWrapper wrapper = GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath());
         Set<Diagnostic> diagnostics = wrapper.compile();
@@ -259,21 +265,21 @@ public final class GroovycWrapperTest {
         File newFolder1 = root.newFolder();
         addFileToFolder(newFolder1, "Coordinates.groovy",
                 "class Coordinates implements ICoordinates {\n"
-                + "   double latitude\n"
-                + "   double longitude\n"
-                + "   double longitude2\n"
-                + "   private double CoordinatesVar\n"
-                + "   double getAt(int idx) {\n"
-                + "      def someString = \"Not in symbols\"\n"
-                + "      if (idx == 0) latitude\n"
-                + "      else if (idx == 1) longitude\n"
-                + "      else throw new Exception(\"Wrong coordinate index, use 0 or 1 \")\n"
-                + "   }\n"
-                + "}\n");
+                        + "   double latitude\n"
+                        + "   double longitude\n"
+                        + "   double longitude2\n"
+                        + "   private double CoordinatesVar\n"
+                        + "   double getAt(int idx) {\n"
+                        + "      def someString = \"Not in symbols\"\n"
+                        + "      if (idx == 0) latitude\n"
+                        + "      else if (idx == 1) longitude\n"
+                        + "      else throw new Exception(\"Wrong coordinate index, use 0 or 1 \")\n"
+                        + "   }\n"
+                        + "}\n");
         addFileToFolder(newFolder1, "ICoordinates.groovy",
                 "interface ICoordinates {\n"
-                + "   abstract double getAt(int idx);\n"
-                + "}\n");
+                        + "   abstract double getAt(int idx);\n"
+                        + "}\n");
         GroovycWrapper wrapper = GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath());
         Set<Diagnostic> diagnostics = wrapper.compile();
         assertEquals(0, diagnostics.size());
@@ -317,14 +323,14 @@ public final class GroovycWrapperTest {
         File newFolder2 = root.newFolder();
         addFileToFolder(newFolder1, "coordinates.groovy",
                 "class Coordinates {\n"
-                + "   double latitude\n"
-                + "   double longitude\n"
-                + "   double getAt(int idx) {\n"
-                + "      if (idx == 0) latitude\n"
-                + "      else if (idx == 1) longitude\n"
-                + "      else throw new Exception(\"Wrong coordinate index, use 0 or 1\")\n"
-                + "   }\n"
-                + "}\n");
+                        + "   double latitude\n"
+                        + "   double longitude\n"
+                        + "   double getAt(int idx) {\n"
+                        + "      if (idx == 0) latitude\n"
+                        + "      else if (idx == 1) longitude\n"
+                        + "      else throw new Exception(\"Wrong coordinate index, use 0 or 1\")\n"
+                        + "   }\n"
+                        + "}\n");
         addFileToFolder(newFolder2, "file.txt", "Something that is not groovy");
         addFileToFolder(newFolder2, "Test.java", "public class Test {}\n");
 
@@ -340,34 +346,34 @@ public final class GroovycWrapperTest {
         File newFolder2 = root.newFolder();
         File test1 = addFileToFolder(newFolder1, "test1.groovy",
                 "class Coordinates {\n"
-                + "   double latitude\n"
-                + "   double longitude\n"
-                + "   double getAt(int idx) {\n"
-                + "      if (idx == 0) latitude\n"
-                + "      else if (idx == 1) longitude\n"
-                + "      else throw new ExceptionNew1(\"Wrong coordinate index, use 0 or 1\")\n"
-                + "   }\n"
-                + "}\n");
+                        + "   double latitude\n"
+                        + "   double longitude\n"
+                        + "   double getAt(int idx) {\n"
+                        + "      if (idx == 0) latitude\n"
+                        + "      else if (idx == 1) longitude\n"
+                        + "      else throw new ExceptionNew1(\"Wrong coordinate index, use 0 or 1\")\n"
+                        + "   }\n"
+                        + "}\n");
         File test2 = addFileToFolder(newFolder2, "test2.groovy",
                 "class Coordinates2 {\n"
-                + "   double latitude\n"
-                + "   double longitude\n"
-                + "   double getAt(int idx) {\n"
-                + "      if (idx == 0) latitude\n"
-                + "      else if (idx == 1) longitude\n"
-                + "      else throw new ExceptionNew222(\"Wrong coordinate index, use 0 or 1\")\n"
-                + "   }\n"
-                + "}\n");
+                        + "   double latitude\n"
+                        + "   double longitude\n"
+                        + "   double getAt(int idx) {\n"
+                        + "      if (idx == 0) latitude\n"
+                        + "      else if (idx == 1) longitude\n"
+                        + "      else throw new ExceptionNew222(\"Wrong coordinate index, use 0 or 1\")\n"
+                        + "   }\n"
+                        + "}\n");
         addFileToFolder(newFolder2, "test3.groovy",
                 "class Coordinates3 {\n"
-                + "   double latitude\n"
-                + "   double longitude\n"
-                + "   double getAt(int idx) {\n"
-                + "      if (idx == 0) latitude\n"
-                + "      else if (idx == 1) longitude\n"
-                + "      else throw new ExceptionNew(\"Wrong coordinate index, use 0 or 1\")\n"
-                + "   }\n"
-                + "}\n");
+                        + "   double latitude\n"
+                        + "   double longitude\n"
+                        + "   double getAt(int idx) {\n"
+                        + "      if (idx == 0) latitude\n"
+                        + "      else if (idx == 1) longitude\n"
+                        + "      else throw new ExceptionNew(\"Wrong coordinate index, use 0 or 1\")\n"
+                        + "   }\n"
+                        + "}\n");
         addFileToFolder(root.getRoot(), "test4.groovy", "class ExceptionNew {}\n");
 
         GroovycWrapper wrapper = GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath());
@@ -379,16 +385,339 @@ public final class GroovycWrapperTest {
         expectedDiagnostics
                 .add(new DefaultDiagnosticBuilder(
                         "unable to resolve class ExceptionNew1 \n @ line 7, column 18.", DiagnosticSeverity.Error)
-                        .range(Ranges.createRange(7, 18, 7, 73))
-                        .source(test1.getAbsolutePath())
-                        .build());
+                                .range(Ranges.createRange(7, 18, 7, 73))
+                                .source(test1.getAbsolutePath())
+                                .build());
         expectedDiagnostics
                 .add(new DefaultDiagnosticBuilder(
                         "unable to resolve class ExceptionNew222 \n @ line 7, column 18.", DiagnosticSeverity.Error)
-                        .range(Ranges.createRange(7, 18, 7, 75))
-                        .source(test2.getAbsolutePath())
-                        .build());
+                                .range(Ranges.createRange(7, 18, 7, 75))
+                                .source(test2.getAbsolutePath())
+                                .build());
         assertEquals(expectedDiagnostics, actualDiagnostics);
+    }
+
+    @Test
+    public void testFindReferences_edgeCases() throws IOException {
+        File newFolder1 = root.newFolder();
+        File file = addFileToFolder(newFolder1, "Dog.groovy",
+                        "class Dog {\n"
+                        + "   Cat friend1;\n"
+                        + "   Cat2 friend2;\n"
+                        + "   Cat bark(Cat enemy) {\n"
+                        + "      println \"Bark! \" + enemy.name\n"
+                        + "      return friend1\n"
+                        + "   }\n"
+                        + "}\n"
+                        + "class Cat {\n"
+                        + "   public String name = \"Bobby\"\n"
+                        + "}\n"
+                        + "class Cat2 {\n"
+                        + "   InnerCat2 myFriend;\n"
+                        + "   class InnerCat2 {\n"
+                        + "   }\n"
+                        + "}\n");
+        GroovycWrapper wrapper = GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath());
+        Set<Diagnostic> diagnostics = wrapper.compile();
+        System.out.println(diagnostics);
+        assertEquals(0, diagnostics.size());
+
+        System.out.println(wrapper.getFileSymbols());
+
+        // Right before "Cat", therefore should not find any symbol
+        assertEquals(0, wrapper.findReferences(createTextDocumentPositionParams(file.getAbsolutePath(), 8, 1)).size());
+        // Right after "Cat", therefore should not find any symbol
+        assertEquals(0, wrapper.findReferences(createTextDocumentPositionParams(file.getAbsolutePath(), 11, 3)).size());
+
+        // InnerCat2 references - testing finding more specific symbols that are contained inside another symbol's
+        // range.
+        assertEquals(Sets.newHashSet(createLocation(file.getAbsolutePath(), 13, 4, 13, 22)),
+                wrapper.findReferences(createTextDocumentPositionParams(file.getAbsolutePath(), 14, 10)));
+    }
+
+    @Test
+    public void testReferences_classesAndInterfaces() throws InterruptedException, ExecutionException, IOException {
+        File newFolder1 = root.newFolder();
+        File extendedCoordinatesFile =
+                addFileToFolder(newFolder1, "ExtendedCoordinates.groovy",
+                        "class ExtendedCoordinates extends Coordinates{\n"
+                                + "   void somethingElse() {\n"
+                                + "      println \"Hi again!\"\n"
+                                + "   }\n"
+                                + "}\n");
+        File coordinatesFile =
+                addFileToFolder(newFolder1, "Coordinates.groovy",
+                        "class Coordinates extends AbstractCoordinates implements ICoordinates {\n"
+                                + "   double latitude\n"
+                                + "   double longitude\n"
+                                + "   double longitude2\n"
+                                + "   private double CoordinatesVar\n"
+                                + "   double getAt(int idx) {\n"
+                                + "      def someString = \"Not in symbols\"\n"
+                                + "      if (idx == 0) latitude\n"
+                                + "      else if (idx == 1) longitude\n"
+                                + "      else throw new Exception(\"Wrong coordinate index, use 0 or 1 \")\n"
+                                + "   }\n"
+                                + "   void superInterfaceMethod() {\n"
+                                + "      println \"Hi!\"\n"
+                                + "   }\n"
+                                + "   void something() {\n"
+                                + "      println \"Hi!\"\n"
+                                + "   }\n"
+                                + "}\n");
+        File icoordinatesFile =
+                addFileToFolder(newFolder1, "ICoordinates.groovy",
+                        "interface ICoordinates extends ICoordinatesSuper{\n"
+                                + "   abstract double getAt(int idx);\n"
+                                + "}\n");
+        addFileToFolder(newFolder1, "ICoordinatesSuper.groovy",
+                "interface ICoordinatesSuper {\n"
+                        + "   abstract void superInterfaceMethod()\n"
+                        + "}\n");
+        addFileToFolder(newFolder1, "AbstractCoordinates.groovy",
+                "abstract class AbstractCoordinates {\n"
+                        + "   abstract void something();\n"
+                        + "}\n");
+        GroovycWrapper wrapper = GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath());
+        Set<Diagnostic> diagnostics = wrapper.compile();
+        assertEquals(0, diagnostics.size());
+        Map<String, Set<SymbolInformation>> references = wrapper.getReferences();
+        // ExtendedCoordinates should have no references
+        assertNull(references.get("ExtendedCoordinates"));
+        // Coordinates is only referenced in ExtendedCoordinates
+        assertEquals(Sets.newHashSet(
+                createSymbolInformation("ExtendedCoordinates", extendedCoordinatesFile.getAbsolutePath(),
+                        SymbolKind.Class, 1, 1, 5, 2, Optional.absent())),
+                references.get("Coordinates"));
+        // ICoordinates is only referenced in Coordinates
+        assertEquals(Sets.newHashSet(
+                createSymbolInformation("Coordinates", coordinatesFile.getAbsolutePath(),
+                        SymbolKind.Class, 1, 1, 18, 2, Optional.absent())),
+                references.get("ICoordinates"));
+        // AbstractCoordinates is only references in Coordinates
+        assertEquals(Sets.newHashSet(
+                createSymbolInformation("Coordinates", coordinatesFile.getAbsolutePath(),
+                        SymbolKind.Class, 1, 1, 18, 2, Optional.absent())),
+                references.get("AbstractCoordinates"));
+        // ICoordinatesSuper is only references in ICoordinates
+        assertEquals(Sets.newHashSet(
+                createSymbolInformation("ICoordinates", icoordinatesFile.getAbsolutePath(),
+                        SymbolKind.Interface, 1, 1, 3, 2, Optional.absent())),
+                references.get("ICoordinatesSuper"));
+    }
+
+
+    @Test
+    public void testFindReferences_classesAndInterfaces() throws InterruptedException, ExecutionException, IOException {
+        File newFolder1 = root.newFolder();
+        File extendedCoordinatesFile =
+                addFileToFolder(newFolder1, "ExtendedCoordinates.groovy",
+                        "class ExtendedCoordinates extends Coordinates{\n"
+                                + "   void somethingElse() {\n"
+                                + "      println \"Hi again!\"\n"
+                                + "   }\n"
+                                + "}\n");
+        File coordinatesFile =
+                addFileToFolder(newFolder1, "Coordinates.groovy",
+                        "class Coordinates extends AbstractCoordinates implements ICoordinates {\n"
+                                + "   double latitude\n"
+                                + "   double longitude\n"
+                                + "   double longitude2\n"
+                                + "   private double CoordinatesVar\n"
+                                + "   double getAt(int idx) {\n"
+                                + "      def someString = \"Not in symbols\"\n"
+                                + "      if (idx == 0) latitude\n"
+                                + "      else if (idx == 1) longitude\n"
+                                + "      else throw new Exception(\"Wrong coordinate index, use 0 or 1 \")\n"
+                                + "   }\n"
+                                + "   void superInterfaceMethod() {\n"
+                                + "      println \"Hi!\"\n"
+                                + "   }\n"
+                                + "   void something() {\n"
+                                + "      println \"Hi!\"\n"
+                                + "   }\n"
+                                + "}\n");
+        File icoordinatesFile =
+                addFileToFolder(newFolder1, "ICoordinates.groovy",
+                        "interface ICoordinates extends ICoordinatesSuper{\n"
+                                + "   abstract double getAt(int idx);\n"
+                                + "}\n");
+        File icoordinatesSuperFile =
+                addFileToFolder(newFolder1, "ICoordinatesSuper.groovy",
+                "interface ICoordinatesSuper {\n"
+                        + "   abstract void superInterfaceMethod()\n"
+                        + "}\n");
+        File abstractCoordinatesFile =
+                addFileToFolder(newFolder1, "AbstractCoordinates.groovy",
+                "abstract class AbstractCoordinates {\n"
+                        + "   abstract void something();\n"
+                        + "}\n");
+        GroovycWrapper wrapper = GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath());
+        Set<Diagnostic> diagnostics = wrapper.compile();
+        assertEquals(0, diagnostics.size());
+
+        // ICoordinatesSuper reference
+        assertEquals(Sets.newHashSet(createLocation(icoordinatesFile.getAbsolutePath(), 1, 1, 3, 2)), wrapper
+                .findReferences(createTextDocumentPositionParams(icoordinatesSuperFile.getAbsolutePath(), 1, 14)));
+        // AbstractCoordinates reference
+        assertEquals(Sets.newHashSet(createLocation(coordinatesFile.getAbsolutePath(), 1, 1, 18, 2)), wrapper
+                .findReferences(createTextDocumentPositionParams(abstractCoordinatesFile.getAbsolutePath(), 1, 20)));
+        // ICoordinates reference
+        assertEquals(Sets.newHashSet(createLocation(coordinatesFile.getAbsolutePath(), 1, 1, 18, 2)),
+                wrapper.findReferences(createTextDocumentPositionParams(icoordinatesFile.getAbsolutePath(), 1, 15)));
+        // Coordinates reference
+        assertEquals(Sets.newHashSet(createLocation(extendedCoordinatesFile.getAbsolutePath(), 1, 1, 5, 2)),
+                wrapper.findReferences(createTextDocumentPositionParams(coordinatesFile.getAbsolutePath(), 1, 10)));
+        // ExtendedCoordinates has no references
+        assertEquals(0, wrapper
+                .findReferences(createTextDocumentPositionParams(extendedCoordinatesFile.getAbsolutePath(), 1, 8))
+                .size());
+    }
+
+    @Test
+    public void testReferences_fields() throws IOException {
+        File newFolder1 = root.newFolder();
+        File dogFile =
+                addFileToFolder(newFolder1, "Dog.groovy",
+                        "class Dog {\n"
+                                + "   Cat friend1;\n"
+                                + "   Cat friend2;\n"
+                                + "   Cat bark(Cat enemy) {\n"
+                                + "      println \"Bark! \" + enemy.name\n"
+                                + "      return friend1\n"
+                                + "   }\n"
+                                + "}\n");
+
+        addFileToFolder(newFolder1, "Cat.groovy",
+                        "class Cat {\n"
+                                + "   public String name = \"Bobby\"\n"
+                                + "}\n");
+        GroovycWrapper wrapper = GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath());
+        Set<Diagnostic> diagnostics = wrapper.compile();
+        assertEquals(0, diagnostics.size());
+
+        Map<String, Set<SymbolInformation>> references = wrapper.getReferences();
+        // Dog should have no references
+        assertNull(references.get("Dog"));
+        assertEquals(Sets.newHashSet(
+                createSymbolInformation("friend1", dogFile.getAbsolutePath(),
+                        SymbolKind.Field, 2, 4, 2, 15, Optional.of("Dog")),
+                createSymbolInformation("friend2", dogFile.getAbsolutePath(),
+                        SymbolKind.Field, 3, 4, 3, 15, Optional.of("Dog")),
+                createSymbolInformation("enemy", dogFile.getAbsolutePath(),
+                        SymbolKind.Variable, 4, 13, 4, 22, Optional.of("bark")),
+                // Bark method returns a Cat
+                createSymbolInformation("bark", dogFile.getAbsolutePath(),
+                        SymbolKind.Method, 4, 4, 7, 5, Optional.of("Dog")),
+                // Generated getters and setter
+                // These two function take in a Cat value
+                createSymbolInformation("value", dogFile.getAbsolutePath(),
+                        SymbolKind.Variable, -1, -1, -1, -1, Optional.of("setFriend1")),
+                createSymbolInformation("value", dogFile.getAbsolutePath(),
+                        SymbolKind.Variable, -1, -1, -1, -1, Optional.of("setFriend2")),
+                // Return values of these functions are of type Cat
+                createSymbolInformation("getFriend1", dogFile.getAbsolutePath(),
+                        SymbolKind.Method, -1, -1, -1, -1, Optional.of("Dog")),
+                createSymbolInformation("getFriend2", dogFile.getAbsolutePath(),
+                        SymbolKind.Method, -1, -1, -1, -1, Optional.of("Dog"))),
+                references.get("Cat"));
+    }
+
+    @Test
+    public void testFindReferences_fields() throws IOException {
+        File newFolder1 = root.newFolder();
+        File dogFile =
+                addFileToFolder(newFolder1, "Dog.groovy",
+                        "class Dog {\n"
+                                + "   Cat friend1;\n"
+                                + "   Cat friend2;\n"
+                                + "   Cat bark(Cat enemy) {\n"
+                                + "      println \"Bark! \" + enemy.name\n"
+                                + "      return friend1\n"
+                                + "   }\n"
+                                + "}\n");
+
+        File catFile =
+                addFileToFolder(newFolder1, "Cat.groovy",
+                        "class Cat {\n"
+                                + "   public String name = \"Bobby\"\n"
+                                + "}\n");
+        GroovycWrapper wrapper = GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath());
+        Set<Diagnostic> diagnostics = wrapper.compile();
+        assertEquals(0, diagnostics.size());
+
+        // Find references on position on top of Cat
+        Set<Location> referenceLocations =
+                wrapper.findReferences(createTextDocumentPositionParams(catFile.getAbsolutePath(), 1, 8));
+
+        assertEquals(Sets.newHashSet(createLocation(dogFile.getAbsolutePath(), 2, 4, 2, 15),
+                createLocation(dogFile.getAbsolutePath(), 3, 4, 3, 15),
+                createLocation(dogFile.getAbsolutePath(), 4, 13, 4, 22),
+                createLocation(dogFile.getAbsolutePath(), 4, 4, 7, 5)), referenceLocations);
+
+        // No references for Dog
+        assertEquals(0,
+                wrapper.findReferences(createTextDocumentPositionParams(dogFile.getAbsolutePath(), 1, 8)).size());
+    }
+
+    @Test
+    public void testReferences_script() throws IOException {
+        File newFolder1 = root.newFolder();
+        File scriptFile =
+                addFileToFolder(newFolder1, "MyScript.groovy",
+                        "Cat friend1;\n"
+                                + "bark(friend1)\n"
+                                + "Cat bark(Cat enemy) {\n"
+                                + "   println \"Bark! \"\n"
+                                + "   return enemy\n"
+                                + "}\n"
+                                + "\n");
+        addFileToFolder(newFolder1, "Cat.groovy",
+                "class Cat {\n"
+                        + "}\n");
+        GroovycWrapper wrapper = GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath());
+        Set<Diagnostic> diagnostics = wrapper.compile();
+        assertEquals(0, diagnostics.size());
+
+        Map<String, Set<SymbolInformation>> references = wrapper.getReferences();
+        // Dog should have no references
+        assertNull(references.get("Dog"));
+        assertEquals(Sets.newHashSet(
+                createSymbolInformation("friend1", scriptFile.getAbsolutePath(),
+                        SymbolKind.Variable, 1, 5, 1, 12, Optional.of("MyScript")),
+                createSymbolInformation("enemy", scriptFile.getAbsolutePath(),
+                        SymbolKind.Variable, 3, 10, 3, 19, Optional.of("bark")),
+                // Bark method returns a Cat
+                createSymbolInformation("bark", scriptFile.getAbsolutePath(),
+                        SymbolKind.Method, 3, 1, 6, 2, Optional.of("MyScript"))),
+                references.get("Cat"));
+    }
+
+    @Test
+    public void testFindReferences_script() throws IOException {
+        File newFolder1 = root.newFolder();
+        File scriptFile =
+                addFileToFolder(newFolder1, "MyScript.groovy",
+                        "Cat friend1;\n"
+                                + "bark(friend1)\n"
+                                + "Cat bark(Cat enemy) {\n"
+                                + "   println \"Bark! \"\n"
+                                + "   return enemy\n"
+                                + "}\n"
+                                + "\n");
+        File catFile =
+                addFileToFolder(newFolder1, "Cat.groovy",
+                "class Cat {\n"
+                        + "}\n");
+        GroovycWrapper wrapper = GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath());
+        Set<Diagnostic> diagnostics = wrapper.compile();
+        assertEquals(0, diagnostics.size());
+
+        Set<Location> referenceLocations =
+                wrapper.findReferences(createTextDocumentPositionParams(catFile.getAbsolutePath(), 1, 8));
+        assertEquals(Sets.newHashSet(createLocation(scriptFile.getAbsolutePath(), 1, 5, 1, 12),
+                createLocation(scriptFile.getAbsolutePath(), 3, 10, 3, 19),
+                createLocation(scriptFile.getAbsolutePath(), 3, 1, 6, 2)), referenceLocations);
     }
 
     private boolean mapHasSymbol(Map<String, Set<SymbolInformation>> map, Optional<String> container, String fieldName,
@@ -405,6 +734,28 @@ public final class GroovycWrapperTest {
         writer.println(contents);
         writer.close();
         return file;
+    }
+
+    private static SymbolInformation createSymbolInformation(String name, String uri, SymbolKind kind, int startLine,
+            int startChar, int endLine, int endChar, Optional<String> parentName) {
+        return new SymbolInformationBuilder()
+                .containerName(parentName.orNull())
+                .kind(kind)
+                .location(createLocation(uri, startLine, startChar, endLine, endChar))
+                .name(name)
+                .build();
+    }
+
+    private static Location createLocation(String uri, int startLine, int startChar, int endLine, int endChar) {
+        return new LocationBuilder().uri(uri).range(new PositionBuilder().line(startLine).character(startChar).build(),
+                new PositionBuilder().line(endLine).character(endChar).build()).build();
+    }
+
+    private static TextDocumentPositionParams createTextDocumentPositionParams(String uri, int line, int col) {
+        return new TextDocumentPositionParamsBuilder()
+                .textDocument(uri)
+                .position(line, col)
+                .uri(uri).build();
     }
 
 }
