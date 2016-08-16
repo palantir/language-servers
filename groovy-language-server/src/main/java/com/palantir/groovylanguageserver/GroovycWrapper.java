@@ -43,6 +43,7 @@ import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.codehaus.groovy.ast.ASTNode;
 import org.codehaus.groovy.ast.ClassNode;
 import org.codehaus.groovy.ast.DynamicVariable;
@@ -145,8 +146,8 @@ public final class GroovycWrapper implements CompilerWrapper {
                             && (s.getKind() == SymbolKind.Class || s.getKind() == SymbolKind.Interface
                                     || s.getKind() == SymbolKind.Enum))
                 // If there is more than one result, we want the symbol whose range starts the latest.
-                .sorted((s1, s2) -> Ranges.POSITION_COMPARATOR.compare(s2.getLocation().getRange().getStart(),
-                        s1.getLocation().getRange().getStart()))
+                .sorted((s1, s2) -> Ranges.POSITION_COMPARATOR.reversed()
+                        .compare(s1.getLocation().getRange().getStart(), s2.getLocation().getRange().getStart()))
                 .collect(Collectors.toList());
 
         if (foundSymbolInformations.isEmpty()) {
@@ -242,11 +243,10 @@ public final class GroovycWrapper implements CompilerWrapper {
                 symbols.add(classSymbol);
 
                 // Add implemented interfaces reference
-                for (ClassNode node : clazz.getInterfaces()) {
-                    if (!node.getName().equals(GROOVY_DEFAULT_INTERFACE)) {
-                        addToValueSet(newTypeReferences, node.getName(), classSymbol);
-                    }
-                }
+                Stream.of(clazz.getInterfaces())
+                        .filter(node -> !node.getName().equals(GROOVY_DEFAULT_INTERFACE))
+                        .forEach(node -> addToValueSet(newTypeReferences, node.getName(), classSymbol));
+
                 // Add extended class reference
                 if (clazz.getSuperClass() != null && !clazz.getSuperClass().getName().equals(JAVA_DEFAULT_OBJECT)) {
                     addToValueSet(newTypeReferences, clazz.getSuperClass().getName(), classSymbol);

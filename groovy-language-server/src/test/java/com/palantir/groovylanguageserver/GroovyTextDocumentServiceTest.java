@@ -114,7 +114,7 @@ public final class GroovyTextDocumentServiceTest {
                 .name("MyClassName3")
                 .location(new LocationBuilder()
                             .uri("uri")
-                            .range(Ranges.createRange(-1, -1, -1, -1))
+                            .range(Ranges.UNDEFINED_RANGE)
                             .build())
                 .build());
         when(compilerWrapper.getWorkspaceRoot()).thenReturn(WORKSPACE_PATH);

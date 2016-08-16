@@ -29,6 +29,8 @@ import com.palantir.groovylanguageserver.util.DefaultDiagnosticBuilder;
 import com.palantir.groovylanguageserver.util.Ranges;
 import io.typefox.lsapi.Diagnostic;
 import io.typefox.lsapi.DiagnosticSeverity;
+import io.typefox.lsapi.Location;
+import io.typefox.lsapi.Range;
 import io.typefox.lsapi.ReferenceParams;
 import io.typefox.lsapi.SymbolInformation;
 import io.typefox.lsapi.SymbolKind;
@@ -432,19 +434,22 @@ public final class GroovycWrapperTest {
         // InnerCat2 references - testing finding more specific symbols that are contained inside another symbol's
         // range.
         assertEquals(Sets.newHashSet(
-                createSymbolInformation("myFriend", file.getAbsolutePath(),
-                        SymbolKind.Field, 13, 4, 13, 22, Optional.of("Cat2")),
-                createSymbolInformation("getMyFriend", file.getAbsolutePath(),
-                        SymbolKind.Method, -1, -1, -1, -1, Optional.of("Cat2")),
-                createSymbolInformation("value", file.getAbsolutePath(),
-                        SymbolKind.Variable, -1, -1, -1, -1, Optional.of("setMyFriend"))),
+                createSymbolInformation("myFriend",
+                        createLocation(file.getAbsolutePath(), Ranges.createRange(13, 4, 13, 22)), SymbolKind.Field,
+                        Optional.of("Cat2")),
+                createSymbolInformation("getMyFriend", createLocation(file.getAbsolutePath(), Ranges.UNDEFINED_RANGE),
+                        SymbolKind.Method, Optional.of("Cat2")),
+                createSymbolInformation("value", createLocation(file.getAbsolutePath(), Ranges.UNDEFINED_RANGE),
+                        SymbolKind.Variable, Optional.of("setMyFriend"))),
                 wrapper.getTypeReferences().get("Cat2$InnerCat2"));
         // Find one line enum correctly
         assertEquals(Sets.newHashSet(
-                createSymbolInformation("ONE", enumFile.getAbsolutePath(),
-                        SymbolKind.Field, 1, 14, 1, 17, Optional.of("MyEnum")),
-                createSymbolInformation("TWO", enumFile.getAbsolutePath(),
-                        SymbolKind.Field, 1, 18, 1, 21, Optional.of("MyEnum"))),
+                createSymbolInformation("ONE",
+                        createLocation(enumFile.getAbsolutePath(), Ranges.createRange(1, 14, 1, 17)), SymbolKind.Field,
+                        Optional.of("MyEnum")),
+                createSymbolInformation("TWO",
+                        createLocation(enumFile.getAbsolutePath(), Ranges.createRange(1, 18, 1, 21)), SymbolKind.Field,
+                        Optional.of("MyEnum"))),
                 wrapper.getTypeReferences().get("MyEnum").stream()
                         .filter(symbol -> Ranges.isValid(symbol.getLocation().getRange())).collect(Collectors.toSet()));
         // Identify type A correctly
@@ -982,15 +987,18 @@ public final class GroovycWrapperTest {
         return file;
     }
 
-    private static SymbolInformation createSymbolInformation(String name, String uri, SymbolKind kind, int startLine,
-            int startChar, int endLine, int endChar, Optional<String> parentName) {
+    private static SymbolInformation createSymbolInformation(String name, Location location, SymbolKind kind,
+            Optional<String> parentName) {
         return new SymbolInformationBuilder()
                 .containerName(parentName.orNull())
                 .kind(kind)
-                .location(new LocationBuilder().uri(uri)
-                        .range(Ranges.createRange(startLine, startChar, endLine, endChar)).build())
+                .location(location)
                 .name(name)
                 .build();
+    }
+
+    private static Location createLocation(String uri, Range range) {
+        return new LocationBuilder().uri(uri).range(range).build();
     }
 
     private static ReferenceParams createReferenceParams(String uri, int line, int col, boolean includeDeclaration) {
