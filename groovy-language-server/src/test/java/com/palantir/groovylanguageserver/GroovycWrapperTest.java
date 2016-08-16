@@ -404,7 +404,7 @@ public final class GroovycWrapperTest {
     }
 
     @Test
-    public void testReferences_edgeCases() throws IOException {
+    public void testReferences_innerClass() throws IOException {
         File newFolder1 = root.newFolder();
         // edge cases, intersecting ranges
         File file = addFileToFolder(newFolder1, "Dog.groovy",
@@ -424,15 +424,7 @@ public final class GroovycWrapperTest {
                 + "   class InnerCat2 {\n"
                 + "   }\n"
                 + "}\n");
-        // edge case on one line
-        File enumFile = addFileToFolder(newFolder1, "MyEnum.groovy",
-                "enum MyEnum {ONE,TWO}\n");
-        // edge case on one line
-        File innerClass = addFileToFolder(newFolder1, "AandB.groovy",
-                "public class A {public static class B {}\n"
-                        + "A a\n"
-                        + "B b\n"
-                + "}\n");
+
         GroovycWrapper wrapper = GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath());
         Set<Diagnostic> diagnostics = wrapper.compile();
         assertEquals(0, diagnostics.size());
@@ -455,6 +447,17 @@ public final class GroovycWrapperTest {
         assertEquals(innerCat2ExpectedResult, wrapper.getTypeReferences().get("Cat2$InnerCat2"));
         assertEquals(innerCat2ExpectedResult,
                 wrapper.findReferences(createReferenceParams(file.getAbsolutePath(), 14, 10, false)));
+    }
+
+    @Test
+    public void testReferences_enumOneLine() throws IOException {
+        File newFolder1 = root.newFolder();
+        // edge case on one line
+        File enumFile = addFileToFolder(newFolder1, "MyEnum.groovy",
+                "enum MyEnum {ONE,TWO}\n");
+        GroovycWrapper wrapper = GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath());
+        Set<Diagnostic> diagnostics = wrapper.compile();
+        assertEquals(0, diagnostics.size());
 
         // Find one line enum correctly
         Set<SymbolInformation> myEnumExpectedResult = Sets.newHashSet(
@@ -485,6 +488,20 @@ public final class GroovycWrapperTest {
         assertEquals(myEnumExpectedResult, wrapper.getTypeReferences().get("MyEnum"));
         assertEquals(myEnumExpectedResult,
                 wrapper.findReferences(createReferenceParams(enumFile.getAbsolutePath(), 1, 7, false)));
+    }
+
+    @Test
+    public void testReferences_innerClassOneLine() throws IOException {
+        File newFolder1 = root.newFolder();
+        // edge case on one line
+        File innerClass = addFileToFolder(newFolder1, "AandB.groovy",
+                "public class A {public static class B {}\n"
+                        + "A a\n"
+                        + "B b\n"
+                + "}\n");
+        GroovycWrapper wrapper = GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath());
+        Set<Diagnostic> diagnostics = wrapper.compile();
+        assertEquals(0, diagnostics.size());
 
         // Identify type A correctly
         Set<SymbolInformation> typeAExpectedResult = Sets.newHashSet(
