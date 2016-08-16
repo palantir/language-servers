@@ -463,33 +463,57 @@ public final class GroovycWrapperTest {
                         Optional.of("MyEnum")),
                 createSymbolInformation("TWO", SymbolKind.Field,
                         createLocation(enumFile.getAbsolutePath(), Ranges.createRange(1, 18, 1, 21)),
+                        Optional.of("MyEnum")),
+                createSymbolInformation("MIN_VALUE", SymbolKind.Field,
+                        createLocation(enumFile.getAbsolutePath(), Ranges.UNDEFINED_RANGE),
+                        Optional.of("MyEnum")),
+                createSymbolInformation("MAX_VALUE", SymbolKind.Field,
+                        createLocation(enumFile.getAbsolutePath(), Ranges.UNDEFINED_RANGE),
+                        Optional.of("MyEnum")),
+                createSymbolInformation("$INIT", SymbolKind.Method,
+                        createLocation(enumFile.getAbsolutePath(), Ranges.UNDEFINED_RANGE),
+                        Optional.of("MyEnum")),
+                createSymbolInformation("previous", SymbolKind.Method,
+                        createLocation(enumFile.getAbsolutePath(), Ranges.UNDEFINED_RANGE),
+                        Optional.of("MyEnum")),
+                createSymbolInformation("next", SymbolKind.Method,
+                        createLocation(enumFile.getAbsolutePath(), Ranges.UNDEFINED_RANGE),
+                        Optional.of("MyEnum")),
+                createSymbolInformation("valueOf", SymbolKind.Method,
+                        createLocation(enumFile.getAbsolutePath(), Ranges.UNDEFINED_RANGE),
                         Optional.of("MyEnum")));
-        assertEquals(myEnumExpectedResult, wrapper.getTypeReferences().get("MyEnum").stream()
-                .filter(symbol -> Ranges.isValid(symbol.getLocation().getRange())).collect(Collectors.toSet()));
+        assertEquals(myEnumExpectedResult, wrapper.getTypeReferences().get("MyEnum"));
         assertEquals(myEnumExpectedResult,
-                wrapper.findReferences(createReferenceParams(enumFile.getAbsolutePath(), 1, 7, false)).stream()
-                        .filter(symbol -> Ranges.isValid(symbol.getLocation().getRange())).collect(Collectors.toSet()));
+                wrapper.findReferences(createReferenceParams(enumFile.getAbsolutePath(), 1, 7, false)));
 
         // Identify type A correctly
         Set<SymbolInformation> typeAExpectedResult = Sets.newHashSet(
                 createSymbolInformation("a", SymbolKind.Field,
                         createLocation(innerClass.getAbsolutePath(), Ranges.createRange(2, 1, 2, 4)),
-                        Optional.of("A")));
-        assertEquals(typeAExpectedResult, wrapper.getTypeReferences().get("A").stream()
-                .filter(symbol -> Ranges.isValid(symbol.getLocation().getRange())).collect(Collectors.toSet()));
+                        Optional.of("A")),
+                createSymbolInformation("getA", SymbolKind.Method,
+                        createLocation(innerClass.getAbsolutePath(), Ranges.UNDEFINED_RANGE),
+                        Optional.of("A")),
+                createSymbolInformation("value", SymbolKind.Variable,
+                        createLocation(innerClass.getAbsolutePath(), Ranges.UNDEFINED_RANGE),
+                        Optional.of("setA")));
+        assertEquals(typeAExpectedResult, wrapper.getTypeReferences().get("A"));
         assertEquals(typeAExpectedResult,
-                wrapper.findReferences(createReferenceParams(innerClass.getAbsolutePath(), 1, 7, false)).stream()
-                        .filter(symbol -> Ranges.isValid(symbol.getLocation().getRange())).collect(Collectors.toSet()));
+                wrapper.findReferences(createReferenceParams(innerClass.getAbsolutePath(), 1, 7, false)));
         // Identify type B correctly
         Set<SymbolInformation> typeBExpectedResult = Sets.newHashSet(
                 createSymbolInformation("b", SymbolKind.Field,
                         createLocation(innerClass.getAbsolutePath(), Ranges.createRange(3, 1, 3, 4)),
-                        Optional.of("A")));
-        assertEquals(typeBExpectedResult, wrapper.getTypeReferences().get("A$B").stream()
-                .filter(symbol -> Ranges.isValid(symbol.getLocation().getRange())).collect(Collectors.toSet()));
+                        Optional.of("A")),
+                createSymbolInformation("getB", SymbolKind.Method,
+                        createLocation(innerClass.getAbsolutePath(), Ranges.UNDEFINED_RANGE),
+                        Optional.of("A")),
+                createSymbolInformation("value", SymbolKind.Variable,
+                        createLocation(innerClass.getAbsolutePath(), Ranges.UNDEFINED_RANGE),
+                        Optional.of("setB")));
+        assertEquals(typeBExpectedResult, wrapper.getTypeReferences().get("A$B"));
         assertEquals(typeBExpectedResult,
-                wrapper.findReferences(createReferenceParams(innerClass.getAbsolutePath(), 1, 18, false)).stream()
-                        .filter(symbol -> Ranges.isValid(symbol.getLocation().getRange())).collect(Collectors.toSet()));
+                wrapper.findReferences(createReferenceParams(innerClass.getAbsolutePath(), 1, 18, false)));
     }
 
     @Test
@@ -716,13 +740,30 @@ public final class GroovycWrapperTest {
                 // pet method returns a Animal
                 createSymbolInformation("pet", SymbolKind.Method,
                         createLocation(scriptFile.getAbsolutePath(), Ranges.createRange(3, 1, 6, 2)),
-                        Optional.of("MyScript")));
+                        Optional.of("MyScript")),
+                // generated symbols
+                createSymbolInformation("valueOf", SymbolKind.Method,
+                        createLocation(animalFile.getAbsolutePath(), Ranges.UNDEFINED_RANGE),
+                        Optional.of("Animal")),
+                createSymbolInformation("MAX_VALUE", SymbolKind.Field,
+                        createLocation(animalFile.getAbsolutePath(), Ranges.UNDEFINED_RANGE),
+                        Optional.of("Animal")),
+                createSymbolInformation("previous", SymbolKind.Method,
+                        createLocation(animalFile.getAbsolutePath(), Ranges.UNDEFINED_RANGE),
+                        Optional.of("Animal")),
+                createSymbolInformation("next", SymbolKind.Method,
+                        createLocation(animalFile.getAbsolutePath(), Ranges.UNDEFINED_RANGE),
+                        Optional.of("Animal")),
+                createSymbolInformation("$INIT", SymbolKind.Method,
+                        createLocation(animalFile.getAbsolutePath(), Ranges.UNDEFINED_RANGE),
+                        Optional.of("Animal")),
+                createSymbolInformation("MIN_VALUE", SymbolKind.Field,
+                        createLocation(animalFile.getAbsolutePath(), Ranges.UNDEFINED_RANGE),
+                        Optional.of("Animal")));
         // We check the references, after filtering out the generated ones.
-        assertEquals(expectedResult, wrapper.getTypeReferences().get("Animal").stream()
-                .filter(symbol -> Ranges.isValid(symbol.getLocation().getRange())).collect(Collectors.toSet()));
+        assertEquals(expectedResult, wrapper.getTypeReferences().get("Animal"));
         assertEquals(expectedResult,
-                wrapper.findReferences(createReferenceParams(animalFile.getAbsolutePath(), 1, 6, false)).stream()
-                        .filter(symbol -> Ranges.isValid(symbol.getLocation().getRange())).collect(Collectors.toSet()));
+                wrapper.findReferences(createReferenceParams(animalFile.getAbsolutePath(), 1, 6, false)));
     }
 
     @Test
