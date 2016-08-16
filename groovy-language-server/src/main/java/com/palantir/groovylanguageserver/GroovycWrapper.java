@@ -29,9 +29,9 @@ import io.typefox.lsapi.DiagnosticSeverity;
 import io.typefox.lsapi.Location;
 import io.typefox.lsapi.Position;
 import io.typefox.lsapi.Range;
+import io.typefox.lsapi.ReferenceParams;
 import io.typefox.lsapi.SymbolInformation;
 import io.typefox.lsapi.SymbolKind;
-import io.typefox.lsapi.TextDocumentPositionParams;
 import io.typefox.lsapi.builders.LocationBuilder;
 import io.typefox.lsapi.builders.SymbolInformationBuilder;
 import java.io.File;
@@ -135,7 +135,7 @@ public final class GroovycWrapper implements CompilerWrapper {
     }
 
     @Override
-    public Set<SymbolInformation> findReferences(TextDocumentPositionParams params) {
+    public Set<SymbolInformation> findReferences(ReferenceParams params) {
         Set<SymbolInformation> symbols = fileSymbols.get(params.getTextDocument().getUri());
         if (symbols == null) {
             return Sets.newHashSet();
@@ -158,12 +158,17 @@ public final class GroovycWrapper implements CompilerWrapper {
             return Sets.newHashSet();
         }
 
-        String symbolName = Iterables.getOnlyElement(foundSymbolInformations).getName();
-        if (references.containsKey(symbolName)) {
-            return references.get(symbolName);
+        SymbolInformation foundSymbol = Iterables.getOnlyElement(foundSymbolInformations);
+        Set<SymbolInformation> foundReferences = Sets.newHashSet();
+
+        if (params.getContext().isIncludeDeclaration()) {
+            foundReferences.add(foundSymbol);
+        }
+        if (references.containsKey(foundSymbol.getName())) {
+            foundReferences.addAll(references.get(foundSymbol.getName()));
         }
 
-        return Sets.newHashSet();
+        return foundReferences;
     }
 
     @Override

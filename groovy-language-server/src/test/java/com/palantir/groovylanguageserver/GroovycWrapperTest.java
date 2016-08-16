@@ -29,12 +29,12 @@ import com.palantir.groovylanguageserver.util.DefaultDiagnosticBuilder;
 import com.palantir.groovylanguageserver.util.Ranges;
 import io.typefox.lsapi.Diagnostic;
 import io.typefox.lsapi.DiagnosticSeverity;
+import io.typefox.lsapi.ReferenceParams;
 import io.typefox.lsapi.SymbolInformation;
 import io.typefox.lsapi.SymbolKind;
-import io.typefox.lsapi.TextDocumentPositionParams;
 import io.typefox.lsapi.builders.LocationBuilder;
+import io.typefox.lsapi.builders.ReferenceParamsBuilder;
 import io.typefox.lsapi.builders.SymbolInformationBuilder;
-import io.typefox.lsapi.builders.TextDocumentPositionParamsBuilder;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -421,9 +421,9 @@ public final class GroovycWrapperTest {
         assertEquals(0, diagnostics.size());
 
         // Right before "Cat", therefore should not find any symbol
-        assertEquals(0, wrapper.findReferences(createTextDocumentPositionParams(file.getAbsolutePath(), 8, 1)).size());
+        assertEquals(0, wrapper.findReferences(createReferenceParams(file.getAbsolutePath(), 8, 1, false)).size());
         // Right after "Cat", therefore should not find any symbol
-        assertEquals(0, wrapper.findReferences(createTextDocumentPositionParams(file.getAbsolutePath(), 11, 3)).size());
+        assertEquals(0, wrapper.findReferences(createReferenceParams(file.getAbsolutePath(), 11, 3, false)).size());
 
         // InnerCat2 references - testing finding more specific symbols that are contained inside another symbol's
         // range.
@@ -434,7 +434,7 @@ public final class GroovycWrapperTest {
                         SymbolKind.Method, -1, -1, -1, -1, Optional.of("Cat2")),
                 createSymbolInformation("value", file.getAbsolutePath(),
                         SymbolKind.Variable, -1, -1, -1, -1, Optional.of("setMyFriend"))),
-                wrapper.findReferences(createTextDocumentPositionParams(file.getAbsolutePath(), 14, 10)));
+                wrapper.findReferences(createReferenceParams(file.getAbsolutePath(), 14, 10, false)));
     }
 
     @Test
@@ -577,11 +577,11 @@ public final class GroovycWrapperTest {
         assertEquals(0, diagnostics.size());
         // ExtendedCoordinates has no references
         assertEquals(0, wrapper
-                .findReferences(createTextDocumentPositionParams(extendedCoordinatesFile.getAbsolutePath(), 1, 8))
+                .findReferences(createReferenceParams(extendedCoordinatesFile.getAbsolutePath(), 1, 8, false))
                 .size());
         // ExtendedCoordinates2 has no references
         assertEquals(0, wrapper
-                .findReferences(createTextDocumentPositionParams(extendedCoordinates2File.getAbsolutePath(), 1, 8))
+                .findReferences(createReferenceParams(extendedCoordinates2File.getAbsolutePath(), 1, 8, false))
                 .size());
         // Coordinates reference
         assertEquals(
@@ -590,24 +590,24 @@ public final class GroovycWrapperTest {
                                 SymbolKind.Class, 1, 1, 5, 2, Optional.absent()),
                         createSymbolInformation("ExtendedCoordinates2", extendedCoordinates2File.getAbsolutePath(),
                                 SymbolKind.Class, 1, 1, 5, 2, Optional.absent())),
-                wrapper.findReferences(createTextDocumentPositionParams(coordinatesFile.getAbsolutePath(), 1, 10)));
+                wrapper.findReferences(createReferenceParams(coordinatesFile.getAbsolutePath(), 1, 10, false)));
         // ICoordinates reference
         assertEquals(
                 Sets.newHashSet(createSymbolInformation("Coordinates", coordinatesFile.getAbsolutePath(),
                         SymbolKind.Class, 1, 1, 18, 2, Optional.absent())),
-                wrapper.findReferences(createTextDocumentPositionParams(icoordinatesFile.getAbsolutePath(), 1, 15)));
+                wrapper.findReferences(createReferenceParams(icoordinatesFile.getAbsolutePath(), 1, 15, false)));
         // AbstractCoordinates reference
         assertEquals(
                 Sets.newHashSet(createSymbolInformation("Coordinates", coordinatesFile.getAbsolutePath(),
                         SymbolKind.Class, 1, 1, 18, 2, Optional.absent())),
                 wrapper.findReferences(
-                        createTextDocumentPositionParams(abstractCoordinatesFile.getAbsolutePath(), 1, 20)));
+                        createReferenceParams(abstractCoordinatesFile.getAbsolutePath(), 1, 20, false)));
         // ICoordinatesSuper reference
         assertEquals(
                 Sets.newHashSet(createSymbolInformation("ICoordinates", icoordinatesFile.getAbsolutePath(),
                         SymbolKind.Interface, 1, 1, 3, 2, Optional.absent())),
                 wrapper.findReferences(
-                        createTextDocumentPositionParams(icoordinatesSuperFile.getAbsolutePath(), 1, 14)));
+                        createReferenceParams(icoordinatesSuperFile.getAbsolutePath(), 1, 14, false)));
     }
 
     @Test
@@ -684,7 +684,7 @@ public final class GroovycWrapperTest {
 
         // Find references on position on top of Cat
         Set<SymbolInformation> referenceLocations =
-                wrapper.findReferences(createTextDocumentPositionParams(catFile.getAbsolutePath(), 1, 8));
+                wrapper.findReferences(createReferenceParams(catFile.getAbsolutePath(), 1, 8, false));
 
         assertEquals(Sets.newHashSet(Sets.newHashSet(
                 createSymbolInformation("friend1", dogFile.getAbsolutePath(),
@@ -710,7 +710,7 @@ public final class GroovycWrapperTest {
 
         // No references for Dog
         assertEquals(0,
-                wrapper.findReferences(createTextDocumentPositionParams(dogFile.getAbsolutePath(), 1, 8)).size());
+                wrapper.findReferences(createReferenceParams(dogFile.getAbsolutePath(), 1, 8, false)).size());
     }
 
     @Test
@@ -767,7 +767,7 @@ public final class GroovycWrapperTest {
         assertEquals(0, diagnostics.size());
 
         Set<SymbolInformation> referenceLocations =
-                wrapper.findReferences(createTextDocumentPositionParams(catFile.getAbsolutePath(), 1, 8));
+                wrapper.findReferences(createReferenceParams(catFile.getAbsolutePath(), 1, 8, false));
         assertEquals(Sets.newHashSet(
                 createSymbolInformation("friend1", scriptFile.getAbsolutePath(),
                         SymbolKind.Variable, 1, 5, 1, 12, Optional.of("MyScript")),
@@ -805,8 +805,9 @@ public final class GroovycWrapperTest {
                 .build();
     }
 
-    private static TextDocumentPositionParams createTextDocumentPositionParams(String uri, int line, int col) {
-        return new TextDocumentPositionParamsBuilder()
+    private static ReferenceParams createReferenceParams(String uri, int line, int col, boolean includeDeclaration) {
+        return (ReferenceParams) new ReferenceParamsBuilder()
+                .context(includeDeclaration)
                 .textDocument(uri)
                 .position(line, col)
                 .uri(uri).build();

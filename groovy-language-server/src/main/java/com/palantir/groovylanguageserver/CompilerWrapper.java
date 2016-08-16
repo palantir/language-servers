@@ -17,8 +17,8 @@
 package com.palantir.groovylanguageserver;
 
 import io.typefox.lsapi.Diagnostic;
+import io.typefox.lsapi.ReferenceParams;
 import io.typefox.lsapi.SymbolInformation;
-import io.typefox.lsapi.TextDocumentPositionParams;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.Set;
@@ -52,7 +52,7 @@ public interface CompilerWrapper {
      * @param params the parameters used to filter down which symbol is referenced
      * @return the set of locations
      */
-    Set<SymbolInformation> findReferences(TextDocumentPositionParams params);
+    Set<SymbolInformation> findReferences(ReferenceParams params);
 
     /**
      * Returns a list of symbols filtered based on a wildcard query.
