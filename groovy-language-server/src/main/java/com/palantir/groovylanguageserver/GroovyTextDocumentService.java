@@ -92,9 +92,11 @@ public final class GroovyTextDocumentService implements TextDocumentService {
 
     @Override
     public CompletableFuture<List<? extends Location>> references(ReferenceParams params) {
-        return CompletableFuture
-                .completedFuture(provider.get().findReferences(params).stream().map(symbol -> symbol.getLocation())
-                        .filter(location -> Ranges.isValid(location.getRange())).collect(Collectors.toList()));
+        return CompletableFuture.completedFuture(
+                provider.get().findReferences(params).stream()
+                        .map(symbol -> symbol.getLocation())
+                        .filter(location -> Ranges.isValid(location.getRange()))
+                        .collect(Collectors.toList()));
     }
 
     @Override
