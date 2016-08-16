@@ -396,6 +396,72 @@ public final class GroovycWrapperTest {
     }
 
     @Test
+    public void testReferences_edgeCases() throws IOException {
+        File newFolder1 = root.newFolder();
+        // edge cases, intersecting ranges
+        File file = addFileToFolder(newFolder1, "Dog.groovy",
+                "class Dog {\n"
+                + "   Cat friend1;\n"
+                + "   Cat2 friend2;\n"
+                + "   Cat bark(Cat enemy) {\n"
+                + "      println \"Bark! \" + enemy.name\n"
+                + "      return friend1\n"
+                + "   }\n"
+                + "}\n"
+                + "class Cat {\n"
+                + "   public String name = \"Bobby\"\n"
+                + "}\n"
+                + "class Cat2 {\n"
+                + "   InnerCat2 myFriend;\n"
+                + "   class InnerCat2 {\n"
+                + "   }\n"
+                + "}\n");
+        // edge case on one line
+        File enumFile = addFileToFolder(newFolder1, "MyEnum.groovy",
+                "enum MyEnum {ONE,TWO}\n");
+        // edge case on one line
+        File innerClass = addFileToFolder(newFolder1, "AandB.groovy",
+                "public class A {public static class B {}\n"
+                        + "A a\n"
+                        + "B b\n"
+                + "}\n");
+        GroovycWrapper wrapper = GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath());
+        Set<Diagnostic> diagnostics = wrapper.compile();
+        assertEquals(0, diagnostics.size());
+
+        // InnerCat2 references - testing finding more specific symbols that are contained inside another symbol's
+        // range.
+        assertEquals(Sets.newHashSet(
+                createSymbolInformation("myFriend", file.getAbsolutePath(),
+                        SymbolKind.Field, 13, 4, 13, 22, Optional.of("Cat2")),
+                createSymbolInformation("getMyFriend", file.getAbsolutePath(),
+                        SymbolKind.Method, -1, -1, -1, -1, Optional.of("Cat2")),
+                createSymbolInformation("value", file.getAbsolutePath(),
+                        SymbolKind.Variable, -1, -1, -1, -1, Optional.of("setMyFriend"))),
+                wrapper.getTypeReferences().get("Cat2$InnerCat2"));
+        // Find one line enum correctly
+        assertEquals(Sets.newHashSet(
+                createSymbolInformation("ONE", enumFile.getAbsolutePath(),
+                        SymbolKind.Field, 1, 14, 1, 17, Optional.of("MyEnum")),
+                createSymbolInformation("TWO", enumFile.getAbsolutePath(),
+                        SymbolKind.Field, 1, 18, 1, 21, Optional.of("MyEnum"))),
+                wrapper.getTypeReferences().get("MyEnum").stream()
+                        .filter(symbol -> Ranges.isValid(symbol.getLocation().getRange())).collect(Collectors.toSet()));
+        // Identify type A correctly
+        assertEquals(Sets.newHashSet(
+                createSymbolInformation("a", innerClass.getAbsolutePath(),
+                        SymbolKind.Field, 2, 1, 2, 4, Optional.of("A"))),
+                wrapper.getTypeReferences().get("A").stream()
+                        .filter(symbol -> Ranges.isValid(symbol.getLocation().getRange())).collect(Collectors.toSet()));
+        // Identify type B correctly
+        assertEquals(Sets.newHashSet(
+                createSymbolInformation("b", innerClass.getAbsolutePath(),
+                        SymbolKind.Field, 3, 1, 3, 4, Optional.of("A"))),
+                wrapper.getTypeReferences().get("A$B").stream()
+                        .filter(symbol -> Ranges.isValid(symbol.getLocation().getRange())).collect(Collectors.toSet()));
+    }
+
+    @Test
     public void testFindReferences_edgeCases() throws IOException {
         File newFolder1 = root.newFolder();
         // edge cases, intersecting ranges
@@ -419,9 +485,14 @@ public final class GroovycWrapperTest {
         // edge case on one line
         File enumFile = addFileToFolder(newFolder1, "MyEnum.groovy",
                 "enum MyEnum {ONE,TWO}\n");
+        // edge case on one line
+        File innerClass = addFileToFolder(newFolder1, "AandB.groovy",
+                "public class A {public static class B {}\n"
+                        + "A a\n"
+                        + "B b\n"
+                + "}\n");
         GroovycWrapper wrapper = GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath());
         Set<Diagnostic> diagnostics = wrapper.compile();
-        System.out.println(diagnostics);
         assertEquals(0, diagnostics.size());
 
         // Right before "Cat", therefore should not find any symbol
@@ -439,6 +510,7 @@ public final class GroovycWrapperTest {
                 createSymbolInformation("value", file.getAbsolutePath(),
                         SymbolKind.Variable, -1, -1, -1, -1, Optional.of("setMyFriend"))),
                 wrapper.findReferences(createReferenceParams(file.getAbsolutePath(), 14, 10, false)));
+        // Find one line enum correctly
         assertEquals(Sets.newHashSet(
                 createSymbolInformation("ONE", enumFile.getAbsolutePath(),
                         SymbolKind.Field, 1, 14, 1, 17, Optional.of("MyEnum")),
@@ -446,27 +518,36 @@ public final class GroovycWrapperTest {
                         SymbolKind.Field, 1, 18, 1, 21, Optional.of("MyEnum"))),
                 wrapper.findReferences(createReferenceParams(enumFile.getAbsolutePath(), 1, 7, false)).stream()
                         .filter(symbol -> Ranges.isValid(symbol.getLocation().getRange())).collect(Collectors.toSet()));
+        // Identify type A correctly
+        assertEquals(Sets.newHashSet(
+                createSymbolInformation("a", innerClass.getAbsolutePath(),
+                        SymbolKind.Field, 2, 1, 2, 4, Optional.of("A"))),
+                wrapper.findReferences(createReferenceParams(innerClass.getAbsolutePath(), 1, 7, false)).stream()
+                .filter(symbol -> Ranges.isValid(symbol.getLocation().getRange())).collect(Collectors.toSet()));
+        // Identify type B correctly
+        assertEquals(Sets.newHashSet(
+                createSymbolInformation("b", innerClass.getAbsolutePath(),
+                        SymbolKind.Field, 3, 1, 3, 4, Optional.of("A"))),
+                wrapper.findReferences(createReferenceParams(innerClass.getAbsolutePath(), 1, 18, false)).stream()
+                .filter(symbol -> Ranges.isValid(symbol.getLocation().getRange())).collect(Collectors.toSet()));
     }
 
     @Test
     public void testReferences_classesAndInterfaces() throws InterruptedException, ExecutionException, IOException {
         File newFolder1 = root.newFolder();
-        File extendedCoordinatesFile =
-                addFileToFolder(newFolder1, "ExtendedCoordinates.groovy",
+        File extendedCoordinatesFile = addFileToFolder(newFolder1, "ExtendedCoordinates.groovy",
                         "class ExtendedCoordinates extends Coordinates{\n"
                                 + "   void somethingElse() {\n"
                                 + "      println \"Hi again!\"\n"
                                 + "   }\n"
                                 + "}\n");
-        File extendedCoordinates2File =
-                addFileToFolder(newFolder1, "ExtendedCoordinates2.groovy",
+        File extendedCoordinates2File = addFileToFolder(newFolder1, "ExtendedCoordinates2.groovy",
                         "class ExtendedCoordinates2 extends Coordinates{\n"
                                 + "   void somethingElse() {\n"
                                 + "      println \"Hi again!\"\n"
                                 + "   }\n"
                                 + "}\n");
-        File coordinatesFile =
-                addFileToFolder(newFolder1, "Coordinates.groovy",
+        File coordinatesFile = addFileToFolder(newFolder1, "Coordinates.groovy",
                         "class Coordinates extends AbstractCoordinates implements ICoordinates {\n"
                                 + "   double latitude\n"
                                 + "   double longitude\n"
@@ -485,8 +566,7 @@ public final class GroovycWrapperTest {
                                 + "      println \"Hi!\"\n"
                                 + "   }\n"
                                 + "}\n");
-        File icoordinatesFile =
-                addFileToFolder(newFolder1, "ICoordinates.groovy",
+        File icoordinatesFile = addFileToFolder(newFolder1, "ICoordinates.groovy",
                         "interface ICoordinates extends ICoordinatesSuper{\n"
                                 + "   abstract double getAt(int idx);\n"
                                 + "}\n");
@@ -534,22 +614,19 @@ public final class GroovycWrapperTest {
     @Test
     public void testFindReferences_classesAndInterfaces() throws InterruptedException, ExecutionException, IOException {
         File newFolder1 = root.newFolder();
-        File extendedCoordinatesFile =
-                addFileToFolder(newFolder1, "ExtendedCoordinates.groovy",
+        File extendedCoordinatesFile = addFileToFolder(newFolder1, "ExtendedCoordinates.groovy",
                         "class ExtendedCoordinates extends Coordinates{\n"
                                 + "   void somethingElse() {\n"
                                 + "      println \"Hi again!\"\n"
                                 + "   }\n"
                                 + "}\n");
-        File extendedCoordinates2File =
-                addFileToFolder(newFolder1, "ExtendedCoordinates2.groovy",
+        File extendedCoordinates2File = addFileToFolder(newFolder1, "ExtendedCoordinates2.groovy",
                         "class ExtendedCoordinates2 extends Coordinates{\n"
                                 + "   void somethingElse() {\n"
                                 + "      println \"Hi again!\"\n"
                                 + "   }\n"
                                 + "}\n");
-        File coordinatesFile =
-                addFileToFolder(newFolder1, "Coordinates.groovy",
+        File coordinatesFile = addFileToFolder(newFolder1, "Coordinates.groovy",
                         "class Coordinates extends AbstractCoordinates implements ICoordinates {\n"
                                 + "   double latitude\n"
                                 + "   double longitude\n"
@@ -568,18 +645,15 @@ public final class GroovycWrapperTest {
                                 + "      println \"Hi!\"\n"
                                 + "   }\n"
                                 + "}\n");
-        File icoordinatesFile =
-                addFileToFolder(newFolder1, "ICoordinates.groovy",
+        File icoordinatesFile = addFileToFolder(newFolder1, "ICoordinates.groovy",
                         "interface ICoordinates extends ICoordinatesSuper{\n"
                                 + "   abstract double getAt(int idx);\n"
                                 + "}\n");
-        File icoordinatesSuperFile =
-                addFileToFolder(newFolder1, "ICoordinatesSuper.groovy",
+        File icoordinatesSuperFile = addFileToFolder(newFolder1, "ICoordinatesSuper.groovy",
                 "interface ICoordinatesSuper {\n"
                         + "   abstract void superInterfaceMethod()\n"
                         + "}\n");
-        File abstractCoordinatesFile =
-                addFileToFolder(newFolder1, "AbstractCoordinates.groovy",
+        File abstractCoordinatesFile = addFileToFolder(newFolder1, "AbstractCoordinates.groovy",
                 "abstract class AbstractCoordinates {\n"
                         + "   abstract void something();\n"
                                 + "}\n");
@@ -624,8 +698,7 @@ public final class GroovycWrapperTest {
     @Test
     public void testReferences_fields() throws IOException {
         File newFolder1 = root.newFolder();
-        File dogFile =
-                addFileToFolder(newFolder1, "Dog.groovy",
+        File dogFile = addFileToFolder(newFolder1, "Dog.groovy",
                         "class Dog {\n"
                                 + "   Cat friend1;\n"
                                 + "   Cat friend2;\n"
@@ -673,8 +746,7 @@ public final class GroovycWrapperTest {
     @Test
     public void testFindReferences_fields() throws IOException {
         File newFolder1 = root.newFolder();
-        File dogFile =
-                addFileToFolder(newFolder1, "Dog.groovy",
+        File dogFile = addFileToFolder(newFolder1, "Dog.groovy",
                         "class Dog {\n"
                                 + "   Cat friend1;\n"
                                 + "   Cat friend2;\n"
@@ -684,8 +756,7 @@ public final class GroovycWrapperTest {
                                 + "   }\n"
                                 + "}\n");
 
-        File catFile =
-                addFileToFolder(newFolder1, "Cat.groovy",
+        File catFile = addFileToFolder(newFolder1, "Cat.groovy",
                         "class Cat {\n"
                                 + "   public String name = \"Bobby\"\n"
                                 + "}\n");
@@ -727,8 +798,7 @@ public final class GroovycWrapperTest {
     @Test
     public void testReferences_script() throws IOException {
         File newFolder1 = root.newFolder();
-        File scriptFile =
-                addFileToFolder(newFolder1, "MyScript.groovy",
+        File scriptFile = addFileToFolder(newFolder1, "MyScript.groovy",
                         "Cat friend1;\n"
                                 + "bark(friend1)\n"
                                 + "Cat bark(Cat enemy) {\n"
@@ -758,8 +828,7 @@ public final class GroovycWrapperTest {
     @Test
     public void testFindReferences_script() throws IOException {
         File newFolder1 = root.newFolder();
-        File scriptFile =
-                addFileToFolder(newFolder1, "MyScript.groovy",
+        File scriptFile = addFileToFolder(newFolder1, "MyScript.groovy",
                         "Cat friend1;\n"
                                 + "bark(friend1)\n"
                                 + "Cat bark(Cat enemy) {\n"
@@ -767,8 +836,7 @@ public final class GroovycWrapperTest {
                                 + "   return enemy\n"
                                 + "}\n"
                                 + "\n");
-        File catFile =
-                addFileToFolder(newFolder1, "Cat.groovy",
+        File catFile = addFileToFolder(newFolder1, "Cat.groovy",
                 "class Cat {\n"
                         + "}\n");
         GroovycWrapper wrapper = GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath());
@@ -790,8 +858,7 @@ public final class GroovycWrapperTest {
     @Test
     public void testReferences_enum() throws IOException {
         File newFolder1 = root.newFolder();
-        File scriptFile =
-                addFileToFolder(newFolder1, "MyScript.groovy",
+        File scriptFile = addFileToFolder(newFolder1, "MyScript.groovy",
                         "Animal friend = Animal.CAT;\n"
                                 + "pet(friend1)\n"
                                 + "Animal pet(Animal animal) {\n"
@@ -827,12 +894,10 @@ public final class GroovycWrapperTest {
                         .collect(Collectors.toSet()));
     }
 
-
     @Test
     public void testFindReferences_enum() throws IOException {
         File newFolder1 = root.newFolder();
-        File scriptFile =
-                addFileToFolder(newFolder1, "MyScript.groovy",
+        File scriptFile = addFileToFolder(newFolder1, "MyScript.groovy",
                         "Animal friend = Animal.CAT;\n"
                                 + "pet(friend1)\n"
                                 + "Animal pet(Animal animal) {\n"
@@ -872,8 +937,7 @@ public final class GroovycWrapperTest {
     @Test
     public void testFindReferences_includeDeclaration() throws IOException {
         File newFolder1 = root.newFolder();
-        File scriptFile =
-                addFileToFolder(newFolder1, "MyScript.groovy",
+        File scriptFile = addFileToFolder(newFolder1, "MyScript.groovy",
                         "Cat friend1;\n"
                                 + "bark(friend1)\n"
                                 + "Cat bark(Cat enemy) {\n"
@@ -881,8 +945,7 @@ public final class GroovycWrapperTest {
                                 + "   return enemy\n"
                                 + "}\n"
                                 + "\n");
-        File catFile =
-                addFileToFolder(newFolder1, "Cat.groovy",
+        File catFile = addFileToFolder(newFolder1, "Cat.groovy",
                 "class Cat {\n"
                         + "}\n");
         GroovycWrapper wrapper = GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath());
@@ -931,6 +994,7 @@ public final class GroovycWrapperTest {
     }
 
     private static ReferenceParams createReferenceParams(String uri, int line, int col, boolean includeDeclaration) {
+        // HACK, blocked on https://github.com/TypeFox/ls-api/issues/39
         return (ReferenceParams) new ReferenceParamsBuilder()
                 .context(includeDeclaration)
                 .textDocument(uri)

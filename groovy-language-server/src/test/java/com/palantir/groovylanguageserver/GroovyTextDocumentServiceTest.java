@@ -89,14 +89,14 @@ public final class GroovyTextDocumentServiceTest {
         symbolsMap.put(WORKSPACE_PATH.resolve("something.groovy").toString(), Sets.newHashSet(symbol));
 
         expectedReferences.add(new SymbolInformationBuilder()
-                                .containerName("Something")
-                                .kind(SymbolKind.Class)
-                                .name("MyClassName")
-                                .location(new LocationBuilder()
-                                            .uri("uri")
-                                            .range(Ranges.createRange(1, 1, 9, 9))
-                                            .build())
-                                .build());
+                .containerName("Something")
+                .kind(SymbolKind.Class)
+                .name("MyClassName")
+                .location(new LocationBuilder()
+                        .uri("uri")
+                        .range(Ranges.createRange(1, 1, 9, 9))
+                        .build())
+                .build());
         expectedReferences.add(new SymbolInformationBuilder()
                 .containerName("SomethingElse")
                 .kind(SymbolKind.Class)
@@ -202,6 +202,7 @@ public final class GroovyTextDocumentServiceTest {
 
     @Test
     public void testReferences() throws InterruptedException, ExecutionException {
+        // HACK, blocked on https://github.com/TypeFox/ls-api/issues/39
         ReferenceParams params =
                 (ReferenceParams) new ReferenceParamsBuilder().context(false).position(5, 5).textDocument("uri")
                         .uri("uri").build();

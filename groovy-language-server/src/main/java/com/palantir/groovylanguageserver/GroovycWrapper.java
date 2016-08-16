@@ -18,7 +18,6 @@ package com.palantir.groovylanguageserver;
 
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.io.Files;
@@ -27,7 +26,6 @@ import com.palantir.groovylanguageserver.util.Ranges;
 import io.typefox.lsapi.Diagnostic;
 import io.typefox.lsapi.DiagnosticSeverity;
 import io.typefox.lsapi.Location;
-import io.typefox.lsapi.Position;
 import io.typefox.lsapi.Range;
 import io.typefox.lsapi.ReferenceParams;
 import io.typefox.lsapi.SymbolInformation;
@@ -39,6 +37,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -140,26 +139,21 @@ public final class GroovycWrapper implements CompilerWrapper {
         if (symbols == null) {
             return Sets.newHashSet();
         }
-        Set<SymbolInformation> foundSymbolInformations = symbols.stream()
-                .filter(s -> {
-                    // If we are given a position that is located within the first line of this symbol's location, then
-                    // this is its definition and is likely to be the symbol we are trying to find.
-                    Position startPosition = s.getLocation().getRange().getStart();
-                    Range definitionRange =
-                            Ranges.createRange(startPosition.getLine(), startPosition.getCharacter(),
-                                    startPosition.getLine() + 1, 0);
-                    return Ranges.isValid(s.getLocation().getRange())
-                            && Ranges.contains(definitionRange, params.getPosition())
+        List<SymbolInformation> foundSymbolInformations = symbols.stream()
+                .filter(s -> Ranges.isValid(s.getLocation().getRange())
+                            && Ranges.contains(s.getLocation().getRange(), params.getPosition())
                             && (s.getKind() == SymbolKind.Class || s.getKind() == SymbolKind.Interface
-                                    || s.getKind() == SymbolKind.Enum);
-                })
-                .collect(Collectors.toSet());
+                                    || s.getKind() == SymbolKind.Enum))
+                // If there is more than one result, we want the symbol whose range starts the latest.
+                .sorted((s1, s2) -> Ranges.POSITION_COMPARATOR.compare(s2.getLocation().getRange().getStart(),
+                        s1.getLocation().getRange().getStart()))
+                .collect(Collectors.toList());
 
         if (foundSymbolInformations.isEmpty()) {
             return Sets.newHashSet();
         }
 
-        SymbolInformation foundSymbol = Iterables.getOnlyElement(foundSymbolInformations);
+        SymbolInformation foundSymbol = foundSymbolInformations.get(0);
         Set<SymbolInformation> foundReferences = Sets.newHashSet();
 
         if (params.getContext().isIncludeDeclaration()) {
@@ -233,7 +227,7 @@ public final class GroovycWrapper implements CompilerWrapper {
 
     private void parseAllSymbols() {
         Map<String, Set<SymbolInformation>> newFileSymbols = Maps.newHashMap();
-        Map<String, Set<SymbolInformation>> newReferences = Maps.newHashMap();
+        Map<String, Set<SymbolInformation>> newTypeReferences = Maps.newHashMap();
 
         unit.iterator().forEachRemaining(sourceUnit -> {
             Set<SymbolInformation> symbols = Sets.newHashSet();
@@ -250,26 +244,25 @@ public final class GroovycWrapper implements CompilerWrapper {
                 // Add implemented interfaces reference
                 for (ClassNode node : clazz.getInterfaces()) {
                     if (!node.getName().equals(GROOVY_DEFAULT_INTERFACE)) {
-                        newReferences.computeIfAbsent(node.getName(), (value) -> Sets.newHashSet()).add(classSymbol);
+                        addToValueSet(newTypeReferences, node.getName(), classSymbol);
                     }
                 }
                 // Add extended class reference
                 if (clazz.getSuperClass() != null && !clazz.getSuperClass().getName().equals(JAVA_DEFAULT_OBJECT)) {
-                    newReferences.computeIfAbsent(clazz.getSuperClass().getName(), (value) -> Sets.newHashSet())
-                            .add(classSymbol);
+                    addToValueSet(newTypeReferences, clazz.getSuperClass().getName(), classSymbol);
                 }
 
                 // Add all the class's field symbols
                 clazz.getFields().forEach(field -> {
                     SymbolInformation symbol = getVariableSymbolInformation(clazz.getName(), sourcePath, field);
-                    newReferences.computeIfAbsent(field.getType().getName(), (value) -> Sets.newHashSet()).add(symbol);
+                    addToValueSet(newTypeReferences, field.getType().getName(), symbol);
                     symbols.add(symbol);
                 });
 
                 // Add all method symbols
                 clazz.getAllDeclaredMethods()
                         .forEach(method -> {
-                            symbols.addAll(getMethodSymbolInformations(newReferences, sourcePath, clazz, method));
+                            symbols.addAll(getMethodSymbolInformations(newTypeReferences, sourcePath, clazz, method));
                         });
             });
 
@@ -281,15 +274,14 @@ public final class GroovycWrapper implements CompilerWrapper {
                         variable -> {
                             SymbolInformation symbol =
                                     getVariableSymbolInformation(scriptClass.getName(), sourcePath, variable);
-                            newReferences.computeIfAbsent(variable.getType().getName(), (value) -> Sets.newHashSet())
-                                    .add(symbol);
+                            addToValueSet(newTypeReferences, variable.getType().getName(), symbol);
                             symbols.add(symbol);
                         });
             }
             newFileSymbols.put(sourcePath, symbols);
         });
         // Set the new references and new symbols
-        typeReferences = newReferences;
+        typeReferences = newTypeReferences;
         fileSymbols = newFileSymbols;
     }
 
@@ -327,7 +319,7 @@ public final class GroovycWrapper implements CompilerWrapper {
                 Optional.of(parentName));
     }
 
-    private Set<SymbolInformation> getMethodSymbolInformations(Map<String, Set<SymbolInformation>> newReferences,
+    private Set<SymbolInformation> getMethodSymbolInformations(Map<String, Set<SymbolInformation>> newTypeReferences,
             String sourcePath, ClassNode parent, MethodNode method) {
         Set<SymbolInformation> symbols = Sets.newHashSet();
 
@@ -335,12 +327,11 @@ public final class GroovycWrapper implements CompilerWrapper {
                 createSymbolInformation(method.getName(), SymbolKind.Method, createLocation(sourcePath, method),
                         Optional.of(parent.getName()));
         symbols.add(methodSymbol);
-        newReferences.computeIfAbsent(method.getReturnType().getName(), (value) -> Sets.newHashSet()).add(methodSymbol);
+        addToValueSet(newTypeReferences, method.getReturnType().getName(), methodSymbol);
 
         method.getVariableScope().getDeclaredVariables().values().forEach(variable -> {
             SymbolInformation variableSymbol = getVariableSymbolInformation(method.getName(), sourcePath, variable);
-            newReferences.computeIfAbsent(variable.getType().getName(), (value) -> Sets.newHashSet())
-                    .add(variableSymbol);
+            addToValueSet(newTypeReferences, variable.getType().getName(), variableSymbol);
             symbols.add(variableSymbol);
         });
         return symbols;
@@ -362,6 +353,10 @@ public final class GroovycWrapper implements CompilerWrapper {
                 .range(Ranges.createRange(node.getLineNumber(), node.getColumnNumber(), node.getLastLineNumber(),
                         node.getLastColumnNumber()))
                 .build();
+    }
+
+    private static void addToValueSet(Map<String, Set<SymbolInformation>> map, String key, SymbolInformation symbol) {
+        map.computeIfAbsent(key, (value) -> Sets.newHashSet()).add(symbol);
     }
 
 }
