@@ -778,6 +778,41 @@ public final class GroovycWrapperTest {
                         SymbolKind.Method, 3, 1, 6, 2, Optional.of("MyScript"))), referenceLocations);
     }
 
+
+    @Test
+    public void testFindReferences_includeDeclaration() throws IOException {
+        File newFolder1 = root.newFolder();
+        File scriptFile =
+                addFileToFolder(newFolder1, "MyScript.groovy",
+                        "Cat friend1;\n"
+                                + "bark(friend1)\n"
+                                + "Cat bark(Cat enemy) {\n"
+                                + "   println \"Bark! \"\n"
+                                + "   return enemy\n"
+                                + "}\n"
+                                + "\n");
+        File catFile =
+                addFileToFolder(newFolder1, "Cat.groovy",
+                "class Cat {\n"
+                        + "}\n");
+        GroovycWrapper wrapper = GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath());
+        Set<Diagnostic> diagnostics = wrapper.compile();
+        assertEquals(0, diagnostics.size());
+
+        Set<SymbolInformation> referenceLocations =
+                wrapper.findReferences(createReferenceParams(catFile.getAbsolutePath(), 1, 8, true));
+        assertEquals(Sets.newHashSet(
+                createSymbolInformation("friend1", scriptFile.getAbsolutePath(),
+                        SymbolKind.Variable, 1, 5, 1, 12, Optional.of("MyScript")),
+                createSymbolInformation("enemy", scriptFile.getAbsolutePath(),
+                        SymbolKind.Variable, 3, 10, 3, 19, Optional.of("bark")),
+                // Bark method returns a Cat
+                createSymbolInformation("bark", scriptFile.getAbsolutePath(),
+                        SymbolKind.Method, 3, 1, 6, 2, Optional.of("MyScript")),
+                createSymbolInformation("Cat", catFile.getAbsolutePath(),
+                        SymbolKind.Class, 1, 1, 2, 2, Optional.absent())), referenceLocations);
+    }
+
     private boolean mapHasSymbol(Map<String, Set<SymbolInformation>> map, Optional<String> container, String fieldName,
             SymbolKind kind) {
         return map.values().stream().flatMap(Collection::stream)
