@@ -32,6 +32,11 @@ public final class Ranges {
     public static final Comparator<Position> POSITION_COMPARATOR = (p1, p2) ->
             p1.getLine() != p2.getLine() ? p1.getLine() - p2.getLine() : p1.getCharacter() - p2.getCharacter();
 
+    /**
+     * The default range to use when no range is specified. Is an invalid range in a comparison.
+     */
+    public static final Range UNDEFINED_RANGE = createRange(-1, -1, -1, -1);
+
     private Ranges() {}
 
     /**

@@ -57,7 +57,7 @@ public final class DefaultDiagnosticBuilder {
         DiagnosticBuilder builder = new DiagnosticBuilder()
                                     .message(message)
                                     .severity(severity)
-                                    .range(range.or(Ranges.createRange(-1, -1, -1, -1)))
+                                    .range(range.or(Ranges.UNDEFINED_RANGE))
                                     .source(source.or("groovyc"));
         if (code.isPresent()) {
             builder.code(code.get());

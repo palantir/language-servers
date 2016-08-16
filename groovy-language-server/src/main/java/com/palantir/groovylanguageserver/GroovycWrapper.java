@@ -33,7 +33,6 @@ import io.typefox.lsapi.SymbolInformation;
 import io.typefox.lsapi.SymbolKind;
 import io.typefox.lsapi.TextDocumentPositionParams;
 import io.typefox.lsapi.builders.LocationBuilder;
-import io.typefox.lsapi.builders.RangeBuilder;
 import io.typefox.lsapi.builders.SymbolInformationBuilder;
 import java.io.File;
 import java.io.PrintWriter;
@@ -78,9 +77,9 @@ public final class GroovycWrapper implements CompilerWrapper {
 
     private final Path workspaceRoot;
     private final CompilationUnit unit;
-    // Maps from source file -> list of symbols in that file
+    // Maps from source file -> set of symbols in that file
     private Map<String, Set<SymbolInformation>> fileSymbols = Maps.newHashMap();
-    // Maps from type -> list of references of this type
+    // Maps from type -> set of references of this type
     private Map<String, Set<SymbolInformation>> references = Maps.newHashMap();
 
     private GroovycWrapper(CompilationUnit unit, Path workspaceRoot) {
@@ -136,53 +135,35 @@ public final class GroovycWrapper implements CompilerWrapper {
     }
 
     @Override
-    public Set<Location> findReferences(TextDocumentPositionParams params) {
+    public Set<SymbolInformation> findReferences(TextDocumentPositionParams params) {
         Set<SymbolInformation> symbols = fileSymbols.get(params.getTextDocument().getUri());
         if (symbols == null) {
             return Sets.newHashSet();
         }
         Set<SymbolInformation> foundSymbolInformations = symbols.stream()
-                .filter(s -> Ranges.isValid(s.getLocation().getRange())
-                        && Ranges.contains(s.getLocation().getRange(), params.getPosition())
-                        && (s.getKind() == SymbolKind.Class || s.getKind() == SymbolKind.Interface))
+                .filter(s -> {
+                    // If we are given a position that is located within the first line of this symbol's location, then
+                    // this is its definition and is likely to be the symbol we are trying to find.
+                    Position startPosition = s.getLocation().getRange().getStart();
+                    Range definitionRange =
+                            Ranges.createRange(startPosition.getLine(), startPosition.getCharacter(),
+                                    startPosition.getLine() + 1, 0);
+                    return Ranges.isValid(s.getLocation().getRange())
+                            && Ranges.contains(definitionRange, params.getPosition())
+                            && (s.getKind() == SymbolKind.Class || s.getKind() == SymbolKind.Interface);
+                })
                 .collect(Collectors.toSet());
 
         if (foundSymbolInformations.isEmpty()) {
             return Sets.newHashSet();
         }
 
-        Optional<SymbolInformation> foundSymbol;
-        if (foundSymbolInformations.size() == 1) {
-            foundSymbol = Optional.of(Iterables.getOnlyElement(foundSymbolInformations));
-        } else {
-            foundSymbol = reduceFoundSymbolsToMostSpecific(foundSymbolInformations, params.getPosition());
-        }
-
-        if (!foundSymbol.isPresent()) {
-            return Sets.newHashSet();
-        }
-
-        String symbolName = foundSymbol.get().getName();
-        if (references.get(symbolName) != null) {
-            return references.get(symbolName).stream().map(s -> s.getLocation())
-                    .filter(l -> Ranges.isValid(l.getRange())).collect(Collectors.toSet());
+        String symbolName = Iterables.getOnlyElement(foundSymbolInformations).getName();
+        if (references.containsKey(symbolName)) {
+            return references.get(symbolName);
         }
 
         return Sets.newHashSet();
-    }
-
-    private Optional<SymbolInformation> reduceFoundSymbolsToMostSpecific(Set<SymbolInformation> symbols,
-            Position position) {
-        for (SymbolInformation symbol : symbols) {
-            Position startPosition = symbol.getLocation().getRange().getStart();
-            // If we are given a position that is located within the first line of this symbol's location, then this is
-            // its definition and is likely to be the symbol we are trying to find.
-            Range newRange = new RangeBuilder().start(startPosition).end(startPosition.getLine() + 1, 0).build();
-            if (Ranges.contains(newRange, position)) {
-                return Optional.of(symbol);
-            }
-        }
-        return Optional.absent();
     }
 
     @Override
@@ -316,30 +297,23 @@ public final class GroovycWrapper implements CompilerWrapper {
     }
 
     private SymbolInformation getVariableSymbolInformation(String parentName, String sourcePath, Variable variable) {
-
         Location location;
         SymbolKind kind;
-
         if (variable instanceof DynamicVariable) {
             kind = SymbolKind.Field;
-            location = new LocationBuilder().uri(sourcePath).range(Ranges.createRange(-1, -1, -1, -1)).build();
-
+            location = new LocationBuilder().uri(sourcePath).range(Ranges.UNDEFINED_RANGE).build();
         } else if (variable instanceof FieldNode) {
             kind = SymbolKind.Field;
             location = createLocation(sourcePath, (FieldNode) variable);
-
         } else if (variable instanceof Parameter) {
             kind = SymbolKind.Variable;
             location = createLocation(sourcePath, (Parameter) variable);
-
         } else if (variable instanceof PropertyNode) {
             kind = SymbolKind.Field;
             location = createLocation(sourcePath, (PropertyNode) variable);
-
         } else if (variable instanceof VariableExpression) {
             kind = SymbolKind.Variable;
             location = createLocation(sourcePath, (VariableExpression) variable);
-
         } else {
             throw new IllegalArgumentException(String.format("Unknown type of variable: %s", variable));
         }
@@ -379,10 +353,8 @@ public final class GroovycWrapper implements CompilerWrapper {
     private static Location createLocation(String uri, ASTNode node) {
         return new LocationBuilder()
                 .uri(uri)
-                .range(new RangeBuilder()
-                        .start(node.getLineNumber(), node.getColumnNumber())
-                        .end(node.getLastLineNumber(), node.getLastColumnNumber())
-                        .build())
+                .range(Ranges.createRange(node.getLineNumber(), node.getColumnNumber(), node.getLastLineNumber(),
+                        node.getLastColumnNumber()))
                 .build();
     }
 
