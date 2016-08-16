@@ -71,8 +71,8 @@ public final class GroovycWrapper implements CompilerWrapper {
 
     private static final Logger log = LoggerFactory.getLogger(GroovycWrapper.class);
 
-    private static final String GROOVY_EXTENSION = "groovy";
     private static final String GROOVY_DEFAULT_INTERFACE = "groovy.lang.GroovyObject";
+    private static final String GROOVY_EXTENSION = "groovy";
     private static final String JAVA_DEFAULT_OBJECT = "java.lang.Object";
 
     private final Path workspaceRoot;
@@ -150,7 +150,8 @@ public final class GroovycWrapper implements CompilerWrapper {
                                     startPosition.getLine() + 1, 0);
                     return Ranges.isValid(s.getLocation().getRange())
                             && Ranges.contains(definitionRange, params.getPosition())
-                            && (s.getKind() == SymbolKind.Class || s.getKind() == SymbolKind.Interface);
+                            && (s.getKind() == SymbolKind.Class || s.getKind() == SymbolKind.Interface
+                                    || s.getKind() == SymbolKind.Enum);
                 })
                 .collect(Collectors.toSet());
 

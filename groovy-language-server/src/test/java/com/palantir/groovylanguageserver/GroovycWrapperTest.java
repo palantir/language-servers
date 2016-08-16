@@ -398,23 +398,27 @@ public final class GroovycWrapperTest {
     @Test
     public void testFindReferences_edgeCases() throws IOException {
         File newFolder1 = root.newFolder();
+        // edge cases, intersecting ranges
         File file = addFileToFolder(newFolder1, "Dog.groovy",
-                        "class Dog {\n"
-                        + "   Cat friend1;\n"
-                        + "   Cat2 friend2;\n"
-                        + "   Cat bark(Cat enemy) {\n"
-                        + "      println \"Bark! \" + enemy.name\n"
-                        + "      return friend1\n"
-                        + "   }\n"
-                        + "}\n"
-                        + "class Cat {\n"
-                        + "   public String name = \"Bobby\"\n"
-                        + "}\n"
-                        + "class Cat2 {\n"
-                        + "   InnerCat2 myFriend;\n"
-                        + "   class InnerCat2 {\n"
-                        + "   }\n"
-                        + "}\n");
+                "class Dog {\n"
+                + "   Cat friend1;\n"
+                + "   Cat2 friend2;\n"
+                + "   Cat bark(Cat enemy) {\n"
+                + "      println \"Bark! \" + enemy.name\n"
+                + "      return friend1\n"
+                + "   }\n"
+                + "}\n"
+                + "class Cat {\n"
+                + "   public String name = \"Bobby\"\n"
+                + "}\n"
+                + "class Cat2 {\n"
+                + "   InnerCat2 myFriend;\n"
+                + "   class InnerCat2 {\n"
+                + "   }\n"
+                + "}\n");
+        // edge case on one line
+        File enumFile = addFileToFolder(newFolder1, "MyEnum.groovy",
+                "enum MyEnum {ONE,TWO}\n");
         GroovycWrapper wrapper = GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath());
         Set<Diagnostic> diagnostics = wrapper.compile();
         System.out.println(diagnostics);
@@ -435,6 +439,13 @@ public final class GroovycWrapperTest {
                 createSymbolInformation("value", file.getAbsolutePath(),
                         SymbolKind.Variable, -1, -1, -1, -1, Optional.of("setMyFriend"))),
                 wrapper.findReferences(createReferenceParams(file.getAbsolutePath(), 14, 10, false)));
+        assertEquals(Sets.newHashSet(
+                createSymbolInformation("ONE", enumFile.getAbsolutePath(),
+                        SymbolKind.Field, 1, 14, 1, 17, Optional.of("MyEnum")),
+                createSymbolInformation("TWO", enumFile.getAbsolutePath(),
+                        SymbolKind.Field, 1, 18, 1, 21, Optional.of("MyEnum"))),
+                wrapper.findReferences(createReferenceParams(enumFile.getAbsolutePath(), 1, 7, false)).stream()
+                        .filter(symbol -> Ranges.isValid(symbol.getLocation().getRange())).collect(Collectors.toSet()));
     }
 
     @Test
@@ -733,8 +744,6 @@ public final class GroovycWrapperTest {
         assertEquals(0, diagnostics.size());
 
         Map<String, Set<SymbolInformation>> references = wrapper.getReferences();
-        // Dog should have no references
-        assertNull(references.get("Dog"));
         assertEquals(Sets.newHashSet(
                 createSymbolInformation("friend1", scriptFile.getAbsolutePath(),
                         SymbolKind.Variable, 1, 5, 1, 12, Optional.of("MyScript")),
@@ -778,6 +787,87 @@ public final class GroovycWrapperTest {
                         SymbolKind.Method, 3, 1, 6, 2, Optional.of("MyScript"))), referenceLocations);
     }
 
+    @Test
+    public void testReferences_enum() throws IOException {
+        File newFolder1 = root.newFolder();
+        File scriptFile =
+                addFileToFolder(newFolder1, "MyScript.groovy",
+                        "Animal friend = Animal.CAT;\n"
+                                + "pet(friend1)\n"
+                                + "Animal pet(Animal animal) {\n"
+                                + "   println \"Pet the \" + animal\n"
+                                + "   return animal\n"
+                                + "}\n"
+                                + "\n");
+        File animalFile = addFileToFolder(newFolder1, "Animal.groovy",
+                "enum Animal {\n"
+                        + "CAT, DOG, BUNNY\n"
+                        + "}\n");
+        GroovycWrapper wrapper = GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath());
+        Set<Diagnostic> diagnostics = wrapper.compile();
+        assertEquals(0, diagnostics.size());
+
+        Map<String, Set<SymbolInformation>> references = wrapper.getReferences();
+        // We check the references, after filtering out the generated ones.
+        assertEquals(Sets.newHashSet(
+                createSymbolInformation("CAT", animalFile.getAbsolutePath(),
+                        SymbolKind.Field, 2, 1, 2, 4, Optional.of("Animal")),
+                createSymbolInformation("DOG", animalFile.getAbsolutePath(),
+                        SymbolKind.Field, 2, 6, 2, 9, Optional.of("Animal")),
+                createSymbolInformation("BUNNY", animalFile.getAbsolutePath(),
+                        SymbolKind.Field, 2, 11, 2, 16, Optional.of("Animal")),
+                createSymbolInformation("friend", scriptFile.getAbsolutePath(),
+                        SymbolKind.Variable, 1, 8, 1, 14, Optional.of("MyScript")),
+                createSymbolInformation("animal", scriptFile.getAbsolutePath(),
+                        SymbolKind.Variable, 3, 12, 3, 25, Optional.of("pet")),
+                // pet method returns a Animal
+                createSymbolInformation("pet", scriptFile.getAbsolutePath(),
+                        SymbolKind.Method, 3, 1, 6, 2, Optional.of("MyScript"))),
+                references.get("Animal").stream().filter(symbol -> Ranges.isValid(symbol.getLocation().getRange()))
+                        .collect(Collectors.toSet()));
+    }
+
+
+    @Test
+    public void testFindReferences_enum() throws IOException {
+        File newFolder1 = root.newFolder();
+        File scriptFile =
+                addFileToFolder(newFolder1, "MyScript.groovy",
+                        "Animal friend = Animal.CAT;\n"
+                                + "pet(friend1)\n"
+                                + "Animal pet(Animal animal) {\n"
+                                + "   println \"Pet the \" + animal\n"
+                                + "   return animal\n"
+                                + "}\n"
+                                + "\n");
+        File animalFile = addFileToFolder(newFolder1, "Animal.groovy",
+                "enum Animal {\n"
+                        + "CAT, DOG, BUNNY\n"
+                        + "}\n");
+        GroovycWrapper wrapper = GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath());
+        Set<Diagnostic> diagnostics = wrapper.compile();
+        assertEquals(0, diagnostics.size());
+
+        Set<SymbolInformation> referenceLocations =
+                wrapper.findReferences(createReferenceParams(animalFile.getAbsolutePath(), 1, 6, false));
+        // We check the references, after filtering out the generated ones.
+        assertEquals(Sets.newHashSet(
+                createSymbolInformation("CAT", animalFile.getAbsolutePath(),
+                        SymbolKind.Field, 2, 1, 2, 4, Optional.of("Animal")),
+                createSymbolInformation("DOG", animalFile.getAbsolutePath(),
+                        SymbolKind.Field, 2, 6, 2, 9, Optional.of("Animal")),
+                createSymbolInformation("BUNNY", animalFile.getAbsolutePath(),
+                        SymbolKind.Field, 2, 11, 2, 16, Optional.of("Animal")),
+                createSymbolInformation("friend", scriptFile.getAbsolutePath(),
+                        SymbolKind.Variable, 1, 8, 1, 14, Optional.of("MyScript")),
+                createSymbolInformation("animal", scriptFile.getAbsolutePath(),
+                        SymbolKind.Variable, 3, 12, 3, 25, Optional.of("pet")),
+                // pet method returns a Animal
+                createSymbolInformation("pet", scriptFile.getAbsolutePath(),
+                        SymbolKind.Method, 3, 1, 6, 2, Optional.of("MyScript"))),
+                referenceLocations.stream().filter(symbol -> Ranges.isValid(symbol.getLocation().getRange()))
+                        .collect(Collectors.toSet()));
+    }
 
     @Test
     public void testFindReferences_includeDeclaration() throws IOException {
