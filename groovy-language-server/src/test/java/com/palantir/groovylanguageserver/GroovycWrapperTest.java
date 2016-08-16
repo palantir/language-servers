@@ -600,7 +600,7 @@ public final class GroovycWrapperTest {
         assertNull(references.get("ExtendedCoordinates"));
         // ExtendedCoordinates2 should have no references
         assertNull(references.get("ExtendedCoordinates2"));
-        // Coordinates is only referenced in ExtendedCoordinates
+        // Coordinates is only referenced in ExtendedCoordinates and ExtendedCoordinates2
         assertEquals(Sets.newHashSet(
                 createSymbolInformation("ExtendedCoordinates", SymbolKind.Class,
                         createLocation(extendedCoordinatesFile.getAbsolutePath(), Ranges.createRange(1, 1, 5, 2)),
@@ -628,7 +628,6 @@ public final class GroovycWrapperTest {
                         Optional.absent())),
                 references.get("ICoordinatesSuper"));
     }
-
 
     @Test
     public void testFindReferences_classesAndInterfaces() throws InterruptedException, ExecutionException, IOException {
@@ -687,7 +686,7 @@ public final class GroovycWrapperTest {
         assertEquals(0, wrapper
                 .findReferences(createReferenceParams(extendedCoordinates2File.getAbsolutePath(), 1, 8, false))
                 .size());
-        // Coordinates reference
+        // Coordinates references
         assertEquals(
                 Sets.newHashSet(
                         createSymbolInformation("ExtendedCoordinates", SymbolKind.Class,
@@ -731,19 +730,19 @@ public final class GroovycWrapperTest {
     public void testReferences_fields() throws IOException {
         File newFolder1 = root.newFolder();
         File dogFile = addFileToFolder(newFolder1, "Dog.groovy",
-                        "class Dog {\n"
-                                + "   Cat friend1;\n"
-                                + "   Cat friend2;\n"
-                                + "   Cat bark(Cat enemy) {\n"
-                                + "      println \"Bark! \" + enemy.name\n"
-                                + "      return friend1\n"
-                                + "   }\n"
-                                + "}\n");
+                "class Dog {\n"
+                        + "   Cat friend1;\n"
+                        + "   Cat friend2;\n"
+                        + "   Cat bark(Cat enemy) {\n"
+                        + "      println \"Bark! \" + enemy.name\n"
+                        + "      return friend1\n"
+                        + "   }\n"
+                        + "}\n");
 
         addFileToFolder(newFolder1, "Cat.groovy",
-                        "class Cat {\n"
-                                + "   public String name = \"Bobby\"\n"
-                                + "}\n");
+                "class Cat {\n"
+                        + "   public String name = \"Bobby\"\n"
+                        + "}\n");
         GroovycWrapper wrapper = GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath());
         Set<Diagnostic> diagnostics = wrapper.compile();
         assertEquals(0, diagnostics.size());
