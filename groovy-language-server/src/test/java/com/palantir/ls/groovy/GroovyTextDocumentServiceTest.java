@@ -27,6 +27,8 @@ import com.google.common.collect.Sets;
 import com.palantir.ls.util.DefaultDiagnosticBuilder;
 import com.palantir.ls.util.Ranges;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import io.typefox.lsapi.CompletionItemKind;
+import io.typefox.lsapi.CompletionList;
 import io.typefox.lsapi.Diagnostic;
 import io.typefox.lsapi.DiagnosticSeverity;
 import io.typefox.lsapi.Location;
@@ -36,6 +38,9 @@ import io.typefox.lsapi.SymbolInformation;
 import io.typefox.lsapi.SymbolKind;
 import io.typefox.lsapi.TextDocumentIdentifier;
 import io.typefox.lsapi.TextDocumentItem;
+import io.typefox.lsapi.TextDocumentPositionParams;
+import io.typefox.lsapi.builders.CompletionItemBuilder;
+import io.typefox.lsapi.builders.CompletionListBuilder;
 import io.typefox.lsapi.builders.DidChangeTextDocumentParamsBuilder;
 import io.typefox.lsapi.builders.DidCloseTextDocumentParamsBuilder;
 import io.typefox.lsapi.builders.DidOpenTextDocumentParamsBuilder;
@@ -46,6 +51,7 @@ import io.typefox.lsapi.builders.ReferenceParamsBuilder;
 import io.typefox.lsapi.builders.SymbolInformationBuilder;
 import io.typefox.lsapi.builders.TextDocumentIdentifierBuilder;
 import io.typefox.lsapi.builders.TextDocumentItemBuilder;
+import io.typefox.lsapi.builders.TextDocumentPositionParamsBuilder;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
@@ -85,8 +91,9 @@ public final class GroovyTextDocumentServiceTest {
         expectedDiagnostics.add(new DefaultDiagnosticBuilder("Some other message", DiagnosticSeverity.Warning).build());
         Set<Diagnostic> diagnostics = Sets.newHashSet(expectedDiagnostics);
 
-        SymbolInformation symbol = new SymbolInformationBuilder().name("ThisIsASymbol").build();
-        symbolsMap.put(WORKSPACE_PATH.resolve("something.groovy").toString(), Sets.newHashSet(symbol));
+        SymbolInformation symbol1 = new SymbolInformationBuilder().name("ThisIsASymbol").kind(SymbolKind.Field).build();
+        SymbolInformation symbol2 = new SymbolInformationBuilder().name("methodA").kind(SymbolKind.Method).build();
+        symbolsMap.put(WORKSPACE_PATH.resolve("something.groovy").toString(), Sets.newHashSet(symbol1, symbol2));
 
         expectedReferences.add(new SymbolInformationBuilder()
                 .containerName("Something")
@@ -139,9 +146,12 @@ public final class GroovyTextDocumentServiceTest {
 
     @Test
     public void testDidOpen() {
-        TextDocumentItem textDocument =
-                new TextDocumentItemBuilder().uri(WORKSPACE_PATH.resolve("something.groovy").toString())
-                        .languageId("groovy").version(1).text("something").build();
+        TextDocumentItem textDocument = new TextDocumentItemBuilder()
+                .uri(WORKSPACE_PATH.resolve("something.groovy").toString())
+                .languageId("groovy")
+                .version(1)
+                .text("something")
+                .build();
         service.didOpen(new DidOpenTextDocumentParamsBuilder().textDocument(textDocument).build());
         // assert diagnostics were published
         assertEquals(1, publishedDiagnostics.size());
@@ -152,7 +162,8 @@ public final class GroovyTextDocumentServiceTest {
     @Test
     public void testDidChange() {
         service.didChange(new DidChangeTextDocumentParamsBuilder()
-                .uri(WORKSPACE_PATH.resolve("something.groovy").toString()).build());
+                .uri(WORKSPACE_PATH.resolve("something.groovy").toString())
+                .build());
         // assert diagnostics were published
         assertEquals(1, publishedDiagnostics.size());
         assertEquals(expectedDiagnostics, Sets.newHashSet(publishedDiagnostics.get(0).getDiagnostics()));
@@ -161,8 +172,9 @@ public final class GroovyTextDocumentServiceTest {
 
     @Test
     public void testDidClose() {
-        TextDocumentIdentifier textDocument =
-                new TextDocumentIdentifierBuilder().uri(WORKSPACE_PATH.resolve("something.groovy").toString()).build();
+        TextDocumentIdentifier textDocument = new TextDocumentIdentifierBuilder()
+                .uri(WORKSPACE_PATH.resolve("something.groovy").toString())
+                .build();
         service.didClose(new DidCloseTextDocumentParamsBuilder().textDocument(textDocument).build());
         // assert diagnostics were published
         assertEquals(1, publishedDiagnostics.size());
@@ -172,8 +184,9 @@ public final class GroovyTextDocumentServiceTest {
 
     @Test
     public void testDidSave() {
-        TextDocumentIdentifier textDocument =
-                new TextDocumentIdentifierBuilder().uri(WORKSPACE_PATH.resolve("something.groovy").toString()).build();
+        TextDocumentIdentifier textDocument = new TextDocumentIdentifierBuilder()
+                .uri(WORKSPACE_PATH.resolve("something.groovy").toString())
+                .build();
         service.didSave(new DidSaveTextDocumentParamsBuilder().textDocument(textDocument).build());
         // assert diagnostics were published
         assertEquals(1, publishedDiagnostics.size());
@@ -183,8 +196,9 @@ public final class GroovyTextDocumentServiceTest {
 
     @Test
     public void testDocumentSymbols_absolutePath() throws InterruptedException, ExecutionException {
-        TextDocumentIdentifier textDocument =
-                new TextDocumentIdentifierBuilder().uri(WORKSPACE_PATH.resolve("something.groovy").toString()).build();
+        TextDocumentIdentifier textDocument = new TextDocumentIdentifierBuilder()
+                .uri(WORKSPACE_PATH.resolve("something.groovy").toString())
+                .build();
         CompletableFuture<List<? extends SymbolInformation>> response =
                 service.documentSymbol(new DocumentSymbolParamsBuilder().textDocument(textDocument).build());
         assertThat(response.get().stream().collect(Collectors.toSet()),
@@ -203,12 +217,37 @@ public final class GroovyTextDocumentServiceTest {
     @Test
     public void testReferences() throws InterruptedException, ExecutionException {
         // HACK, blocked on https://github.com/TypeFox/ls-api/issues/39
-        ReferenceParams params =
-                (ReferenceParams) new ReferenceParamsBuilder().context(false).position(5, 5).textDocument("uri")
-                        .uri("uri").build();
+        ReferenceParams params = (ReferenceParams) new ReferenceParamsBuilder()
+                .context(false).position(5, 5)
+                .textDocument("uri")
+                .uri("uri")
+                .build();
         CompletableFuture<List<? extends Location>> response = service.references(params);
         assertThat(response.get().stream().collect(Collectors.toSet()),
                 is(expectedReferences.stream().map(symbol -> symbol.getLocation()).collect(Collectors.toSet())));
+    }
+
+    @Test
+    public void testCompletion() throws InterruptedException, ExecutionException {
+        String uri = WORKSPACE_PATH.resolve("something.groovy").toString();
+        TextDocumentPositionParams params = new TextDocumentPositionParamsBuilder()
+                .position(5, 5)
+                .textDocument(uri)
+                .uri(uri)
+                .build();
+        CompletableFuture<CompletionList> response = service.completion(params);
+        CompletionList expectedResult = new CompletionListBuilder()
+                .incomplete(false)
+                .item(new CompletionItemBuilder()
+                        .label("ThisIsASymbol")
+                        .kind(CompletionItemKind.Field)
+                        .build())
+                .item(new CompletionItemBuilder()
+                        .label("methodA")
+                        .kind(CompletionItemKind.Method).build())
+                .build();
+        assertThat(response.get().isIncomplete(), is(expectedResult.isIncomplete()));
+        assertThat(Sets.newHashSet(response.get().getItems()), is(Sets.newHashSet(expectedResult.getItems())));
     }
 
 }

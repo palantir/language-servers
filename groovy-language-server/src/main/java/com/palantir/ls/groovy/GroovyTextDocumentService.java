@@ -24,6 +24,7 @@ import io.typefox.lsapi.CodeLens;
 import io.typefox.lsapi.CodeLensParams;
 import io.typefox.lsapi.Command;
 import io.typefox.lsapi.CompletionItem;
+import io.typefox.lsapi.CompletionItemKind;
 import io.typefox.lsapi.CompletionList;
 import io.typefox.lsapi.Diagnostic;
 import io.typefox.lsapi.DidChangeTextDocumentParams;
@@ -42,9 +43,12 @@ import io.typefox.lsapi.ReferenceParams;
 import io.typefox.lsapi.RenameParams;
 import io.typefox.lsapi.SignatureHelp;
 import io.typefox.lsapi.SymbolInformation;
+import io.typefox.lsapi.SymbolKind;
 import io.typefox.lsapi.TextDocumentPositionParams;
 import io.typefox.lsapi.TextEdit;
 import io.typefox.lsapi.WorkspaceEdit;
+import io.typefox.lsapi.builders.CompletionItemBuilder;
+import io.typefox.lsapi.builders.CompletionListBuilder;
 import io.typefox.lsapi.builders.PublishDiagnosticsParamsBuilder;
 import io.typefox.lsapi.services.TextDocumentService;
 import java.nio.file.Path;
@@ -67,7 +71,8 @@ public final class GroovyTextDocumentService implements TextDocumentService {
 
     @Override
     public CompletableFuture<CompletionList> completion(TextDocumentPositionParams position) {
-        throw new UnsupportedOperationException();
+        return CompletableFuture.completedFuture(createCompletionListFromSymbols(
+                provider.get().getFileSymbols().get(position.getTextDocument().getUri())));
     }
 
     @Override
@@ -183,6 +188,65 @@ public final class GroovyTextDocumentService implements TextDocumentService {
                     .uri(provider.get().getWorkspaceRoot().toAbsolutePath().toString());
         diagnostics.stream().forEach(d -> paramsBuilder.diagnostic(d));
         publishDiagnostics.accept(paramsBuilder.build());
+    }
+
+    private static CompletionList createCompletionListFromSymbols(Set<SymbolInformation> symbols) {
+        CompletionListBuilder builder = new CompletionListBuilder();
+        builder.incomplete(false);
+        if (symbols == null) {
+            return builder.build();
+        }
+        symbols.forEach(symbol -> {
+            builder.item(new CompletionItemBuilder()
+                    .label(symbol.getName())
+                    .kind(symbolKindToCompletionItemKind(symbol.getKind()))
+                    .build());
+        });
+        return builder.build();
+    }
+
+    @SuppressWarnings("checkstyle:cyclomaticcomplexity") // this is not complex behaviour
+    private static CompletionItemKind symbolKindToCompletionItemKind(SymbolKind kind) {
+        switch (kind) {
+            case Array:
+                return CompletionItemKind.Value;
+            case Boolean:
+                return CompletionItemKind.Value;
+            case Class:
+                return CompletionItemKind.Class;
+            case Constant:
+                return CompletionItemKind.Value;
+            case Constructor:
+                return CompletionItemKind.Constructor;
+            case Enum:
+                return CompletionItemKind.Enum;
+            case Field:
+                return CompletionItemKind.Field;
+            case File:
+                return CompletionItemKind.File;
+            case Function:
+                return CompletionItemKind.Function;
+            case Interface:
+                return CompletionItemKind.Interface;
+            case Method:
+                return CompletionItemKind.Method;
+            case Module:
+                return CompletionItemKind.Module;
+            case Namespace:
+                return CompletionItemKind.Module;
+            case Number:
+                return CompletionItemKind.Value;
+            case Package:
+                return CompletionItemKind.Module;
+            case Property:
+                return CompletionItemKind.Property;
+            case String:
+                return CompletionItemKind.Text;
+            case Variable:
+                return CompletionItemKind.Variable;
+            default:
+                throw new IllegalArgumentException(String.format("Unsupported SymbolKind: %s", kind));
+        }
     }
 
 }
