@@ -48,7 +48,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -64,11 +63,6 @@ public final class GroovycWrapperTest {
 
     @Rule
     public TemporaryFolder root = new TemporaryFolder();
-
-    @Before
-    public void before() {
-
-    }
 
     @Test
     public void testTargetDirectoryNotFolder() throws IOException {
