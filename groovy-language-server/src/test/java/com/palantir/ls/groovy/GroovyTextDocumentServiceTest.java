@@ -250,4 +250,17 @@ public final class GroovyTextDocumentServiceTest {
         assertThat(Sets.newHashSet(response.get().getItems()), is(Sets.newHashSet(expectedResult.getItems())));
     }
 
+    @Test
+    public void testCompletion_noSymbols() throws InterruptedException, ExecutionException {
+        String uri = WORKSPACE_PATH.resolve("somethingthatdoesntexist.groovy").toString();
+        TextDocumentPositionParams params = new TextDocumentPositionParamsBuilder()
+                .position(5, 5)
+                .textDocument(uri)
+                .uri(uri)
+                .build();
+        CompletableFuture<CompletionList> response = service.completion(params);
+        assertThat(response.get().isIncomplete(), is(false));
+        assertThat(response.get().getItems(), is(Lists.newArrayList()));
+    }
+
 }

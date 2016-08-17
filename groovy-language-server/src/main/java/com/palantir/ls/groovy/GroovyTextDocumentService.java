@@ -50,6 +50,7 @@ import io.typefox.lsapi.WorkspaceEdit;
 import io.typefox.lsapi.builders.CompletionItemBuilder;
 import io.typefox.lsapi.builders.CompletionListBuilder;
 import io.typefox.lsapi.builders.PublishDiagnosticsParamsBuilder;
+import io.typefox.lsapi.impl.CompletionListImpl;
 import io.typefox.lsapi.services.TextDocumentService;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -191,11 +192,10 @@ public final class GroovyTextDocumentService implements TextDocumentService {
     }
 
     private static CompletionList createCompletionListFromSymbols(Set<SymbolInformation> symbols) {
-        CompletionListBuilder builder = new CompletionListBuilder();
-        builder.incomplete(false);
         if (symbols == null) {
-            return builder.build();
+            return new CompletionListImpl(false, Lists.newArrayList());
         }
+        CompletionListBuilder builder = new CompletionListBuilder().incomplete(false);
         symbols.forEach(symbol -> {
             builder.item(new CompletionItemBuilder()
                     .label(symbol.getName())
