@@ -83,7 +83,8 @@ public final class GroovyLanguageServer implements LanguageServer {
                 .supportedLanguage(languageDescription)
                 .build();
 
-        GroovycWrapper groovycWrapper = GroovycWrapper.of(Files.createTempDir().toPath(), workspaceRoot);
+        GroovycWrapper groovycWrapper =
+                GroovycWrapper.of(Files.createTempDir().toPath(), workspaceRoot, Files.createTempDir().toPath());
         provider.set(groovycWrapper);
 
         return CompletableFuture.completedFuture(result);

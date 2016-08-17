@@ -26,7 +26,6 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.palantir.ls.util.DefaultDiagnosticBuilder;
 import com.palantir.ls.util.Ranges;
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.typefox.lsapi.CompletionItemKind;
 import io.typefox.lsapi.CompletionList;
 import io.typefox.lsapi.Diagnostic;
@@ -39,6 +38,7 @@ import io.typefox.lsapi.SymbolKind;
 import io.typefox.lsapi.TextDocumentIdentifier;
 import io.typefox.lsapi.TextDocumentItem;
 import io.typefox.lsapi.TextDocumentPositionParams;
+import io.typefox.lsapi.VersionedTextDocumentIdentifier;
 import io.typefox.lsapi.builders.CompletionItemBuilder;
 import io.typefox.lsapi.builders.CompletionListBuilder;
 import io.typefox.lsapi.builders.DidChangeTextDocumentParamsBuilder;
@@ -52,8 +52,9 @@ import io.typefox.lsapi.builders.SymbolInformationBuilder;
 import io.typefox.lsapi.builders.TextDocumentIdentifierBuilder;
 import io.typefox.lsapi.builders.TextDocumentItemBuilder;
 import io.typefox.lsapi.builders.TextDocumentPositionParamsBuilder;
+import io.typefox.lsapi.builders.VersionedTextDocumentIdentifierBuilder;
+import java.io.IOException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -62,17 +63,24 @@ import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.junit.rules.TemporaryFolder;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
-@SuppressFBWarnings("DMI_HARDCODED_ABSOLUTE_FILENAME")
 public final class GroovyTextDocumentServiceTest {
 
-    private static final Path WORKSPACE_PATH = Paths.get("/some/path/that/may/exist/");
+    @Rule
+    public TemporaryFolder workspace = new TemporaryFolder();
+
+    @Rule
+    public ExpectedException expectedException = ExpectedException.none();
 
     private GroovyTextDocumentService service;
+    private Path file;
     private List<PublishDiagnosticsParams> publishedDiagnostics = Lists.newArrayList();
     private Set<Diagnostic> expectedDiagnostics = Sets.newHashSet();
     private Map<String, Set<SymbolInformation>> symbolsMap = Maps.newHashMap();
@@ -84,16 +92,17 @@ public final class GroovyTextDocumentServiceTest {
     private CompilerWrapperProvider provider;
 
     @Before
-    public void setup() {
+    public void setup() throws IOException {
         MockitoAnnotations.initMocks(this);
 
         expectedDiagnostics.add(new DefaultDiagnosticBuilder("Some message", DiagnosticSeverity.Error).build());
         expectedDiagnostics.add(new DefaultDiagnosticBuilder("Some other message", DiagnosticSeverity.Warning).build());
         Set<Diagnostic> diagnostics = Sets.newHashSet(expectedDiagnostics);
 
+        file = workspace.newFile("something.groovy").toPath();
         SymbolInformation symbol1 = new SymbolInformationBuilder().name("ThisIsASymbol").kind(SymbolKind.Field).build();
         SymbolInformation symbol2 = new SymbolInformationBuilder().name("methodA").kind(SymbolKind.Method).build();
-        symbolsMap.put(WORKSPACE_PATH.resolve("something.groovy").toString(), Sets.newHashSet(symbol1, symbol2));
+        symbolsMap.put(file.toAbsolutePath().toString(), Sets.newHashSet(symbol1, symbol2));
 
         expectedReferences.add(new SymbolInformationBuilder()
                 .containerName("Something")
@@ -124,7 +133,7 @@ public final class GroovyTextDocumentServiceTest {
                             .range(Ranges.UNDEFINED_RANGE)
                             .build())
                 .build());
-        when(compilerWrapper.getWorkspaceRoot()).thenReturn(WORKSPACE_PATH);
+        when(compilerWrapper.getWorkspaceRoot()).thenReturn(workspace.getRoot().toPath());
         when(compilerWrapper.compile()).thenReturn(diagnostics);
         when(compilerWrapper.getFileSymbols()).thenReturn(symbolsMap);
         when(compilerWrapper.findReferences(Mockito.any())).thenReturn(allReferencesReturned);
@@ -147,7 +156,7 @@ public final class GroovyTextDocumentServiceTest {
     @Test
     public void testDidOpen() {
         TextDocumentItem textDocument = new TextDocumentItemBuilder()
-                .uri(WORKSPACE_PATH.resolve("something.groovy").toString())
+                .uri(file.toAbsolutePath().toString())
                 .languageId("groovy")
                 .version(1)
                 .text("something")
@@ -156,53 +165,105 @@ public final class GroovyTextDocumentServiceTest {
         // assert diagnostics were published
         assertEquals(1, publishedDiagnostics.size());
         assertEquals(expectedDiagnostics, Sets.newHashSet(publishedDiagnostics.get(0).getDiagnostics()));
-        assertEquals(WORKSPACE_PATH.toString(), publishedDiagnostics.get(0).getUri());
+        assertEquals(workspace.getRoot().toString(), publishedDiagnostics.get(0).getUri());
     }
 
     @Test
     public void testDidChange() {
         service.didChange(new DidChangeTextDocumentParamsBuilder()
-                .uri(WORKSPACE_PATH.resolve("something.groovy").toString())
+                .contentChange(Ranges.createRange(0, 0, 1, 1), 3, "Hello")
+                .textDocument((VersionedTextDocumentIdentifier) new VersionedTextDocumentIdentifierBuilder()
+                        .version(0)
+                        .uri(file.toAbsolutePath().toString())
+                        .build())
                 .build());
         // assert diagnostics were published
         assertEquals(1, publishedDiagnostics.size());
         assertEquals(expectedDiagnostics, Sets.newHashSet(publishedDiagnostics.get(0).getDiagnostics()));
-        assertEquals(WORKSPACE_PATH.toString(), publishedDiagnostics.get(0).getUri());
+        assertEquals(workspace.getRoot().toString(), publishedDiagnostics.get(0).getUri());
+    }
+
+    @Test
+    public void testDidChange_noChanges() {
+        expectedException.expect(IllegalArgumentException.class);
+        expectedException.expectMessage(
+                String.format("Calling didChange with no changes on uri '%s'", file.toAbsolutePath().toString()));
+        service.didChange(new DidChangeTextDocumentParamsBuilder()
+                .textDocument((VersionedTextDocumentIdentifier) new VersionedTextDocumentIdentifierBuilder()
+                        .version(0)
+                        .uri(file.toAbsolutePath().toString())
+                        .build())
+                .build());
+    }
+
+    @Test
+    public void testDidChange_nonExistantUri() {
+        expectedException.expect(IllegalArgumentException.class);
+        expectedException
+                .expectMessage(String.format("Uri '%s' does not exist", file.toAbsolutePath().toString() + "boo"));
+        service.didChange(new DidChangeTextDocumentParamsBuilder()
+                .textDocument((VersionedTextDocumentIdentifier) new VersionedTextDocumentIdentifierBuilder()
+                        .version(0)
+                        .uri(file.toAbsolutePath().toString() + "boo")
+                        .build())
+                .build());
     }
 
     @Test
     public void testDidClose() {
         TextDocumentIdentifier textDocument = new TextDocumentIdentifierBuilder()
-                .uri(WORKSPACE_PATH.resolve("something.groovy").toString())
+                .uri(file.toAbsolutePath().toString())
                 .build();
         service.didClose(new DidCloseTextDocumentParamsBuilder().textDocument(textDocument).build());
         // assert diagnostics were published
         assertEquals(1, publishedDiagnostics.size());
         assertEquals(expectedDiagnostics, Sets.newHashSet(publishedDiagnostics.get(0).getDiagnostics()));
-        assertEquals(WORKSPACE_PATH.toString(), publishedDiagnostics.get(0).getUri());
+        assertEquals(workspace.getRoot().toString(), publishedDiagnostics.get(0).getUri());
+    }
+
+    @Test
+    public void testDidClose_nonExistantUri() {
+        TextDocumentIdentifier textDocument = new TextDocumentIdentifierBuilder()
+                .uri(file.toAbsolutePath().toString() + "boo")
+                .build();
+        expectedException.expect(IllegalArgumentException.class);
+        expectedException
+                .expectMessage(String.format("Uri '%s' does not exist", file.toAbsolutePath().toString() + "boo"));
+        service.didClose(new DidCloseTextDocumentParamsBuilder().textDocument(textDocument).build());
     }
 
     @Test
     public void testDidSave() {
         TextDocumentIdentifier textDocument = new TextDocumentIdentifierBuilder()
-                .uri(WORKSPACE_PATH.resolve("something.groovy").toString())
+                .uri(file.toAbsolutePath().toString())
                 .build();
         service.didSave(new DidSaveTextDocumentParamsBuilder().textDocument(textDocument).build());
         // assert diagnostics were published
         assertEquals(1, publishedDiagnostics.size());
         assertEquals(expectedDiagnostics, Sets.newHashSet(publishedDiagnostics.get(0).getDiagnostics()));
-        assertEquals(WORKSPACE_PATH.toString(), publishedDiagnostics.get(0).getUri());
+        assertEquals(workspace.getRoot().toString(), publishedDiagnostics.get(0).getUri());
+    }
+
+    @Test
+    public void testDidSave_nonExistantUri() {
+        TextDocumentIdentifier textDocument = new TextDocumentIdentifierBuilder()
+                .uri(file.toAbsolutePath().toString() + "boo")
+                .build();
+        expectedException.expect(IllegalArgumentException.class);
+        expectedException
+                .expectMessage(String.format("Uri '%s' does not exist", file.toAbsolutePath().toString() + "boo"));
+        service.didSave(new DidSaveTextDocumentParamsBuilder().textDocument(textDocument).build());
     }
 
     @Test
     public void testDocumentSymbols_absolutePath() throws InterruptedException, ExecutionException {
         TextDocumentIdentifier textDocument = new TextDocumentIdentifierBuilder()
-                .uri(WORKSPACE_PATH.resolve("something.groovy").toString())
+                .uri(file.toAbsolutePath().toString())
                 .build();
         CompletableFuture<List<? extends SymbolInformation>> response =
                 service.documentSymbol(new DocumentSymbolParamsBuilder().textDocument(textDocument).build());
         assertThat(response.get().stream().collect(Collectors.toSet()),
-                is(symbolsMap.get(WORKSPACE_PATH.resolve("something.groovy").toString())));
+                is(symbolsMap.get(file.toAbsolutePath().toString())));
     }
 
     @Test
@@ -211,7 +272,18 @@ public final class GroovyTextDocumentServiceTest {
         CompletableFuture<List<? extends SymbolInformation>> response =
                 service.documentSymbol(new DocumentSymbolParamsBuilder().textDocument(textDocument).build());
         assertThat(response.get().stream().collect(Collectors.toSet()),
-                is(symbolsMap.get(WORKSPACE_PATH.resolve("something.groovy").toString())));
+                is(symbolsMap.get(file.toAbsolutePath().toString())));
+    }
+
+    @Test
+    public void testDocumentSymbols_nonExistantUri() throws InterruptedException, ExecutionException {
+        TextDocumentIdentifier textDocument = new TextDocumentIdentifierBuilder()
+                .uri(file.toAbsolutePath().toString() + "boo")
+                .build();
+        expectedException.expect(IllegalArgumentException.class);
+        expectedException
+                .expectMessage(String.format("Uri '%s' does not exist", file.toAbsolutePath().toString() + "boo"));
+        service.documentSymbol(new DocumentSymbolParamsBuilder().textDocument(textDocument).build());
     }
 
     @Test
@@ -230,7 +302,7 @@ public final class GroovyTextDocumentServiceTest {
 
     @Test
     public void testCompletion() throws InterruptedException, ExecutionException {
-        String uri = WORKSPACE_PATH.resolve("something.groovy").toString();
+        String uri = file.toAbsolutePath().toString();
         TextDocumentPositionParams params = new TextDocumentPositionParamsBuilder()
                 .position(5, 5)
                 .textDocument(uri)
@@ -253,7 +325,7 @@ public final class GroovyTextDocumentServiceTest {
 
     @Test
     public void testCompletion_noSymbols() throws InterruptedException, ExecutionException {
-        String uri = WORKSPACE_PATH.resolve("somethingthatdoesntexist.groovy").toString();
+        String uri = workspace.getRoot().toPath().resolve("somethingthatdoesntexist.groovy").toString();
         TextDocumentPositionParams params = new TextDocumentPositionParamsBuilder()
                 .position(5, 5)
                 .textDocument(uri)

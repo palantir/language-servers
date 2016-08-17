@@ -19,7 +19,9 @@ package com.palantir.ls.groovy;
 import io.typefox.lsapi.Diagnostic;
 import io.typefox.lsapi.ReferenceParams;
 import io.typefox.lsapi.SymbolInformation;
+import io.typefox.lsapi.TextDocumentContentChangeEvent;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -35,6 +37,23 @@ public interface CompilerWrapper {
      * @return the compilation warnings and errors
      */
     Set<Diagnostic> compile();
+
+    /**
+     * Handle adding incremental changes to open files to be included in compilation.
+     */
+    void handleFileChanged(Path originalFile, List<TextDocumentContentChangeEvent> contentChanges);
+
+    /**
+     * Handle removing non-saved changes to open files from compiled source files.
+     * @param originalFile the absolute file path of the original file
+     */
+    void handleFileClosed(Path originalFile);
+
+    /**
+     * Handle saving the accumulated changes to the origin source.
+     * @param originalFile the absolute file path of the original file
+     */
+    void handleFileSaved(Path originalFile);
 
     /**
      * Returns a mapping from absolute path of source file to symbols located within these source files.

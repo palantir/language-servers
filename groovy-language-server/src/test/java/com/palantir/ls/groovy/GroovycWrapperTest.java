@@ -18,12 +18,14 @@ package com.palantir.ls.groovy;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.palantir.ls.util.DefaultDiagnosticBuilder;
 import com.palantir.ls.util.Ranges;
@@ -37,6 +39,7 @@ import io.typefox.lsapi.SymbolKind;
 import io.typefox.lsapi.builders.LocationBuilder;
 import io.typefox.lsapi.builders.ReferenceParamsBuilder;
 import io.typefox.lsapi.builders.SymbolInformationBuilder;
+import io.typefox.lsapi.builders.TextDocumentContentChangeEventBuilder;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -60,6 +63,8 @@ public final class GroovycWrapperTest {
 
     @Rule
     public TemporaryFolder output = new TemporaryFolder();
+    @Rule
+    public TemporaryFolder changedOutput = new TemporaryFolder();
 
     @Rule
     public TemporaryFolder root = new TemporaryFolder();
@@ -68,19 +73,27 @@ public final class GroovycWrapperTest {
     public void testTargetDirectoryNotFolder() throws IOException {
         expectedException.expect(IllegalArgumentException.class);
         expectedException.expectMessage("targetDirectory must be a directory");
-        GroovycWrapper.of(output.newFile().toPath(), root.getRoot().toPath());
+        GroovycWrapper.of(output.newFile().toPath(), root.getRoot().toPath(), changedOutput.getRoot().toPath());
     }
 
     @Test
     public void testWorkspaceRootNotFolder() throws IOException {
         expectedException.expect(IllegalArgumentException.class);
         expectedException.expectMessage("workspaceRoot must be a directory");
-        GroovycWrapper.of(output.getRoot().toPath(), root.newFile().toPath());
+        GroovycWrapper.of(output.getRoot().toPath(), root.newFile().toPath(), changedOutput.getRoot().toPath());
+    }
+
+    @Test
+    public void testChangedFilesRootNotFolder() throws IOException {
+        expectedException.expect(IllegalArgumentException.class);
+        expectedException.expectMessage("changedFilesRoot must be a directory");
+        GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath(), changedOutput.newFile().toPath());
     }
 
     @Test
     public void testEmptyWorkspace() throws InterruptedException, ExecutionException, IOException {
-        GroovycWrapper wrapper = GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath());
+        GroovycWrapper wrapper =
+                GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath(), changedOutput.getRoot().toPath());
         Set<Diagnostic> diagnostics = wrapper.compile();
         assertEquals(0, diagnostics.size());
         Map<String, Set<SymbolInformation>> symbols = wrapper.getFileSymbols();
@@ -123,7 +136,8 @@ public final class GroovycWrapperTest {
                         + "}\n");
         addFileToFolder(root.getRoot(), "test4.groovy", "class ExceptionNew {}");
 
-        GroovycWrapper wrapper = GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath());
+        GroovycWrapper wrapper =
+                GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath(), changedOutput.getRoot().toPath());
         Set<Diagnostic> diagnostics = wrapper.compile();
 
         assertEquals(0, diagnostics.size());
@@ -146,7 +160,8 @@ public final class GroovycWrapperTest {
                         + "   }\n"
                         + "}\n");
 
-        GroovycWrapper wrapper = GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath());
+        GroovycWrapper wrapper =
+                GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath(), changedOutput.getRoot().toPath());
         Set<Diagnostic> diagnostics = wrapper.compile();
         assertEquals(0, diagnostics.size());
         Map<String, Set<SymbolInformation>> symbols = wrapper.getFileSymbols();
@@ -169,7 +184,8 @@ public final class GroovycWrapperTest {
                         + "   abstract double getAt(int idx);\n"
                         + "}\n");
 
-        GroovycWrapper wrapper = GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath());
+        GroovycWrapper wrapper =
+                GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath(), changedOutput.getRoot().toPath());
         Set<Diagnostic> diagnostics = wrapper.compile();
         assertEquals(0, diagnostics.size());
         Map<String, Set<SymbolInformation>> symbols = wrapper.getFileSymbols();
@@ -187,7 +203,8 @@ public final class GroovycWrapperTest {
                         + "   ONE, TWO, THREE\n"
                         + "}\n");
 
-        GroovycWrapper wrapper = GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath());
+        GroovycWrapper wrapper =
+                GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath(), changedOutput.getRoot().toPath());
         Set<Diagnostic> diagnostics = wrapper.compile();
         assertEquals(0, diagnostics.size());
         Map<String, Set<SymbolInformation>> symbols = wrapper.getFileSymbols();
@@ -221,7 +238,8 @@ public final class GroovycWrapperTest {
                         + "   }\n"
                         + "}\n");
 
-        GroovycWrapper wrapper = GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath());
+        GroovycWrapper wrapper =
+                GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath(), changedOutput.getRoot().toPath());
         Set<Diagnostic> diagnostics = wrapper.compile();
         assertEquals(0, diagnostics.size());
         Map<String, Set<SymbolInformation>> symbols = wrapper.getFileSymbols();
@@ -252,7 +270,8 @@ public final class GroovycWrapperTest {
                         + "println name\n"
                         + "myMethod()\n");
 
-        GroovycWrapper wrapper = GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath());
+        GroovycWrapper wrapper =
+                GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath(), changedOutput.getRoot().toPath());
         Set<Diagnostic> diagnostics = wrapper.compile();
         assertEquals(0, diagnostics.size());
         Map<String, Set<SymbolInformation>> symbols = wrapper.getFileSymbols();
@@ -280,7 +299,8 @@ public final class GroovycWrapperTest {
                 "interface ICoordinates {\n"
                         + "   abstract double getAt(int idx);\n"
                         + "}\n");
-        GroovycWrapper wrapper = GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath());
+        GroovycWrapper wrapper =
+                GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath(), changedOutput.getRoot().toPath());
         Set<Diagnostic> diagnostics = wrapper.compile();
         assertEquals(0, diagnostics.size());
 
@@ -334,7 +354,8 @@ public final class GroovycWrapperTest {
         addFileToFolder(newFolder2, "file.txt", "Something that is not groovy");
         addFileToFolder(newFolder2, "Test.java", "public class Test {}\n");
 
-        GroovycWrapper wrapper = GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath());
+        GroovycWrapper wrapper =
+                GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath(), changedOutput.getRoot().toPath());
         Set<Diagnostic> diagnostics = wrapper.compile();
 
         assertEquals(0, diagnostics.size());
@@ -376,7 +397,8 @@ public final class GroovycWrapperTest {
                         + "}\n");
         addFileToFolder(root.getRoot(), "test4.groovy", "class ExceptionNew {}\n");
 
-        GroovycWrapper wrapper = GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath());
+        GroovycWrapper wrapper =
+                GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath(), changedOutput.getRoot().toPath());
         Set<Diagnostic> diagnostics = wrapper.compile();
 
         assertEquals(2, diagnostics.size());
@@ -419,7 +441,8 @@ public final class GroovycWrapperTest {
                         + "   }\n"
                         + "}\n");
 
-        GroovycWrapper wrapper = GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath());
+        GroovycWrapper wrapper =
+                GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath(), changedOutput.getRoot().toPath());
         Set<Diagnostic> diagnostics = wrapper.compile();
         assertEquals(0, diagnostics.size());
 
@@ -449,7 +472,8 @@ public final class GroovycWrapperTest {
         // edge case on one line
         File enumFile = addFileToFolder(newFolder1, "MyEnum.groovy",
                 "enum MyEnum {ONE,TWO}\n");
-        GroovycWrapper wrapper = GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath());
+        GroovycWrapper wrapper =
+                GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath(), changedOutput.getRoot().toPath());
         Set<Diagnostic> diagnostics = wrapper.compile();
         assertEquals(0, diagnostics.size());
 
@@ -493,7 +517,8 @@ public final class GroovycWrapperTest {
                         + "A a\n"
                         + "B b\n"
                         + "}\n");
-        GroovycWrapper wrapper = GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath());
+        GroovycWrapper wrapper =
+                GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath(), changedOutput.getRoot().toPath());
         Set<Diagnostic> diagnostics = wrapper.compile();
         assertEquals(0, diagnostics.size());
 
@@ -573,7 +598,8 @@ public final class GroovycWrapperTest {
                 "abstract class AbstractCoordinates {\n"
                         + "   abstract void something();\n"
                         + "}\n");
-        GroovycWrapper wrapper = GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath());
+        GroovycWrapper wrapper =
+                GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath(), changedOutput.getRoot().toPath());
         Set<Diagnostic> diagnostics = wrapper.compile();
         assertEquals(0, diagnostics.size());
         Map<String, Set<SymbolInformation>> references = wrapper.getTypeReferences();
@@ -645,7 +671,8 @@ public final class GroovycWrapperTest {
                 "class Cat {\n"
                         + "   public String name = \"Bobby\"\n"
                         + "}\n");
-        GroovycWrapper wrapper = GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath());
+        GroovycWrapper wrapper =
+                GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath(), changedOutput.getRoot().toPath());
         Set<Diagnostic> diagnostics = wrapper.compile();
         assertEquals(0, diagnostics.size());
 
@@ -694,7 +721,8 @@ public final class GroovycWrapperTest {
         File catFile = addFileToFolder(newFolder1, "Cat.groovy",
                 "class Cat {\n"
                         + "}\n");
-        GroovycWrapper wrapper = GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath());
+        GroovycWrapper wrapper =
+                GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath(), changedOutput.getRoot().toPath());
         Set<Diagnostic> diagnostics = wrapper.compile();
         assertEquals(0, diagnostics.size());
 
@@ -729,7 +757,8 @@ public final class GroovycWrapperTest {
                 "enum Animal {\n"
                         + "CAT, DOG, BUNNY\n"
                         + "}\n");
-        GroovycWrapper wrapper = GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath());
+        GroovycWrapper wrapper =
+                GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath(), changedOutput.getRoot().toPath());
         Set<Diagnostic> diagnostics = wrapper.compile();
         assertEquals(0, diagnostics.size());
         Set<SymbolInformation> expectedResult = Sets.newHashSet(
@@ -791,7 +820,8 @@ public final class GroovycWrapperTest {
         File catFile = addFileToFolder(newFolder1, "Cat.groovy",
                 "class Cat {\n"
                         + "}\n");
-        GroovycWrapper wrapper = GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath());
+        GroovycWrapper wrapper =
+                GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath(), changedOutput.getRoot().toPath());
         Set<Diagnostic> diagnostics = wrapper.compile();
         assertEquals(0, diagnostics.size());
 
@@ -811,6 +841,165 @@ public final class GroovycWrapperTest {
                         Optional.absent()));
         assertEquals(expectedResult,
                 wrapper.findReferences(createReferenceParams(catFile.getAbsolutePath(), 0, 7, true)));
+    }
+
+    @Test
+    public void testHandleFileChanged() throws IOException {
+        File newFolder1 = root.newFolder();
+        File catFile = addFileToFolder(newFolder1, "Cat.groovy",
+                "class Cat {\n"
+                        + "}\n");
+        GroovycWrapper wrapper =
+                GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath(), changedOutput.getRoot().toPath());
+        // Compile
+        assertEquals(0, wrapper.compile().size());
+        Set<SymbolInformation> symbols = wrapper.getFileSymbols().get(catFile.getAbsolutePath());
+
+        SymbolInformation catSymbol = new SymbolInformationBuilder()
+                .name("Cat")
+                .kind(SymbolKind.Class)
+                .location(catFile.getAbsolutePath(), Ranges.createRange(0, 0, 1, 1))
+                .build();
+        SymbolInformation dogSymbol = new SymbolInformationBuilder()
+                .name("Dog")
+                .kind(SymbolKind.Class)
+                .location(catFile.getAbsolutePath(), Ranges.createRange(0, 0, 1, 1))
+                .build();
+
+        assertTrue(symbols.contains(catSymbol));
+        assertFalse(symbols.contains(dogSymbol));
+
+        // First change
+        wrapper.handleFileChanged(catFile.toPath(), Lists.newArrayList(new TextDocumentContentChangeEventBuilder()
+                .range(Ranges.createRange(0, 6, 0, 9)).rangeLength(3).text("Dog").build()));
+
+        // Re-compile
+        assertEquals(0, wrapper.compile().size());
+
+        // Assert that the symbol Cat no longer exists and that the symbol Dog now exists.
+        symbols = wrapper.getFileSymbols().get(catFile.toString());
+        assertFalse(symbols.contains(catSymbol));
+        assertTrue(symbols.contains(dogSymbol));
+
+        // Second change
+        wrapper.handleFileChanged(catFile.toPath(), Lists.newArrayList(new TextDocumentContentChangeEventBuilder()
+                .range(Ranges.createRange(0, 6, 0, 9)).rangeLength(6).text("Turtle").build()));
+
+        // Re-compile
+        assertEquals(0, wrapper.compile().size());
+
+        // Assert symbols are back to the original
+        symbols = wrapper.getFileSymbols().get(catFile.toString());
+        assertFalse(symbols.contains(dogSymbol));
+        assertTrue(symbols.contains(new SymbolInformationBuilder().name("Turtle")
+                .kind(SymbolKind.Class)
+                .location(catFile.toString(), Ranges.createRange(0, 0, 1, 1))
+                .build()));
+    }
+
+    @Test
+    public void testHandleFileClosed() throws IOException {
+        File newFolder1 = root.newFolder();
+        File catFile = addFileToFolder(newFolder1, "Cat.groovy",
+                "class Cat {\n"
+                        + "}\n");
+        GroovycWrapper wrapper =
+                GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath(), changedOutput.getRoot().toPath());
+        // Compile
+        assertEquals(0, wrapper.compile().size());
+        Set<SymbolInformation> symbols = wrapper.getFileSymbols().get(catFile.getAbsolutePath());
+        SymbolInformation catSymbol = new SymbolInformationBuilder()
+                .name("Cat")
+                .kind(SymbolKind.Class)
+                .location(catFile.getAbsolutePath(), Ranges.createRange(0, 0, 1, 1))
+                .build();
+        SymbolInformation dogSymbol = new SymbolInformationBuilder()
+                .name("Dog")
+                .kind(SymbolKind.Class)
+                .location(catFile.getAbsolutePath(), Ranges.createRange(0, 0, 1, 1))
+                .build();
+
+        assertTrue(symbols.contains(catSymbol));
+        assertFalse(symbols.contains(dogSymbol));
+
+        // First change
+        wrapper.handleFileChanged(catFile.toPath(), Lists.newArrayList(new TextDocumentContentChangeEventBuilder()
+                .range(Ranges.createRange(0, 6, 0, 9)).rangeLength(3).text("Dog").build()));
+
+        // Re-compile
+        assertEquals(0, wrapper.compile().size());
+
+        // Assert that the symbol Cat no longer exists and that the symbol Dog now exists.
+        symbols = wrapper.getFileSymbols().get(catFile.toString());
+        assertFalse(symbols.contains(catSymbol));
+        assertTrue(symbols.contains(dogSymbol));
+
+        // Call handleClose
+        wrapper.handleFileClosed(catFile.toPath());
+        // The changed file should have been deleted
+        assertFalse(changedOutput.getRoot().toPath().resolve(root.getRoot().toPath().relativize(catFile.toPath()))
+                .toFile().exists());
+
+        // Re-compile
+        assertEquals(0, wrapper.compile().size());
+
+        // Assert symbols are back to the original
+        symbols = wrapper.getFileSymbols().get(catFile.toString());
+        assertTrue(symbols.contains(catSymbol));
+        assertFalse(symbols.contains(dogSymbol));
+    }
+
+    @Test
+    public void testHandleFileSaved() throws IOException {
+        File newFolder1 = root.newFolder();
+        File catFile = addFileToFolder(newFolder1, "Cat.groovy",
+                "class Cat {\n"
+                        + "}\n");
+        GroovycWrapper wrapper =
+                GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath(), changedOutput.getRoot().toPath());
+        // Compile
+        assertEquals(0, wrapper.compile().size());
+        Set<SymbolInformation> symbols = wrapper.getFileSymbols().get(catFile.getAbsolutePath());
+
+        SymbolInformation catSymbol = new SymbolInformationBuilder()
+                .name("Cat")
+                .kind(SymbolKind.Class)
+                .location(catFile.getAbsolutePath(), Ranges.createRange(0, 0, 1, 1))
+                .build();
+        SymbolInformation dogSymbol = new SymbolInformationBuilder()
+                .name("Dog")
+                .kind(SymbolKind.Class)
+                .location(catFile.getAbsolutePath(), Ranges.createRange(0, 0, 1, 1))
+                .build();
+
+        assertTrue(symbols.contains(catSymbol));
+        assertFalse(symbols.contains(dogSymbol));
+
+        // First change
+        wrapper.handleFileChanged(catFile.toPath(), Lists.newArrayList(new TextDocumentContentChangeEventBuilder()
+                .range(Ranges.createRange(0, 6, 0, 9)).rangeLength(3).text("Dog").build()));
+
+        // Re-compile
+        assertEquals(0, wrapper.compile().size());
+
+        // Assert that the symbol Cat no longer exists and that the symbol Dog now exists.
+        symbols = wrapper.getFileSymbols().get(catFile.toString());
+        assertFalse(symbols.contains(catSymbol));
+        assertTrue(symbols.contains(dogSymbol));
+
+        // Call handleClose
+        wrapper.handleFileSaved(catFile.toPath());
+        // The changed file should have been deleted
+        assertFalse(changedOutput.getRoot().toPath().resolve(root.getRoot().toPath().relativize(catFile.toPath()))
+                .toFile().exists());
+
+        // Re-compile
+        assertEquals(0, wrapper.compile().size());
+
+        // Assert new symbols persist
+        symbols = wrapper.getFileSymbols().get(catFile.toString());
+        assertFalse(symbols.contains(catSymbol));
+        assertTrue(symbols.contains(dogSymbol));
     }
 
     private boolean mapHasSymbol(Map<String, Set<SymbolInformation>> map, Optional<String> container, String fieldName,
