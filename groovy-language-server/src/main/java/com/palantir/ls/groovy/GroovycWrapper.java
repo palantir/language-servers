@@ -209,8 +209,10 @@ public final class GroovycWrapper implements CompilerWrapper {
                 SyntaxErrorMessage syntaxErrorMessage = (SyntaxErrorMessage) message;
                 SyntaxException cause = syntaxErrorMessage.getCause();
 
-                Range range = Ranges.createRange(
-                        cause.getStartLine(), cause.getStartColumn(), cause.getEndLine(), cause.getEndColumn());
+                Range range =
+                        Ranges.createZeroBasedRange(cause.getStartLine(), cause.getStartColumn(), cause.getEndLine(),
+                                cause.getEndColumn());
+
                 diagnostic = new DefaultDiagnosticBuilder(cause.getMessage(), DiagnosticSeverity.Error)
                                 .range(range)
                                 .source(cause.getSourceLocator())
@@ -349,8 +351,8 @@ public final class GroovycWrapper implements CompilerWrapper {
     private static Location createLocation(String uri, ASTNode node) {
         return new LocationBuilder()
                 .uri(uri)
-                .range(Ranges.createRange(node.getLineNumber(), node.getColumnNumber(), node.getLastLineNumber(),
-                        node.getLastColumnNumber()))
+                .range(Ranges.createZeroBasedRange(node.getLineNumber(), node.getColumnNumber(),
+                        node.getLastLineNumber(), node.getLastColumnNumber()))
                 .build();
     }
 

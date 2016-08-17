@@ -50,6 +50,15 @@ public final class Ranges {
     }
 
     /**
+     * Returns a newly created zero-indexed range from one-indexed lines and columns.
+     */
+    public static Range createZeroBasedRange(int startLine, int startColumn, int endLine, int endColumn) {
+        Range range = Ranges.createRange(startLine - 1, startColumn - 1,
+                endLine - 1, endColumn - 1);
+        return Ranges.isValid(range) ? range : Ranges.UNDEFINED_RANGE;
+    }
+
+    /**
      * Checks whether the given range is valid, i.e its start is before or equal to its end.
      */
     public static boolean isValid(Range range) {
