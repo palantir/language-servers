@@ -25,11 +25,15 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.palantir.groovylanguageserver.util.DefaultDiagnosticBuilder;
+import com.palantir.groovylanguageserver.util.Ranges;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.typefox.lsapi.Diagnostic;
 import io.typefox.lsapi.DiagnosticSeverity;
+import io.typefox.lsapi.Location;
 import io.typefox.lsapi.PublishDiagnosticsParams;
+import io.typefox.lsapi.ReferenceParams;
 import io.typefox.lsapi.SymbolInformation;
+import io.typefox.lsapi.SymbolKind;
 import io.typefox.lsapi.TextDocumentIdentifier;
 import io.typefox.lsapi.TextDocumentItem;
 import io.typefox.lsapi.builders.DidChangeTextDocumentParamsBuilder;
@@ -37,6 +41,8 @@ import io.typefox.lsapi.builders.DidCloseTextDocumentParamsBuilder;
 import io.typefox.lsapi.builders.DidOpenTextDocumentParamsBuilder;
 import io.typefox.lsapi.builders.DidSaveTextDocumentParamsBuilder;
 import io.typefox.lsapi.builders.DocumentSymbolParamsBuilder;
+import io.typefox.lsapi.builders.LocationBuilder;
+import io.typefox.lsapi.builders.ReferenceParamsBuilder;
 import io.typefox.lsapi.builders.SymbolInformationBuilder;
 import io.typefox.lsapi.builders.TextDocumentIdentifierBuilder;
 import io.typefox.lsapi.builders.TextDocumentItemBuilder;
@@ -52,6 +58,7 @@ import java.util.stream.Collectors;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
 @SuppressFBWarnings("DMI_HARDCODED_ABSOLUTE_FILENAME")
@@ -63,6 +70,7 @@ public final class GroovyTextDocumentServiceTest {
     private List<PublishDiagnosticsParams> publishedDiagnostics = Lists.newArrayList();
     private Set<Diagnostic> expectedDiagnostics = Sets.newHashSet();
     private Map<String, Set<SymbolInformation>> symbolsMap = Maps.newHashMap();
+    private Set<SymbolInformation> expectedReferences = Sets.newHashSet();
 
     @Mock
     private CompilerWrapper compilerWrapper;
@@ -80,9 +88,39 @@ public final class GroovyTextDocumentServiceTest {
         SymbolInformation symbol = new SymbolInformationBuilder().name("ThisIsASymbol").build();
         symbolsMap.put(WORKSPACE_PATH.resolve("something.groovy").toString(), Sets.newHashSet(symbol));
 
+        expectedReferences.add(new SymbolInformationBuilder()
+                .containerName("Something")
+                .kind(SymbolKind.Class)
+                .name("MyClassName")
+                .location(new LocationBuilder()
+                        .uri("uri")
+                        .range(Ranges.createRange(1, 1, 9, 9))
+                        .build())
+                .build());
+        expectedReferences.add(new SymbolInformationBuilder()
+                .containerName("SomethingElse")
+                .kind(SymbolKind.Class)
+                .name("MyClassName2")
+                .location(new LocationBuilder()
+                            .uri("uri")
+                            .range(Ranges.createRange(1, 1, 9, 9))
+                            .build())
+                .build());
+        Set<SymbolInformation> allReferencesReturned = Sets.newHashSet(expectedReferences);
+        // The reference that will be filtered out
+        allReferencesReturned.add(new SymbolInformationBuilder()
+                .containerName("SomethingElse")
+                .kind(SymbolKind.Class)
+                .name("MyClassName3")
+                .location(new LocationBuilder()
+                            .uri("uri")
+                            .range(Ranges.UNDEFINED_RANGE)
+                            .build())
+                .build());
         when(compilerWrapper.getWorkspaceRoot()).thenReturn(WORKSPACE_PATH);
         when(compilerWrapper.compile()).thenReturn(diagnostics);
         when(compilerWrapper.getFileSymbols()).thenReturn(symbolsMap);
+        when(compilerWrapper.findReferences(Mockito.any())).thenReturn(allReferencesReturned);
 
         when(provider.get()).thenReturn(compilerWrapper);
 
@@ -160,6 +198,17 @@ public final class GroovyTextDocumentServiceTest {
                 service.documentSymbol(new DocumentSymbolParamsBuilder().textDocument(textDocument).build());
         assertThat(response.get().stream().collect(Collectors.toSet()),
                 is(symbolsMap.get(WORKSPACE_PATH.resolve("something.groovy").toString())));
+    }
+
+    @Test
+    public void testReferences() throws InterruptedException, ExecutionException {
+        // HACK, blocked on https://github.com/TypeFox/ls-api/issues/39
+        ReferenceParams params =
+                (ReferenceParams) new ReferenceParamsBuilder().context(false).position(5, 5).textDocument("uri")
+                        .uri("uri").build();
+        CompletableFuture<List<? extends Location>> response = service.references(params);
+        assertThat(response.get().stream().collect(Collectors.toSet()),
+                is(expectedReferences.stream().map(symbol -> symbol.getLocation()).collect(Collectors.toSet())));
     }
 
 }

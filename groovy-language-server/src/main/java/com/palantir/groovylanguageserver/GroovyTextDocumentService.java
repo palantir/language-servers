@@ -18,6 +18,7 @@ package com.palantir.groovylanguageserver;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
+import com.palantir.groovylanguageserver.util.Ranges;
 import io.typefox.lsapi.CodeActionParams;
 import io.typefox.lsapi.CodeLens;
 import io.typefox.lsapi.CodeLensParams;
@@ -91,7 +92,11 @@ public final class GroovyTextDocumentService implements TextDocumentService {
 
     @Override
     public CompletableFuture<List<? extends Location>> references(ReferenceParams params) {
-        throw new UnsupportedOperationException();
+        return CompletableFuture.completedFuture(
+                provider.get().findReferences(params).stream()
+                        .map(symbol -> symbol.getLocation())
+                        .filter(location -> Ranges.isValid(location.getRange()))
+                        .collect(Collectors.toList()));
     }
 
     @Override

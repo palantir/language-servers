@@ -17,6 +17,7 @@
 package com.palantir.groovylanguageserver;
 
 import io.typefox.lsapi.Diagnostic;
+import io.typefox.lsapi.ReferenceParams;
 import io.typefox.lsapi.SymbolInformation;
 import java.nio.file.Path;
 import java.util.Map;
@@ -37,9 +38,20 @@ public interface CompilerWrapper {
 
     /**
      * Returns a mapping from absolute path of source file to symbols located within these source files.
-     * @return the list of symbols
      */
     Map<String, Set<SymbolInformation>> getFileSymbols();
+
+    /**
+     * Returns a mapping from a type name (class, interface, or enum) to symbols which reference those types.
+     */
+    Map<String, Set<SymbolInformation>> getTypeReferences();
+
+    /**
+     * Returns the locations of the symbols that reference the symbol defined by the given params.
+     * @param params the parameters used to filter down which symbol is referenced
+     * @return the set of locations
+     */
+    Set<SymbolInformation> findReferences(ReferenceParams params);
 
     /**
      * Returns a list of symbols filtered based on a wildcard query.
@@ -47,7 +59,7 @@ public interface CompilerWrapper {
      * The character * designates zero or more of any character. The character ? designates exactly one character.
      *
      * @param query the query
-     * @return the list of symbols
+     * @return the set of symbols
      */
     Set<SymbolInformation> getFilteredSymbols(String query);
 

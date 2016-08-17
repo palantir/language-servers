@@ -66,6 +66,7 @@ public final class GroovyLanguageServer implements LanguageServer {
                                             .textDocumentSync(TextDocumentSyncKind.Incremental)
                                             .documentSymbolProvider(true)
                                             .workspaceSymbolProvider(true)
+                                            .referencesProvider(true)
                                             .build();
         InitializeResult result = new InitializeResultBuilder().capabilities(capabilities).build();
 
