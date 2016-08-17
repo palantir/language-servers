@@ -208,14 +208,8 @@ public final class GroovyTextDocumentService implements TextDocumentService {
     @SuppressWarnings("checkstyle:cyclomaticcomplexity") // this is not complex behaviour
     private static CompletionItemKind symbolKindToCompletionItemKind(SymbolKind kind) {
         switch (kind) {
-            case Array:
-                return CompletionItemKind.Value;
-            case Boolean:
-                return CompletionItemKind.Value;
             case Class:
                 return CompletionItemKind.Class;
-            case Constant:
-                return CompletionItemKind.Value;
             case Constructor:
                 return CompletionItemKind.Constructor;
             case Enum:
@@ -230,20 +224,21 @@ public final class GroovyTextDocumentService implements TextDocumentService {
                 return CompletionItemKind.Interface;
             case Method:
                 return CompletionItemKind.Method;
-            case Module:
-                return CompletionItemKind.Module;
-            case Namespace:
-                return CompletionItemKind.Module;
-            case Number:
-                return CompletionItemKind.Value;
-            case Package:
-                return CompletionItemKind.Module;
             case Property:
                 return CompletionItemKind.Property;
             case String:
                 return CompletionItemKind.Text;
             case Variable:
                 return CompletionItemKind.Variable;
+            case Array:
+            case Boolean:
+            case Constant:
+            case Number:
+                return CompletionItemKind.Value;
+            case Module:
+            case Namespace:
+            case Package:
+                return CompletionItemKind.Module;
             default:
                 throw new IllegalArgumentException(String.format("Unsupported SymbolKind: %s", kind));
         }
