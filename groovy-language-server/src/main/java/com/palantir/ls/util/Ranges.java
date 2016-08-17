@@ -58,7 +58,6 @@ public final class Ranges {
         return Ranges.isValid(range) ? range : Ranges.UNDEFINED_RANGE;
     }
 
-
     /**
      * Checks whether the given range is valid, i.e its start is before or equal to its end.
      */
