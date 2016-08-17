@@ -209,8 +209,9 @@ public final class GroovycWrapper implements CompilerWrapper {
                 SyntaxErrorMessage syntaxErrorMessage = (SyntaxErrorMessage) message;
                 SyntaxException cause = syntaxErrorMessage.getCause();
 
-                Range range = createZeroBasedRange(cause.getStartLine(), cause.getStartColumn(), cause.getEndLine(),
-                        cause.getEndColumn());
+                Range range =
+                        Ranges.createZeroBasedRange(cause.getStartLine(), cause.getStartColumn(), cause.getEndLine(),
+                                cause.getEndColumn());
 
                 diagnostic = new DefaultDiagnosticBuilder(cause.getMessage(), DiagnosticSeverity.Error)
                                 .range(range)
@@ -350,19 +351,13 @@ public final class GroovycWrapper implements CompilerWrapper {
     private static Location createLocation(String uri, ASTNode node) {
         return new LocationBuilder()
                 .uri(uri)
-                .range(createZeroBasedRange(node.getLineNumber(), node.getColumnNumber(), node.getLastLineNumber(),
-                        node.getLastColumnNumber()))
+                .range(Ranges.createZeroBasedRange(node.getLineNumber(), node.getColumnNumber(),
+                        node.getLastLineNumber(), node.getLastColumnNumber()))
                 .build();
     }
 
     private static void addToValueSet(Map<String, Set<SymbolInformation>> map, String key, SymbolInformation symbol) {
         map.computeIfAbsent(key, (value) -> Sets.newHashSet()).add(symbol);
-    }
-
-    private static Range createZeroBasedRange(int startLine, int startChar, int endLine, int endChar) {
-        Range range = Ranges.createRange(startLine - 1, startChar - 1,
-                endLine - 1, endChar - 1);
-        return Ranges.isValid(range) ? range : Ranges.UNDEFINED_RANGE;
     }
 
 }

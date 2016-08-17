@@ -88,6 +88,15 @@ public final class RangesTest {
         Ranges.contains(Ranges.createRange(4, 4, 4, 4), position);
     }
 
+    @Test
+    public void testCreateZeroBasedRange() {
+        assertThat(Ranges.createZeroBasedRange(0, 0, 0, 0), is(Ranges.UNDEFINED_RANGE));
+        assertThat(Ranges.createZeroBasedRange(-1, -1, -1, -1), is(Ranges.UNDEFINED_RANGE));
+        assertThat(Ranges.createZeroBasedRange(-2, -2, -2, -2), is(Ranges.UNDEFINED_RANGE));
+        assertThat(Ranges.createZeroBasedRange(1, 1, 1, 1), is(Ranges.createRange(0, 0, 0, 0)));
+        assertThat(Ranges.createZeroBasedRange(2, 3, 4, 5), is(Ranges.createRange(1, 2, 3, 4)));
+    }
+
     private static Position position(int line, int character) {
         return new PositionImpl(line, character);
     }
