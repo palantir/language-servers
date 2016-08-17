@@ -21,6 +21,7 @@ import io.typefox.lsapi.InitializeParams;
 import io.typefox.lsapi.InitializeResult;
 import io.typefox.lsapi.ServerCapabilities;
 import io.typefox.lsapi.TextDocumentSyncKind;
+import io.typefox.lsapi.builders.CompletionOptionsBuilder;
 import io.typefox.lsapi.builders.InitializeResultBuilder;
 import io.typefox.lsapi.builders.ServerCapabilitiesBuilder;
 import io.typefox.lsapi.services.LanguageServer;
@@ -63,11 +64,15 @@ public final class GroovyLanguageServer implements LanguageServer {
         workspaceRoot = Paths.get(params.getRootPath()).toAbsolutePath().normalize();
 
         ServerCapabilities capabilities = new ServerCapabilitiesBuilder()
-                                            .textDocumentSync(TextDocumentSyncKind.Incremental)
-                                            .documentSymbolProvider(true)
-                                            .workspaceSymbolProvider(true)
-                                            .referencesProvider(true)
-                                            .build();
+                .textDocumentSync(TextDocumentSyncKind.Incremental)
+                .documentSymbolProvider(true)
+                .workspaceSymbolProvider(true)
+                .referencesProvider(true)
+                .completionProvider(new CompletionOptionsBuilder()
+                        .resolveProvider(false)
+                        .triggerCharacter(".")
+                        .build())
+                .build();
         InitializeResult result = new InitializeResultBuilder().capabilities(capabilities).build();
 
         GroovycWrapper groovycWrapper = GroovycWrapper.of(Files.createTempDir().toPath(), workspaceRoot);
