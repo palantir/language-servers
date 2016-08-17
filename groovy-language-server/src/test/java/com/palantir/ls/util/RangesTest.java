@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.palantir.groovylanguageserver.util;
+package com.palantir.ls.util;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertFalse;

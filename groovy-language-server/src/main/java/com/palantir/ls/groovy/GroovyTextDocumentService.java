@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package com.palantir.groovylanguageserver;
+package com.palantir.ls.groovy;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
-import com.palantir.groovylanguageserver.util.Ranges;
+import com.palantir.ls.util.Ranges;
 import io.typefox.lsapi.CodeActionParams;
 import io.typefox.lsapi.CodeLens;
 import io.typefox.lsapi.CodeLensParams;

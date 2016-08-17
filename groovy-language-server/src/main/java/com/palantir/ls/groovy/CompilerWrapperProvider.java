@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.palantir.groovylanguageserver;
+package com.palantir.ls.groovy;
 
 /**
  * Holds and provides a {@link CompilerWrapper}.

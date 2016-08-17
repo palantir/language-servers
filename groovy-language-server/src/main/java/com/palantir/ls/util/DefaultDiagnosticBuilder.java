@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.palantir.groovylanguageserver.util;
+package com.palantir.ls.util;
 
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;

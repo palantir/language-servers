@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-package com.palantir.groovylanguageserver;
+package com.palantir.ls.groovy;
 
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.io.Files;
-import com.palantir.groovylanguageserver.util.DefaultDiagnosticBuilder;
-import com.palantir.groovylanguageserver.util.Ranges;
+import com.palantir.ls.util.DefaultDiagnosticBuilder;
+import com.palantir.ls.util.Ranges;
 import io.typefox.lsapi.Diagnostic;
 import io.typefox.lsapi.DiagnosticSeverity;
 import io.typefox.lsapi.Location;
