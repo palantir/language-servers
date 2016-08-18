@@ -16,14 +16,15 @@
 
 package com.palantir.ls.util;
 
-import com.google.common.base.Preconditions;
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import io.typefox.lsapi.DiagnosticSeverity;
 import io.typefox.lsapi.builders.DiagnosticBuilder;
 
 public final class DefaultDiagnosticBuilder extends DiagnosticBuilder {
 
     public DefaultDiagnosticBuilder(String message, DiagnosticSeverity severity) {
-        Preconditions.checkNotNull(message, "message cannot be null");
+        checkNotNull(message, "message cannot be null");
         this.message(message);
         this.severity(severity);
         this.range(Ranges.UNDEFINED_RANGE);

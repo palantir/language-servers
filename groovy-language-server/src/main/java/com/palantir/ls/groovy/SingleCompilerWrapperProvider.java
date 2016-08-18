@@ -16,7 +16,7 @@
 
 package com.palantir.ls.groovy;
 
-import com.google.common.base.Preconditions;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * Holds and provides a {@link CompilerWrapper} which should be initialized only once.
@@ -27,7 +27,7 @@ public final class SingleCompilerWrapperProvider implements CompilerWrapperProvi
 
     @Override
     public synchronized void set(CompilerWrapper newCompilerWrapper) {
-        Preconditions.checkNotNull(newCompilerWrapper, "newCompilerWrapper cannot be null");
+        checkNotNull(newCompilerWrapper, "newCompilerWrapper cannot be null");
         if (compilerWrapper != null) {
             throw new RuntimeException("Trying to set CompilerWrapper after initialization");
         }
