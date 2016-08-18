@@ -16,7 +16,8 @@
 
 package com.palantir.ls.util;
 
-import com.google.common.base.Preconditions;
+import static com.google.common.base.Preconditions.checkArgument;
+
 import io.typefox.lsapi.Position;
 import io.typefox.lsapi.Range;
 import io.typefox.lsapi.builders.RangeBuilder;
@@ -77,8 +78,8 @@ public final class Ranges {
      * Returns whether the given range contains the given position, inclusively.
      */
     public static boolean contains(Range range, Position position) {
-        Preconditions.checkArgument(isValid(range), String.format("range is not valid: %s", range.toString()));
-        Preconditions.checkArgument(isValid(position), String.format("position is not valid: %s", position.toString()));
+        checkArgument(isValid(range), String.format("range is not valid: %s", range.toString()));
+        checkArgument(isValid(position), String.format("position is not valid: %s", position.toString()));
 
         return POSITION_COMPARATOR.compare(range.getStart(), position) <= 0
                 && POSITION_COMPARATOR.compare(range.getEnd(), position) >= 0;

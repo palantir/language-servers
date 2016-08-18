@@ -16,8 +16,10 @@
 
 package com.palantir.ls.groovy;
 
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import com.google.common.base.Optional;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.io.Files;
@@ -94,10 +96,10 @@ public final class GroovycWrapper implements CompilerWrapper {
      * @return the newly created GroovycWrapper
      */
     public static GroovycWrapper of(Path targetDirectory, Path workspaceRoot) {
-        Preconditions.checkNotNull(workspaceRoot, "workspaceRoot must not be null");
-        Preconditions.checkNotNull(targetDirectory, "targetDirectory must not be null");
-        Preconditions.checkArgument(workspaceRoot.toFile().isDirectory(), "workspaceRoot must be a directory");
-        Preconditions.checkArgument(targetDirectory.toFile().isDirectory(), "targetDirectory must be a directory");
+        checkNotNull(targetDirectory, "targetDirectory must not be null");
+        checkNotNull(workspaceRoot, "workspaceRoot must not be null");
+        checkArgument(targetDirectory.toFile().isDirectory(), "targetDirectory must be a directory");
+        checkArgument(workspaceRoot.toFile().isDirectory(), "workspaceRoot must be a directory");
 
         CompilerConfiguration config = new CompilerConfiguration();
         config.setTargetDirectory(targetDirectory.toFile());
