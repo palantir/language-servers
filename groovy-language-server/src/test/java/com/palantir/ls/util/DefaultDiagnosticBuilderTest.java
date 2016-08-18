@@ -31,6 +31,7 @@ public final class DefaultDiagnosticBuilderTest {
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
 
+    @SuppressWarnings("UWF_NULL_FIELD")
     @Test
     public void testExceptionOnNullMessage() {
         expectedException.expect(NullPointerException.class);
