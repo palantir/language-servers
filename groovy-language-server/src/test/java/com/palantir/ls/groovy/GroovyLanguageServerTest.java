@@ -30,8 +30,10 @@ import io.typefox.lsapi.services.WindowService;
 import io.typefox.lsapi.services.WorkspaceService;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.concurrent.ExecutionException;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -42,36 +44,35 @@ public final class GroovyLanguageServerTest {
     @Rule
     public TemporaryFolder folder = new TemporaryFolder();
 
+    private GroovyLanguageServer server;
+
+    @Before
+    public void before() {
+        server = new GroovyLanguageServer(new CompilerWrapperProvider() {
+            @Override
+            public void set(CompilerWrapper compilerWrapper) {}
+
+            @Override
+            public CompilerWrapper get() {
+                return Mockito.mock(CompilerWrapper.class);
+            }
+        }, Mockito.mock(LanguageServerConfig.class), Mockito.mock(TextDocumentService.class),
+                Mockito.mock(WorkspaceService.class), Mockito.mock(WindowService.class));
+    }
+
     @Test
     public void testInitialize_absoluteWorkspacePath() throws InterruptedException, ExecutionException {
-        GroovyLanguageServer server =
-                new GroovyLanguageServer(new CompilerWrapperProvider() {
-                    @Override
-                    public void set(CompilerWrapper compilerWrapper) {}
-
-                    @Override
-                    public CompilerWrapper get() {
-                        return Mockito.mock(CompilerWrapper.class);
-                    }
-                }, Mockito.mock(LanguageServerConfig.class), Mockito.mock(TextDocumentService.class),
-                        Mockito.mock(WorkspaceService.class), Mockito.mock(WindowService.class));
         InitializeParams params =
                 new InitializeParamsBuilder().capabilities(new ClientCapabilitiesImpl()).processId(1)
                         .rootPath(folder.getRoot().toPath().toAbsolutePath().toString()).build();
         InitializeResult result = server.initialize(params).get();
-        assertThat(server.getWorkspaceRoot(), is(folder.getRoot().toPath().toAbsolutePath().normalize()));
-        assertThat(result.getCapabilities().getTextDocumentSync(), is(TextDocumentSyncKind.Incremental));
-        assertTrue(result.getCapabilities().isDocumentSymbolProvider());
-        assertTrue(result.getCapabilities().isWorkspaceSymbolProvider());
+        assertInitializeResultIsCorrect(folder.getRoot().toPath().toAbsolutePath().normalize(), result);
 
         // Test normalization
         params = new InitializeParamsBuilder().capabilities(new ClientCapabilitiesImpl()).processId(1)
                         .rootPath(folder.getRoot().toPath().toAbsolutePath().toString() + "/somethingelse/..").build();
         result = server.initialize(params).get();
-        assertThat(server.getWorkspaceRoot(), is(folder.getRoot().toPath().toAbsolutePath().normalize()));
-        assertThat(result.getCapabilities().getTextDocumentSync(), is(TextDocumentSyncKind.Incremental));
-        assertTrue(result.getCapabilities().isDocumentSymbolProvider());
-        assertTrue(result.getCapabilities().isWorkspaceSymbolProvider());
+        assertInitializeResultIsCorrect(folder.getRoot().toPath().toAbsolutePath().normalize(), result);
     }
 
     @Test
@@ -80,45 +81,32 @@ public final class GroovyLanguageServerTest {
         // Create a directory in our working directory
         assertTrue(workspaceRoot.mkdir());
 
-        GroovyLanguageServer server =
-                new GroovyLanguageServer(new CompilerWrapperProvider() {
-                    @Override
-                    public void set(CompilerWrapper compilerWrapper) {}
-
-                    @Override
-                    public CompilerWrapper get() {
-                        return Mockito.mock(CompilerWrapper.class);
-                    }
-                }, Mockito.mock(LanguageServerConfig.class), Mockito.mock(TextDocumentService.class),
-                        Mockito.mock(WorkspaceService.class), Mockito.mock(WindowService.class));
         InitializeParams params =
                 new InitializeParamsBuilder().capabilities(new ClientCapabilitiesImpl()).processId(1)
                         .rootPath("something").build();
         InitializeResult result = server.initialize(params).get();
-        assertThat(server.getWorkspaceRoot(), is(workspaceRoot.toPath()));
-        assertThat(result.getCapabilities().getTextDocumentSync(), is(TextDocumentSyncKind.Incremental));
-        assertTrue(result.getCapabilities().isDocumentSymbolProvider());
-        assertTrue(result.getCapabilities().isWorkspaceSymbolProvider());
+        assertInitializeResultIsCorrect(workspaceRoot.toPath(), result);
 
         // Test normalization
         params = new InitializeParamsBuilder().capabilities(new ClientCapabilitiesImpl()).processId(1)
                         .rootPath("./something").build();
         result = server.initialize(params).get();
-        assertThat(server.getWorkspaceRoot(), is(workspaceRoot.toPath()));
-        assertThat(result.getCapabilities().getTextDocumentSync(), is(TextDocumentSyncKind.Incremental));
-        assertTrue(result.getCapabilities().isDocumentSymbolProvider());
-        assertTrue(result.getCapabilities().isWorkspaceSymbolProvider());
+        assertInitializeResultIsCorrect(workspaceRoot.toPath(), result);
 
         params = new InitializeParamsBuilder().capabilities(new ClientCapabilitiesImpl()).processId(1)
                         .rootPath("somethingelse/../something/../something").build();
         result = server.initialize(params).get();
-        assertThat(server.getWorkspaceRoot(), is(workspaceRoot.toPath()));
-        assertThat(result.getCapabilities().getTextDocumentSync(), is(TextDocumentSyncKind.Incremental));
-        assertTrue(result.getCapabilities().isDocumentSymbolProvider());
-        assertTrue(result.getCapabilities().isWorkspaceSymbolProvider());
+        assertInitializeResultIsCorrect(workspaceRoot.toPath(), result);
 
         // Delete the directory we created in our working directory
         assertTrue(workspaceRoot.delete());
+    }
+
+    private void assertInitializeResultIsCorrect(Path expectedWorkspaceRoot, InitializeResult result) {
+        assertThat(server.getWorkspaceRoot(), is(expectedWorkspaceRoot));
+        assertThat(result.getCapabilities().getTextDocumentSync(), is(TextDocumentSyncKind.Incremental));
+        assertTrue(result.getCapabilities().isDocumentSymbolProvider());
+        assertTrue(result.getCapabilities().isWorkspaceSymbolProvider());
     }
 
 }
