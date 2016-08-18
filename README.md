@@ -15,7 +15,7 @@ Uses the Java API definition in [typefox/ls-api](https://github.com/TypeFox/ls-a
 ## Building and Testing
 - `./gradlew build` Compiles, runs tests, checkstyle and findbugs
 - `./gradlew test` Runs all unit tests
-- `./gradlew distTar` Creates a jar under groovy-language-server/groovy-language-server/build/libs/groovy-language-server-\<version\>.jar
+- `./gradlew publishToMavenLocal` Creates jars in your Maven local repository
 
 ## Debug
 - `./gradlew clean cleanEclipse` Deletes gradle generated files
