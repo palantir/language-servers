@@ -16,19 +16,24 @@
 
 package com.palantir.ls.groovy;
 
+import com.google.common.collect.Lists;
 import com.google.common.io.Files;
+import com.palantir.ls.server.StreamLanguageServerLauncher;
+import com.palantir.ls.util.GroovyConstants;
 import io.typefox.lsapi.InitializeParams;
 import io.typefox.lsapi.InitializeResult;
+import io.typefox.lsapi.LanguageDescription;
 import io.typefox.lsapi.ServerCapabilities;
 import io.typefox.lsapi.TextDocumentSyncKind;
 import io.typefox.lsapi.builders.CompletionOptionsBuilder;
 import io.typefox.lsapi.builders.InitializeResultBuilder;
+import io.typefox.lsapi.builders.LanguageDescriptionBuilder;
 import io.typefox.lsapi.builders.ServerCapabilitiesBuilder;
+import io.typefox.lsapi.impl.LanguageDescriptionImpl;
 import io.typefox.lsapi.services.LanguageServer;
 import io.typefox.lsapi.services.TextDocumentService;
 import io.typefox.lsapi.services.WindowService;
 import io.typefox.lsapi.services.WorkspaceService;
-import io.typefox.lsapi.services.json.LanguageServerToJsonAdapter;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.concurrent.CompletableFuture;
@@ -40,7 +45,7 @@ import org.slf4j.LoggerFactory;
 @SuppressWarnings("deprecation")
 public final class GroovyLanguageServer implements LanguageServer {
 
-    private static final Logger log = LoggerFactory.getLogger(GroovyLanguageServer.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(GroovyLanguageServer.class);
 
     private final CompilerWrapperProvider provider;
     private final LanguageServerConfig config;
@@ -73,7 +78,14 @@ public final class GroovyLanguageServer implements LanguageServer {
                         .triggerCharacter(".")
                         .build())
                 .build();
-        InitializeResult result = new InitializeResultBuilder().capabilities(capabilities).build();
+        LanguageDescription languageDescription = new LanguageDescriptionBuilder()
+                .languageId(GroovyConstants.GROOVY_LANGUAGE_NAME)
+                .fileExtension(GroovyConstants.GROOVY_LANGUAGE_EXTENSION)
+                .build();
+        InitializeResult result = new InitializeResultBuilder()
+                .capabilities(capabilities)
+                .supportedLanguage(languageDescription)
+                .build();
 
         GroovycWrapper groovycWrapper = GroovycWrapper.of(Files.createTempDir().toPath(), workspaceRoot);
         provider.set(groovycWrapper);
@@ -118,11 +130,9 @@ public final class GroovyLanguageServer implements LanguageServer {
                 new GroovyLanguageServer(provider, config, new GroovyTextDocumentService(provider),
                         new GroovyWorkspaceService(provider), new GroovyWindowService(config));
 
-        LanguageServerToJsonAdapter adapter = new LanguageServerToJsonAdapter(server);
-        adapter.connect(System.in, System.out);
-        adapter.getProtocol().addErrorListener((message, err) -> log.error(message, err));
-
-        adapter.join();
+        StreamLanguageServerLauncher launcher = new StreamLanguageServerLauncher(server, System.in, System.out);
+        launcher.setLogger(LOGGER);
+        launcher.launch();
     }
 
 }
