@@ -16,7 +16,6 @@
 
 package com.palantir.ls.groovy;
 
-import com.google.common.collect.Lists;
 import com.google.common.io.Files;
 import com.palantir.ls.server.StreamLanguageServerLauncher;
 import com.palantir.ls.util.GroovyConstants;
@@ -29,7 +28,6 @@ import io.typefox.lsapi.builders.CompletionOptionsBuilder;
 import io.typefox.lsapi.builders.InitializeResultBuilder;
 import io.typefox.lsapi.builders.LanguageDescriptionBuilder;
 import io.typefox.lsapi.builders.ServerCapabilitiesBuilder;
-import io.typefox.lsapi.impl.LanguageDescriptionImpl;
 import io.typefox.lsapi.services.LanguageServer;
 import io.typefox.lsapi.services.TextDocumentService;
 import io.typefox.lsapi.services.WindowService;

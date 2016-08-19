@@ -16,7 +16,11 @@
 
 package com.palantir.ls.util;
 
-public class GroovyConstants {
+public final class GroovyConstants {
+
+    private GroovyConstants() {
+        // constant class
+    }
 
     public static final String GROOVY_LANGUAGE_NAME = "groovy";
     public static final String GROOVY_LANGUAGE_EXTENSION = "groovy";

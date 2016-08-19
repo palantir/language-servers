@@ -18,7 +18,6 @@ package com.palantir.ls.server;
 
 import com.palantir.ls.util.LoggerMessageTracer;
 import io.typefox.lsapi.services.LanguageServer;
-import io.typefox.lsapi.services.json.LanguageServerProtocol;
 import io.typefox.lsapi.services.json.MessageJsonHandler;
 import io.typefox.lsapi.services.json.StreamMessageReader;
 import io.typefox.lsapi.services.json.StreamMessageWriter;
@@ -26,14 +25,13 @@ import io.typefox.lsapi.services.transport.io.ConcurrentMessageReader;
 import io.typefox.lsapi.services.transport.io.MessageReader;
 import io.typefox.lsapi.services.transport.io.MessageWriter;
 import io.typefox.lsapi.services.transport.server.LanguageServerEndpoint;
-import io.typefox.lsapi.services.transport.trace.MessageTracer;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import org.slf4j.Logger;
 
-public class StreamLanguageServerLauncher {
+public final class StreamLanguageServerLauncher {
 
     private final LanguageServerEndpoint languageServerEndpoint;
     private final InputStream inputStream;
