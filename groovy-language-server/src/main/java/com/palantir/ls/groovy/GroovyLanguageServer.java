@@ -43,7 +43,7 @@ import org.slf4j.LoggerFactory;
 @SuppressWarnings("deprecation")
 public final class GroovyLanguageServer implements LanguageServer {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(GroovyLanguageServer.class);
+    private static final Logger logger = LoggerFactory.getLogger(GroovyLanguageServer.class);
 
     private final CompilerWrapperProvider provider;
     private final LanguageServerConfig config;
@@ -129,7 +129,7 @@ public final class GroovyLanguageServer implements LanguageServer {
                         new GroovyWorkspaceService(provider), new GroovyWindowService(config));
 
         StreamLanguageServerLauncher launcher = new StreamLanguageServerLauncher(server, System.in, System.out);
-        launcher.setLogger(LOGGER);
+        launcher.setLogger(logger);
         launcher.launch();
     }
 
