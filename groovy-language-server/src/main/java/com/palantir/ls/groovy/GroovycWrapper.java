@@ -277,8 +277,9 @@ public final class GroovycWrapper implements CompilerWrapper {
         try {
             FileUtils.deleteDirectory(config.getTargetDirectory());
             if (!config.getTargetDirectory().mkdir()) {
-                throw new RuntimeException(String.format("Could not recreate target directory: %s",
-                        config.getTargetDirectory().getAbsolutePath()));
+                logger.error("Could not recreate target directory: '{}'",
+                        config.getTargetDirectory().getAbsolutePath());
+                throw new RuntimeException("Could not reset compiled files after changes");
             }
             unit = new CompilationUnit(config);
             addAllSourcesToCompilationUnit();
