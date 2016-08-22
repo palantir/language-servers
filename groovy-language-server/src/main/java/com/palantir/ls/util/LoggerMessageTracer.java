@@ -43,8 +43,7 @@ public final class LoggerMessageTracer implements MessageTracer {
             StringWriter stringWriter = new StringWriter();
             PrintWriter printWriter = new PrintWriter(stringWriter);
             throwable.printStackTrace(printWriter);
-            String stackTrace = stringWriter.toString();
-            logger.error(stackTrace);
+            logger.error(stringWriter.toString());
         }
     }
 
