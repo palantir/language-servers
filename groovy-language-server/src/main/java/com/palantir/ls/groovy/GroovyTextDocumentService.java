@@ -114,7 +114,7 @@ public final class GroovyTextDocumentService implements TextDocumentService {
 
     @Override
     public CompletableFuture<List<? extends SymbolInformation>> documentSymbol(DocumentSymbolParams params) {
-        Path absoluteUri = getAbsolutePathRelativeToWorkspace(params.getTextDocument().getUri());
+        Path absoluteUri = resolveUriToWorkspaceRoot(params.getTextDocument().getUri());
         assertFileExists(absoluteUri);
         List<SymbolInformation> symbols =
                 Optional.fromNullable(provider.get().getFileSymbols().get(absoluteUri.toString()).stream()
@@ -159,14 +159,14 @@ public final class GroovyTextDocumentService implements TextDocumentService {
 
     @Override
     public void didOpen(DidOpenTextDocumentParams params) {
-        Path absoluteUri = getAbsolutePathRelativeToWorkspace(params.getTextDocument().getUri());
+        Path absoluteUri = resolveUriToWorkspaceRoot(params.getTextDocument().getUri());
         assertFileExists(absoluteUri);
         publishDiagnostics(provider.get().compile());
     }
 
     @Override
     public void didChange(DidChangeTextDocumentParams params) {
-        Path absoluteUri = getAbsolutePathRelativeToWorkspace(params.getTextDocument().getUri());
+        Path absoluteUri = resolveUriToWorkspaceRoot(params.getTextDocument().getUri());
         assertFileExists(absoluteUri);
         if (params.getContentChanges() == null || params.getContentChanges().isEmpty()) {
             throw new IllegalArgumentException(
@@ -178,7 +178,7 @@ public final class GroovyTextDocumentService implements TextDocumentService {
 
     @Override
     public void didClose(DidCloseTextDocumentParams params) {
-        Path absoluteUri = getAbsolutePathRelativeToWorkspace(params.getTextDocument().getUri());
+        Path absoluteUri = resolveUriToWorkspaceRoot(params.getTextDocument().getUri());
         assertFileExists(absoluteUri);
         provider.get().handleFileClosed(absoluteUri);
         publishDiagnostics(provider.get().compile());
@@ -186,7 +186,7 @@ public final class GroovyTextDocumentService implements TextDocumentService {
 
     @Override
     public void didSave(DidSaveTextDocumentParams params) {
-        Path absoluteUri = getAbsolutePathRelativeToWorkspace(params.getTextDocument().getUri());
+        Path absoluteUri = resolveUriToWorkspaceRoot(params.getTextDocument().getUri());
         assertFileExists(absoluteUri);
         provider.get().handleFileSaved(absoluteUri);
         publishDiagnostics(provider.get().compile());
@@ -205,7 +205,7 @@ public final class GroovyTextDocumentService implements TextDocumentService {
         publishDiagnostics.accept(paramsBuilder.build());
     }
 
-    private Path getAbsolutePathRelativeToWorkspace(String uri) {
+    private Path resolveUriToWorkspaceRoot(String uri) {
         Path filePath = Paths.get(uri);
         return filePath.isAbsolute() ? filePath : provider.get().getWorkspaceRoot().resolve(uri).toAbsolutePath();
     }

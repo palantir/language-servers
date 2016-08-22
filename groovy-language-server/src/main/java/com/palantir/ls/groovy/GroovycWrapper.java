@@ -174,7 +174,7 @@ public final class GroovycWrapper implements CompilerWrapper {
         originalSourceToChangedSource.remove(originalFile);
         // Deleted the changed file
         if (!changedSource.toFile().delete()) {
-            throw new IllegalStateException(String.format("Unable to delete file %s", changedSource.toAbsolutePath()));
+            logger.error("Unable to delete file '{}'", changedSource.toAbsolutePath());
         }
         resetCompilationUnit();
     }
