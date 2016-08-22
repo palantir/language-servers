@@ -24,6 +24,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.io.Files;
 import com.palantir.ls.util.DefaultDiagnosticBuilder;
+import com.palantir.ls.util.GroovyConstants;
 import com.palantir.ls.util.Ranges;
 import io.typefox.lsapi.Diagnostic;
 import io.typefox.lsapi.DiagnosticSeverity;
@@ -74,7 +75,6 @@ public final class GroovycWrapper implements CompilerWrapper {
     private static final Logger log = LoggerFactory.getLogger(GroovycWrapper.class);
 
     private static final String GROOVY_DEFAULT_INTERFACE = "groovy.lang.GroovyObject";
-    private static final String GROOVY_EXTENSION = "groovy";
     private static final String JAVA_DEFAULT_OBJECT = "java.lang.Object";
 
     private final Path workspaceRoot;
@@ -191,7 +191,8 @@ public final class GroovycWrapper implements CompilerWrapper {
 
     private void addAllSourcesToCompilationUnit() {
         for (File file : Files.fileTreeTraverser().preOrderTraversal(workspaceRoot.toFile())) {
-            if (file.isFile() && Files.getFileExtension(file.getAbsolutePath()).equals(GROOVY_EXTENSION)) {
+            String fileExtension = Files.getFileExtension(file.getAbsolutePath());
+            if (file.isFile() && fileExtension.equals(GroovyConstants.GROOVY_LANGUAGE_EXTENSION)) {
                 unit.addSource(file);
             }
         }
