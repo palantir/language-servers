@@ -19,6 +19,7 @@ package com.palantir.ls.util;
 import static org.junit.Assert.assertEquals;
 
 import com.google.common.collect.Lists;
+import io.typefox.lsapi.Range;
 import io.typefox.lsapi.TextDocumentContentChangeEvent;
 import io.typefox.lsapi.builders.TextDocumentContentChangeEventBuilder;
 import java.io.File;
@@ -225,6 +226,53 @@ public final class SourceWriterTest {
         writer.applyChanges(changes);
         assertEquals("first line\nsecond line\nthird line\nfirst second\n",
                 FileUtils.readFileToString(destination.toFile()));
+    }
+
+    @Test
+    public void testDidChanges_invalidRanges() throws IOException {
+        // Should be appended to the end of the file
+        Path source = addFileToFolder(sourceFolder.getRoot(), "myfile.txt", "first line\nsecond line\nthird line\n");
+        Path destination = destinationFolder.getRoot().toPath().resolve("myfile.txt");
+        SourceWriter writer = SourceWriter.of(source, destination);
+        List<TextDocumentContentChangeEvent> changes = Lists.newArrayList();
+        changes.add(new TextDocumentContentChangeEventBuilder()
+                .range(Ranges.createRange(-1, 0, 0, 0))
+                .rangeLength(3)
+                .text("one")
+                .build());
+        changes.add(new TextDocumentContentChangeEventBuilder()
+                .range(Ranges.createRange(0, 0, 0, 0))
+                .rangeLength(3)
+                .text("two")
+                .build());
+        expectedException.expect(IllegalArgumentException.class);
+        expectedException
+                .expectMessage(String.format("range1 is not valid: %s", Ranges.createRange(-1, 0, 0, 0).toString()));
+        writer.applyChanges(changes);
+    }
+
+    @Test
+    public void testDidChanges_intersectingRanges() throws IOException {
+        // Should be appended to the end of the file
+        Path source = addFileToFolder(sourceFolder.getRoot(), "myfile.txt", "first line\nsecond line\nthird line\n");
+        Path destination = destinationFolder.getRoot().toPath().resolve("myfile.txt");
+        SourceWriter writer = SourceWriter.of(source, destination);
+        List<TextDocumentContentChangeEvent> changes = Lists.newArrayList();
+        Range range = Ranges.createRange(0, 0, 0, 1);
+        changes.add(new TextDocumentContentChangeEventBuilder()
+                .range(range)
+                .rangeLength(3)
+                .text("one")
+                .build());
+        changes.add(new TextDocumentContentChangeEventBuilder()
+                .range(range)
+                .rangeLength(3)
+                .text("two")
+                .build());
+        expectedException.expect(IllegalArgumentException.class);
+        expectedException.expectMessage(
+                String.format("Cannot apply changes with intersecting ranges %s and %s", range, range));
+        writer.applyChanges(changes);
     }
 
     @Test

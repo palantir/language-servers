@@ -97,6 +97,56 @@ public final class RangesTest {
         assertThat(Ranges.createZeroBasedRange(2, 3, 4, 5), is(Ranges.createRange(1, 2, 3, 4)));
     }
 
+    @Test
+    public void testMax() {
+        assertThat(Ranges.max(position(1, 2), position(2, 2)), is(position(2, 2)));
+        assertThat(Ranges.max(position(2, 2), position(1, 2)), is(position(2, 2)));
+        assertThat(Ranges.max(position(1, 2), position(1, 3)), is(position(1, 3)));
+        assertThat(Ranges.max(position(1, 3), position(1, 2)), is(position(1, 3)));
+        assertThat(Ranges.max(position(-1, -1), position(0, 0)), is(position(0, 0)));
+        assertThat(Ranges.max(position(0, 0), position(-1, -1)), is(position(0, 0)));
+        assertThat(Ranges.max(position(0, 0), position(0, 0)), is(position(0, 0)));
+    }
+
+    @Test
+    public void testMin() {
+        assertThat(Ranges.min(position(1, 2), position(2, 2)), is(position(1, 2)));
+        assertThat(Ranges.min(position(2, 2), position(1, 2)), is(position(1, 2)));
+        assertThat(Ranges.min(position(1, 2), position(1, 3)), is(position(1, 2)));
+        assertThat(Ranges.min(position(1, 3), position(1, 2)), is(position(1, 2)));
+        assertThat(Ranges.min(position(-1, -1), position(0, 0)), is(position(-1, -1)));
+        assertThat(Ranges.min(position(0, 0), position(-1, -1)), is(position(-1, -1)));
+        assertThat(Ranges.min(position(0, 0), position(0, 0)), is(position(0, 0)));
+    }
+
+    @Test
+    public void testIntersects() {
+        assertTrue(Ranges.intersects(Ranges.createRange(1, 1, 2, 2), Ranges.createRange(2, 1, 3, 1)));
+        assertTrue(Ranges.intersects(Ranges.createRange(2, 1, 3, 1), Ranges.createRange(1, 1, 2, 2)));
+        assertFalse(Ranges.intersects(Ranges.createRange(1, 1, 2, 1), Ranges.createRange(2, 1, 3, 1)));
+        assertFalse(Ranges.intersects(Ranges.createRange(2, 1, 3, 1), Ranges.createRange(1, 1, 2, 1)));
+        // Since for intersection ranges are considered inclusive on their start and exclusive on their end, ranges
+        // where the start is exactly equal to end are not considered to intersect anything.
+        assertFalse(Ranges.intersects(Ranges.createRange(1, 1, 1, 1), Ranges.createRange(1, 1, 1, 1)));
+        assertFalse(Ranges.intersects(Ranges.createRange(2, 1, 4, 1), Ranges.createRange(3, 1, 3, 1)));
+    }
+
+    @Test
+    public void testIntersects_invalidRange1() {
+        Range range1 = Ranges.UNDEFINED_RANGE;
+        expectedException.expect(IllegalArgumentException.class);
+        expectedException.expectMessage(String.format("range1 is not valid: %s", range1.toString()));
+        assertFalse(Ranges.intersects(range1, Ranges.createRange(1, 2, 1, 2)));
+    }
+
+    @Test
+    public void testIntersects_invalidRange2() {
+        Range range2 = Ranges.UNDEFINED_RANGE;
+        expectedException.expect(IllegalArgumentException.class);
+        expectedException.expectMessage(String.format("range2 is not valid: %s", range2.toString()));
+        assertFalse(Ranges.intersects(Ranges.createRange(1, 2, 1, 2), range2));
+    }
+
     private static Position position(int line, int character) {
         return new PositionImpl(line, character);
     }
