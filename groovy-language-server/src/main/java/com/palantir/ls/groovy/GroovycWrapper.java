@@ -432,11 +432,8 @@ public final class GroovycWrapper implements CompilerWrapper {
     }
 
     private String getWorkspaceUri(String uri) {
-        if (uri.startsWith(workspaceRoot.toString())) {
-            return uri;
-        } else {
-            return workspaceRoot.resolve(changedFilesRoot.relativize(Paths.get(uri))).toString();
-        }
+        return uri.startsWith(workspaceRoot.toString()) ? uri
+                : workspaceRoot.resolve(changedFilesRoot.relativize(Paths.get(uri))).toString();
     }
 
     private Location createLocation(String uri, ASTNode node) {
