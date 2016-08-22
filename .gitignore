@@ -31,4 +31,4 @@ build/
 out/
 
 # Log Files
-*/var/log/
+**/*.log
