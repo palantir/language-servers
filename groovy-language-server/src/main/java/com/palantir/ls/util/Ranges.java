@@ -23,6 +23,7 @@ import io.typefox.lsapi.Range;
 import io.typefox.lsapi.builders.RangeBuilder;
 import io.typefox.lsapi.impl.PositionImpl;
 import java.util.Comparator;
+import java.util.List;
 
 public final class Ranges {
 
@@ -89,7 +90,7 @@ public final class Ranges {
      * Returns the maximum position.
      */
     public static Position max(Position position1, Position position2) {
-        return POSITION_COMPARATOR.reversed().compare(position1, position2) < 0 ? position1 : position2;
+        return POSITION_COMPARATOR.compare(position1, position2) >= 0 ? position1 : position2;
     }
 
     /**
@@ -111,6 +112,21 @@ public final class Ranges {
         Position minEnd = min(range1.getEnd(), range2.getEnd());
         return maxStart.getLine() < minEnd.getLine()
                 || (maxStart.getLine() == minEnd.getLine() && maxStart.getCharacter() < minEnd.getCharacter());
+    }
+
+    /**
+     * Returns whether any of the given sorted ranges intersect. The ranges need to be sorted from first occurrence to
+     * last occurrence.
+     */
+    public static boolean checkSortedRangesIntersect(List<Range> sortedRanges) {
+        for (int i = 0; i < sortedRanges.size() - 1; i++) {
+            Range range1 = sortedRanges.get(i);
+            Range range2 = sortedRanges.get(i + 1);
+            if (Ranges.intersects(range1, range2)) {
+                return true;
+            }
+        }
+        return false;
     }
 
 }

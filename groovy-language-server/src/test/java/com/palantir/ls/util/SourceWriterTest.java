@@ -271,7 +271,7 @@ public final class SourceWriterTest {
                 .build());
         expectedException.expect(IllegalArgumentException.class);
         expectedException.expectMessage(
-                String.format("Cannot apply changes with intersecting ranges %s and %s", range, range));
+                String.format("Cannot apply changes with intersecting ranges in changes: %s", changes));
         writer.applyChanges(changes);
     }
 
