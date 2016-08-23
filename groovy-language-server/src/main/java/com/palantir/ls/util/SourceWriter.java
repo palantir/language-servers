@@ -137,7 +137,9 @@ public final class SourceWriter {
         }
 
         // Add the remaining file lines that are not affected by ranges
-        appendRemainingFile(file, line, output, lastColumn);
+        if (line != null) {
+            appendRemainingFile(file, line, output, lastColumn);
+        }
 
         file.close();
 
@@ -151,13 +153,12 @@ public final class SourceWriter {
     private synchronized void appendRemainingFile(BufferedReader file, String currentLine, BufferedWriter output,
             int lastColumn)
             throws IOException {
+        output.write(currentLine.substring(Math.min(lastColumn, currentLine.length())));
+        output.newLine();
         String line = currentLine;
-        boolean firstAddition = true;
-        while (line != null) {
-            output.write(line.substring(Math.min(firstAddition ? lastColumn : 0, line.length())));
+        while ((line = file.readLine()) != null) {
+            output.write(line.substring(0, line.length()));
             output.newLine();
-            firstAddition = false;
-            line = file.readLine();
         }
     }
 
