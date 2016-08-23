@@ -76,6 +76,21 @@ public final class GroovyLanguageServerTest {
     }
 
     @Test
+    public void testInitialize_uriWorkspacePath() throws InterruptedException, ExecutionException {
+        InitializeParams params =
+                new InitializeParamsBuilder().capabilities(new ClientCapabilitiesImpl()).processId(1)
+                        .rootPath(folder.getRoot().toURI().toString()).build();
+        InitializeResult result = server.initialize(params).get();
+        assertInitializeResultIsCorrect(folder.getRoot().toPath().toAbsolutePath().normalize(), result);
+
+        // Test normalization
+        params = new InitializeParamsBuilder().capabilities(new ClientCapabilitiesImpl()).processId(1)
+                        .rootPath(folder.getRoot().toURI().toString() + "/somethingelse/..").build();
+        result = server.initialize(params).get();
+        assertInitializeResultIsCorrect(folder.getRoot().toPath().toAbsolutePath().normalize(), result);
+    }
+
+    @Test
     public void testInitialize_relativeWorkspacePath() throws InterruptedException, ExecutionException, IOException {
         File workspaceRoot = Paths.get("").toAbsolutePath().resolve("something").toFile();
         // Create a directory in our working directory
