@@ -138,7 +138,7 @@ public final class GroovycWrapperTest {
                         + "   double longitude\n"
                         + "   def name = \"Natacha\"\n"
                         + "   double getAt(int idx1, int idx2) {\n"
-                        + "      def someString = \"Not in symbols\"\n"
+                        + "      def someString = \"Also in symbols\"\n"
                         + "      println someString\n"
                         + "      if (idx1 == 0) latitude\n"
                         + "      else if (idx1 == 1) longitude\n"
@@ -159,6 +159,7 @@ public final class GroovycWrapperTest {
         assertTrue(mapHasSymbol(symbols, Optional.of("Coordinates"), "name", SymbolKind.Field));
         assertTrue(mapHasSymbol(symbols, Optional.of("getAt"), "idx1", SymbolKind.Variable));
         assertTrue(mapHasSymbol(symbols, Optional.of("getAt"), "idx2", SymbolKind.Variable));
+        assertTrue(mapHasSymbol(symbols, Optional.of("getAt"), "someString", SymbolKind.Variable));
     }
 
     @Test
@@ -209,7 +210,7 @@ public final class GroovycWrapperTest {
                         + "   double longitude\n"
                         + "   def name = \"Natacha\"\n"
                         + "   double getAt(int idx) {\n"
-                        + "      def someString = \"Not in symbols\"\n"
+                        + "      def someString = \"Also in symbols\"\n"
                         + "      if (idx == 0) latitude\n"
                         + "      else if (idx == 1) longitude\n"
                         + "      else throw new Exception(\"Wrong coordinate index, use 0 or 1 \")\n"
@@ -239,6 +240,7 @@ public final class GroovycWrapperTest {
         assertTrue(mapHasSymbol(symbols, Optional.of("Coordinates$MyInnerEnum"), "ONE", SymbolKind.Field));
         assertTrue(mapHasSymbol(symbols, Optional.of("Coordinates$MyInnerEnum"), "TWO", SymbolKind.Field));
         assertTrue(mapHasSymbol(symbols, Optional.of("getAt"), "idx", SymbolKind.Variable));
+        assertTrue(mapHasSymbol(symbols, Optional.of("getAt"), "someString", SymbolKind.Variable));
     }
 
     @Test
@@ -247,6 +249,7 @@ public final class GroovycWrapperTest {
         addFileToFolder(root.getRoot(), "test.groovy",
                 "def name = \"Natacha\"\n"
                         + "def myMethod() {\n"
+                        + "   def someString = \"Also in symbols\"\n"
                         + "   println \"Hello World\"\n"
                         + "}\n"
                         + "println name\n"
@@ -258,6 +261,7 @@ public final class GroovycWrapperTest {
         Map<String, Set<SymbolInformation>> symbols = wrapper.getFileSymbols();
         assertTrue(mapHasSymbol(symbols, Optional.of("test"), "myMethod", SymbolKind.Method));
         assertTrue(mapHasSymbol(symbols, Optional.of("test"), "name", SymbolKind.Variable));
+        assertTrue(mapHasSymbol(symbols, Optional.of("myMethod"), "someString", SymbolKind.Variable));
     }
 
     @Test
@@ -270,7 +274,7 @@ public final class GroovycWrapperTest {
                         + "   double longitude2\n"
                         + "   private double CoordinatesVar\n"
                         + "   double getAt(int idx) {\n"
-                        + "      def someString = \"Not in symbols\"\n"
+                        + "      def someString = \"Also in symbols\"\n"
                         + "      if (idx == 0) latitude\n"
                         + "      else if (idx == 1) longitude\n"
                         + "      else throw new Exception(\"Wrong coordinate index, use 0 or 1 \")\n"
@@ -549,12 +553,13 @@ public final class GroovycWrapperTest {
                         + "   double longitude2\n"
                         + "   private double CoordinatesVar\n"
                         + "   double getAt(int idx) {\n"
-                        + "      def someString = \"Not in symbols\"\n"
+                        + "      def someString = \"Also in symbols\"\n"
                         + "      if (idx == 0) latitude\n"
                         + "      else if (idx == 1) longitude\n"
                         + "      else throw new Exception(\"Wrong coordinate index, use 0 or 1 \")\n"
                         + "   }\n"
                         + "   void superInterfaceMethod() {\n"
+                        + "      Coordinates myCoordinate\n"
                         + "      println \"Hi!\"\n"
                         + "   }\n"
                         + "   void something() {\n"
@@ -595,7 +600,16 @@ public final class GroovycWrapperTest {
                         Optional.absent()),
                 createSymbolInformation("ExtendedCoordinates2", SymbolKind.Class,
                         createLocation(extendedCoordinates2File.getAbsolutePath(), Ranges.createRange(0, 0, 4, 1)),
-                        Optional.absent()));
+                        Optional.absent()),
+                createSymbolInformation("myCoordinate", SymbolKind.Variable,
+                        createLocation(coordinatesFile.getAbsolutePath(), Ranges.createRange(12, 18, 12, 30)),
+                        Optional.of("superInterfaceMethod")),
+                createSymbolInformation("myCoordinate", SymbolKind.Variable,
+                        createLocation(extendedCoordinatesFile.getAbsolutePath(), Ranges.createRange(12, 18, 12, 30)),
+                        Optional.of("superInterfaceMethod")),
+                createSymbolInformation("myCoordinate", SymbolKind.Variable,
+                        createLocation(extendedCoordinates2File.getAbsolutePath(), Ranges.createRange(12, 18, 12, 30)),
+                        Optional.of("superInterfaceMethod")));
         assertEquals(coordinatesExpectedResult, references.get("Coordinates"));
         assertEquals(coordinatesExpectedResult,
                 wrapper.findReferences(createReferenceParams(coordinatesFile.getAbsolutePath(), 0, 9, false)));
@@ -603,7 +617,7 @@ public final class GroovycWrapperTest {
         // ICoordinates is only referenced in Coordinates
         Set<SymbolInformation> icoordinatesExpectedResult = Sets.newHashSet(
                 createSymbolInformation("Coordinates", SymbolKind.Class,
-                        createLocation(coordinatesFile.getAbsolutePath(), Ranges.createRange(0, 0, 17, 1)),
+                        createLocation(coordinatesFile.getAbsolutePath(), Ranges.createRange(0, 0, 18, 1)),
                         Optional.absent()));
         assertEquals(icoordinatesExpectedResult, references.get("ICoordinates"));
         assertEquals(icoordinatesExpectedResult,
@@ -612,7 +626,7 @@ public final class GroovycWrapperTest {
         // AbstractCoordinates is only referenced in Coordinates
         Set<SymbolInformation> abstractCoordinatesExpectedResult = Sets.newHashSet(
                 createSymbolInformation("Coordinates", SymbolKind.Class,
-                        createLocation(coordinatesFile.getAbsolutePath(), Ranges.createRange(0, 0, 17, 1)),
+                        createLocation(coordinatesFile.getAbsolutePath(), Ranges.createRange(0, 0, 18, 1)),
                         Optional.absent()));
         assertEquals(abstractCoordinatesExpectedResult, references.get("AbstractCoordinates"));
         assertEquals(abstractCoordinatesExpectedResult,
@@ -636,6 +650,7 @@ public final class GroovycWrapperTest {
                         + "   Cat friend1;\n"
                         + "   Cat friend2;\n"
                         + "   Cat bark(Cat enemy) {\n"
+                        + "      Cat myCat\n"
                         + "      println \"Bark! \" + enemy.name\n"
                         + "      return friend1\n"
                         + "   }\n"
@@ -661,9 +676,12 @@ public final class GroovycWrapperTest {
                 createSymbolInformation("enemy", SymbolKind.Variable,
                         createLocation(dogFile.getAbsolutePath(), Ranges.createRange(3, 12, 3, 21)),
                         Optional.of("bark")),
+                createSymbolInformation("myCat", SymbolKind.Variable,
+                        createLocation(dogFile.getAbsolutePath(), Ranges.createRange(4, 10, 4, 15)),
+                        Optional.of("bark")),
                 // Bark method returns a Cat
                 createSymbolInformation("bark", SymbolKind.Method,
-                        createLocation(dogFile.getAbsolutePath(), Ranges.createRange(3, 3, 6, 4)), Optional.of("Dog")),
+                        createLocation(dogFile.getAbsolutePath(), Ranges.createRange(3, 3, 7, 4)), Optional.of("Dog")),
                 // Generated getters and setter
                 // These two function take in a Cat value
                 createSymbolInformation("value", SymbolKind.Variable,
@@ -687,6 +705,7 @@ public final class GroovycWrapperTest {
                 "Cat friend1;\n"
                         + "bark(friend1)\n"
                         + "Cat bark(Cat enemy) {\n"
+                        + "   Cat myCat\n"
                         + "   println \"Bark! \"\n"
                         + "   return enemy\n"
                         + "}\n"
@@ -702,12 +721,18 @@ public final class GroovycWrapperTest {
                 createSymbolInformation("friend1", SymbolKind.Variable,
                         createLocation(scriptFile.getAbsolutePath(), Ranges.createRange(0, 4, 0, 11)),
                         Optional.of("MyScript")),
+                createSymbolInformation("friend1", SymbolKind.Variable,
+                        createLocation(scriptFile.getAbsolutePath(), Ranges.createRange(0, 4, 0, 11)),
+                        Optional.of("run")),
                 createSymbolInformation("enemy", SymbolKind.Variable,
                         createLocation(scriptFile.getAbsolutePath(), Ranges.createRange(2, 9, 2, 18)),
                         Optional.of("bark")),
+                createSymbolInformation("myCat", SymbolKind.Variable,
+                        createLocation(scriptFile.getAbsolutePath(), Ranges.createRange(3, 7, 3, 12)),
+                        Optional.of("bark")),
                 // Bark method returns a Cat
                 createSymbolInformation("bark", SymbolKind.Method,
-                        createLocation(scriptFile.getAbsolutePath(), Ranges.createRange(2, 0, 5, 1)),
+                        createLocation(scriptFile.getAbsolutePath(), Ranges.createRange(2, 0, 6, 1)),
                         Optional.of("MyScript")));
         assertEquals(expectedResult, wrapper.getTypeReferences().get("Cat"));
         assertEquals(expectedResult,
@@ -721,6 +746,7 @@ public final class GroovycWrapperTest {
                 "Animal friend = Animal.CAT;\n"
                         + "pet(friend1)\n"
                         + "Animal pet(Animal animal) {\n"
+                        + "   Animal myAnimal\n"
                         + "   println \"Pet the \" + animal\n"
                         + "   return animal\n"
                         + "}\n"
@@ -745,12 +771,18 @@ public final class GroovycWrapperTest {
                 createSymbolInformation("friend", SymbolKind.Variable,
                         createLocation(scriptFile.getAbsolutePath(), Ranges.createRange(0, 7, 0, 13)),
                         Optional.of("MyScript")),
+                createSymbolInformation("friend", SymbolKind.Variable,
+                        createLocation(scriptFile.getAbsolutePath(), Ranges.createRange(0, 7, 0, 13)),
+                        Optional.of("run")),
                 createSymbolInformation("animal", SymbolKind.Variable,
                         createLocation(scriptFile.getAbsolutePath(), Ranges.createRange(2, 11, 2, 24)),
                         Optional.of("pet")),
+                createSymbolInformation("myAnimal", SymbolKind.Variable,
+                        createLocation(scriptFile.getAbsolutePath(), Ranges.createRange(3, 10, 3, 18)),
+                        Optional.of("pet")),
                 // pet method returns a Animal
                 createSymbolInformation("pet", SymbolKind.Method,
-                        createLocation(scriptFile.getAbsolutePath(), Ranges.createRange(2, 0, 5, 1)),
+                        createLocation(scriptFile.getAbsolutePath(), Ranges.createRange(2, 0, 6, 1)),
                         Optional.of("MyScript")),
                 // generated symbols
                 createSymbolInformation("valueOf", SymbolKind.Method,
@@ -784,6 +816,7 @@ public final class GroovycWrapperTest {
                 "Cat friend1;\n"
                         + "bark(friend1)\n"
                         + "Cat bark(Cat enemy) {\n"
+                        + "   Cat myCat\n"
                         + "   println \"Bark! \"\n"
                         + "   return enemy\n"
                         + "}\n"
@@ -799,12 +832,18 @@ public final class GroovycWrapperTest {
                 createSymbolInformation("friend1", SymbolKind.Variable,
                         createLocation(scriptFile.getAbsolutePath(), Ranges.createRange(0, 4, 0, 11)),
                         Optional.of("MyScript")),
+                createSymbolInformation("friend1", SymbolKind.Variable,
+                        createLocation(scriptFile.getAbsolutePath(), Ranges.createRange(0, 4, 0, 11)),
+                        Optional.of("run")),
                 createSymbolInformation("enemy", SymbolKind.Variable,
                         createLocation(scriptFile.getAbsolutePath(), Ranges.createRange(2, 9, 2, 18)),
                         Optional.of("bark")),
+                createSymbolInformation("myCat", SymbolKind.Variable,
+                        createLocation(scriptFile.getAbsolutePath(), Ranges.createRange(3, 7, 3, 12)),
+                        Optional.of("bark")),
                 // Bark method returns a Cat
                 createSymbolInformation("bark", SymbolKind.Method,
-                        createLocation(scriptFile.getAbsolutePath(), Ranges.createRange(2, 0, 5, 1)),
+                        createLocation(scriptFile.getAbsolutePath(), Ranges.createRange(2, 0, 6, 1)),
                         Optional.of("MyScript")),
                 createSymbolInformation("Cat", SymbolKind.Class,
                         createLocation(catFile.getAbsolutePath(), Ranges.createRange(0, 0, 1, 1)),

@@ -56,6 +56,7 @@ import org.codehaus.groovy.ast.Parameter;
 import org.codehaus.groovy.ast.PropertyNode;
 import org.codehaus.groovy.ast.Variable;
 import org.codehaus.groovy.ast.expr.VariableExpression;
+import org.codehaus.groovy.ast.stmt.BlockStatement;
 import org.codehaus.groovy.control.CompilationUnit;
 import org.codehaus.groovy.control.CompilerConfiguration;
 import org.codehaus.groovy.control.ErrorCollector;
@@ -333,11 +334,22 @@ public final class GroovycWrapper implements CompilerWrapper {
         symbols.add(methodSymbol);
         addToValueSet(newTypeReferences, method.getReturnType().getName(), methodSymbol);
 
+        // Method parameters
         method.getVariableScope().getDeclaredVariables().values().forEach(variable -> {
             SymbolInformation variableSymbol = getVariableSymbolInformation(method.getName(), sourcePath, variable);
             addToValueSet(newTypeReferences, variable.getType().getName(), variableSymbol);
             symbols.add(variableSymbol);
         });
+
+        // Locally defined variables
+        if (method.getCode() instanceof BlockStatement) {
+            BlockStatement blockStatement = (BlockStatement) method.getCode();
+            blockStatement.getVariableScope().getDeclaredVariables().values().forEach(variable -> {
+                SymbolInformation variableSymbol = getVariableSymbolInformation(method.getName(), sourcePath, variable);
+                addToValueSet(newTypeReferences, variable.getType().getName(), variableSymbol);
+                symbols.add(variableSymbol);
+            });
+        }
         return symbols;
     }
 
