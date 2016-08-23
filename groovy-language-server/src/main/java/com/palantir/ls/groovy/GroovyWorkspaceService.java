@@ -16,27 +16,33 @@
 
 package com.palantir.ls.groovy;
 
+import com.palantir.ls.util.Ranges;
+import io.typefox.lsapi.Diagnostic;
 import io.typefox.lsapi.DidChangeConfigurationParams;
 import io.typefox.lsapi.DidChangeWatchedFilesParams;
 import io.typefox.lsapi.SymbolInformation;
 import io.typefox.lsapi.WorkspaceSymbolParams;
+import io.typefox.lsapi.builders.PublishDiagnosticsParamsBuilder;
 import io.typefox.lsapi.services.WorkspaceService;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 public final class GroovyWorkspaceService implements WorkspaceService {
 
     private final CompilerWrapperProvider provider;
+    private final LanguageServerConfig config;
 
-    public GroovyWorkspaceService(CompilerWrapperProvider provider) {
+    public GroovyWorkspaceService(CompilerWrapperProvider provider, LanguageServerConfig config) {
         this.provider = provider;
+        this.config = config;
     }
 
     @Override
     public CompletableFuture<List<? extends SymbolInformation>> symbol(WorkspaceSymbolParams params) {
-        return CompletableFuture.completedFuture(
-                provider.get().getFilteredSymbols(params.getQuery()).stream().collect(Collectors.toList()));
+        return CompletableFuture.completedFuture(provider.get().getFilteredSymbols(params.getQuery()).stream()
+                .filter(symbol -> Ranges.isValid(symbol.getLocation().getRange())).collect(Collectors.toList()));
     }
 
     @Override
@@ -46,7 +52,16 @@ public final class GroovyWorkspaceService implements WorkspaceService {
 
     @Override
     public void didChangeWatchedFiles(DidChangeWatchedFilesParams params) {
-        throw new UnsupportedOperationException();
+        provider.get().handleChangeWatchedFiles(params.getChanges());
+        publishDiagnostics(provider.get().compile());
+    }
+
+    private void publishDiagnostics(Set<Diagnostic> diagnostics) {
+        PublishDiagnosticsParamsBuilder paramsBuilder =
+                new PublishDiagnosticsParamsBuilder()
+                    .uri(provider.get().getWorkspaceRoot().toAbsolutePath().toString());
+        diagnostics.stream().forEach(d -> paramsBuilder.diagnostic(d));
+        config.getPublishDiagnostics().accept(paramsBuilder.build());
     }
 
 }

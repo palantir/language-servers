@@ -65,11 +65,11 @@ import java.util.stream.Collectors;
 public final class GroovyTextDocumentService implements TextDocumentService {
 
     private final CompilerWrapperProvider provider;
+    private final LanguageServerConfig config;
 
-    private Consumer<PublishDiagnosticsParams> publishDiagnostics = p -> { };
-
-    public GroovyTextDocumentService(CompilerWrapperProvider provider) {
+    public GroovyTextDocumentService(CompilerWrapperProvider provider, LanguageServerConfig config) {
         this.provider = provider;
+        this.config = config;
     }
 
     @Override
@@ -194,7 +194,7 @@ public final class GroovyTextDocumentService implements TextDocumentService {
 
     @Override
     public void onPublishDiagnostics(Consumer<PublishDiagnosticsParams> callback) {
-        publishDiagnostics = callback;
+        config.setPublishDiagnostics(callback);
     }
 
     private void publishDiagnostics(Set<Diagnostic> diagnostics) {
@@ -202,7 +202,7 @@ public final class GroovyTextDocumentService implements TextDocumentService {
                 new PublishDiagnosticsParamsBuilder()
                     .uri(provider.get().getWorkspaceRoot().toAbsolutePath().toString());
         diagnostics.stream().forEach(d -> paramsBuilder.diagnostic(d));
-        publishDiagnostics.accept(paramsBuilder.build());
+        config.getPublishDiagnostics().accept(paramsBuilder.build());
     }
 
     private Path resolveUriToWorkspaceRoot(String uri) {

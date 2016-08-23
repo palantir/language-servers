@@ -17,6 +17,7 @@
 package com.palantir.ls.groovy;
 
 import io.typefox.lsapi.Diagnostic;
+import io.typefox.lsapi.FileEvent;
 import io.typefox.lsapi.ReferenceParams;
 import io.typefox.lsapi.SymbolInformation;
 import io.typefox.lsapi.TextDocumentContentChangeEvent;
@@ -54,6 +55,12 @@ public interface CompilerWrapper {
      * @param originalFile the absolute file path of the original file
      */
     void handleFileSaved(Path originalFile);
+
+    /**
+     * Handles reconfiguring the compiled files in the event some files were created, changed or deleted outside of the
+     * language server.
+     */
+    void handleChangeWatchedFiles(List<? extends FileEvent> changes);
 
     /**
      * Returns a mapping from absolute path of source file to symbols located within these source files.

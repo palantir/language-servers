@@ -30,6 +30,7 @@ import com.palantir.ls.util.Ranges;
 import com.palantir.ls.util.SourceWriter;
 import io.typefox.lsapi.Diagnostic;
 import io.typefox.lsapi.DiagnosticSeverity;
+import io.typefox.lsapi.FileEvent;
 import io.typefox.lsapi.Location;
 import io.typefox.lsapi.Range;
 import io.typefox.lsapi.ReferenceParams;
@@ -199,6 +200,30 @@ public final class GroovycWrapper implements CompilerWrapper {
     }
 
     @Override
+    public void handleChangeWatchedFiles(List<? extends FileEvent> changes) {
+        changes.forEach(change -> {
+            Path absoluteUri = resolveUriToWorkspaceRoot(change.getUri());
+            switch (change.getType()) {
+                case Changed:
+                case Deleted:
+                    if (originalSourceToChangedSource.containsKey(absoluteUri)) {
+                        Path changedSource = originalSourceToChangedSource.get(absoluteUri).getDestination();
+                        // Deleted the changed file
+                        if (!changedSource.toFile().delete()) {
+                            logger.error("Unable to delete file '{}'", changedSource.toAbsolutePath());
+                        }
+                        originalSourceToChangedSource.remove(absoluteUri);
+                    }
+                    break;
+                default:
+                    // Nothing to do in other cases
+                    break;
+            }
+        });
+        resetCompilationUnit();
+    }
+
+    @Override
     public Map<String, Set<SymbolInformation>> getFileSymbols() {
         return fileSymbols;
     }
@@ -243,10 +268,16 @@ public final class GroovycWrapper implements CompilerWrapper {
 
     @Override
     public Set<SymbolInformation> getFilteredSymbols(String query) {
+        checkNotNull(query, "query must not be null");
         Pattern pattern = getQueryPattern(query);
         return fileSymbols.values().stream().flatMap(Collection::stream)
                 .filter(symbol -> pattern.matcher(symbol.getName()).matches())
                 .collect(Collectors.toSet());
+    }
+
+    private Path resolveUriToWorkspaceRoot(String uri) {
+        Path filePath = Paths.get(uri);
+        return filePath.isAbsolute() ? filePath : getWorkspaceRoot().resolve(uri).toAbsolutePath();
     }
 
     private Pattern getQueryPattern(String query) {

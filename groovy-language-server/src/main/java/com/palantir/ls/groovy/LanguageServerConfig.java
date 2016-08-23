@@ -17,6 +17,7 @@
 package com.palantir.ls.groovy;
 
 import io.typefox.lsapi.MessageParams;
+import io.typefox.lsapi.PublishDiagnosticsParams;
 import io.typefox.lsapi.ShowMessageRequestParams;
 import java.util.function.Consumer;
 
@@ -40,5 +41,9 @@ public interface LanguageServerConfig {
     Consumer<Object> getTelemetryEvent();
 
     void setTelemetryEvent(Consumer<Object> callback);
+
+    Consumer<PublishDiagnosticsParams> getPublishDiagnostics();
+
+    void setPublishDiagnostics(Consumer<PublishDiagnosticsParams> callback);
 
 }
