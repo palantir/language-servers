@@ -16,10 +16,13 @@
 
 package com.palantir.ls.server;
 
+import com.google.common.base.Optional;
 import com.palantir.ls.server.api.CompilerWrapper;
 import com.palantir.ls.server.api.TreeParser;
 import com.palantir.ls.server.api.WorkspaceCompiler;
 import io.typefox.lsapi.FileEvent;
+import io.typefox.lsapi.Location;
+import io.typefox.lsapi.Position;
 import io.typefox.lsapi.PublishDiagnosticsParams;
 import io.typefox.lsapi.ReferenceParams;
 import io.typefox.lsapi.SymbolInformation;
@@ -30,7 +33,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Wraps a WorkspaceCompiler and TreeParser. Ensures the tree is updated when the compiler is compiled.
+ * Wraps a WorkspaceCompiler and TreeParser. Ensures the tree is updated when the compiler is compiled sucessfully.
  */
 public final class DefaultCompilerWrapper implements CompilerWrapper {
 
@@ -53,13 +56,18 @@ public final class DefaultCompilerWrapper implements CompilerWrapper {
     }
 
     @Override
-    public Map<String, Set<SymbolInformation>> getTypeReferences() {
-        return parser.getTypeReferences();
+    public Map<Location, Set<Location>> getReferences() {
+        return parser.getReferences();
     }
 
     @Override
-    public Set<SymbolInformation> findReferences(ReferenceParams params) {
+    public Set<Location> findReferences(ReferenceParams params) {
         return parser.findReferences(params);
+    }
+
+    @Override
+    public Optional<Location> gotoDefinition(URI uri, Position position) {
+        return parser.gotoDefinition(uri, position);
     }
 
     @Override

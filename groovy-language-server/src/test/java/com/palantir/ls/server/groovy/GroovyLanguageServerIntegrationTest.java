@@ -205,7 +205,7 @@ public final class GroovyLanguageServerIntegrationTest {
                 new SymbolInformationBuilder()
                         .name("Coordinates")
                         .kind(SymbolKind.Class)
-                        .location(fileUri, Ranges.createRange(0, 0, 11, 1))
+                        .location(fileUri, Ranges.createRange(0, 0, 1, 0))
                         .build(),
                 new SymbolInformationBuilder()
                         .name("getAt")
@@ -345,6 +345,7 @@ public final class GroovyLanguageServerIntegrationTest {
                         .resolveProvider(false)
                         .triggerCharacter(".")
                         .build())
+                .definitionProvider(true)
                 .build();
         assertEquals(expectedCapabilities, result.getCapabilities());
     }

@@ -83,6 +83,7 @@ public final class GroovyLanguageServer implements LanguageServer {
                         .resolveProvider(false)
                         .triggerCharacter(".")
                         .build())
+                .definitionProvider(true)
                 .build();
         InitializeResult result = new InitializeResultBuilder()
                 .capabilities(capabilities)

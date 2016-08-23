@@ -87,7 +87,7 @@ public final class DefaultTextDocumentServiceTest {
     private List<PublishDiagnosticsParams> publishedDiagnostics = Lists.newArrayList();
     private Set<PublishDiagnosticsParams> expectedDiagnostics;
     private Map<URI, Set<SymbolInformation>> symbolsMap = Maps.newHashMap();
-    private Set<SymbolInformation> expectedReferences = Sets.newHashSet();
+    private Set<Location> expectedReferences = Sets.newHashSet();
 
     @Mock
     private CompilerWrapper compilerWrapper;
@@ -109,35 +109,20 @@ public final class DefaultTextDocumentServiceTest {
         SymbolInformation symbol2 = new SymbolInformationBuilder().name("methodA").kind(SymbolKind.Method).build();
         symbolsMap.put(filePath.toUri(), Sets.newHashSet(symbol1, symbol2));
 
-        expectedReferences.add(new SymbolInformationBuilder()
-                .containerName("Something")
-                .kind(SymbolKind.Class)
-                .name("MyClassName")
-                .location(new LocationBuilder()
+        expectedReferences.add(new LocationBuilder()
                         .uri("uri")
                         .range(Ranges.createRange(1, 1, 9, 9))
-                        .build())
-                .build());
-        expectedReferences.add(new SymbolInformationBuilder()
-                .containerName("SomethingElse")
-                .kind(SymbolKind.Class)
-                .name("MyClassName2")
-                .location(new LocationBuilder()
+                        .build());
+        expectedReferences.add(new LocationBuilder()
                         .uri("uri")
                         .range(Ranges.createRange(1, 1, 9, 9))
-                        .build())
-                .build());
-        Set<SymbolInformation> allReferencesReturned = Sets.newHashSet(expectedReferences);
+                        .build());
+        Set<Location> allReferencesReturned = Sets.newHashSet(expectedReferences);
         // The reference that will be filtered out
-        allReferencesReturned.add(new SymbolInformationBuilder()
-                .containerName("SomethingElse")
-                .kind(SymbolKind.Class)
-                .name("MyClassName3")
-                .location(new LocationBuilder()
+        allReferencesReturned.add(new LocationBuilder()
                         .uri("uri")
                         .range(Ranges.UNDEFINED_RANGE)
-                        .build())
-                .build());
+                        .build());
         when(compilerWrapper.getWorkspaceRoot()).thenReturn(workspace.getRoot().toPath().toUri());
         when(compilerWrapper.compile()).thenReturn(expectedDiagnostics);
         when(compilerWrapper.getFileSymbols()).thenReturn(symbolsMap);
@@ -297,8 +282,7 @@ public final class DefaultTextDocumentServiceTest {
                 .uri("uri")
                 .build();
         CompletableFuture<List<? extends Location>> response = service.references(params);
-        assertThat(response.get().stream().collect(Collectors.toSet()),
-                is(expectedReferences.stream().map(symbol -> symbol.getLocation()).collect(Collectors.toSet())));
+        assertThat(response.get().stream().collect(Collectors.toSet()), is(expectedReferences));
     }
 
     @Test
