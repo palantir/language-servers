@@ -32,6 +32,7 @@ import io.typefox.lsapi.services.LanguageServer;
 import io.typefox.lsapi.services.TextDocumentService;
 import io.typefox.lsapi.services.WindowService;
 import io.typefox.lsapi.services.WorkspaceService;
+import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.concurrent.CompletableFuture;
@@ -62,7 +63,12 @@ public final class GroovyLanguageServer implements LanguageServer {
 
     @Override
     public CompletableFuture<InitializeResult> initialize(InitializeParams params) {
-        workspaceRoot = Paths.get(params.getRootPath()).toAbsolutePath().normalize();
+        try {
+            workspaceRoot = Paths.get(URI.create(params.getRootPath())).toAbsolutePath().normalize();
+        } catch (IllegalArgumentException e) {
+            logger.debug("Initialize rootPath was not valid URI '{}'", params.getRootPath());
+            workspaceRoot = Paths.get(params.getRootPath()).toAbsolutePath().normalize();
+        }
 
         ServerCapabilities capabilities = new ServerCapabilitiesBuilder()
                 .textDocumentSync(TextDocumentSyncKind.Incremental)
