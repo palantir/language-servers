@@ -57,6 +57,9 @@ public final class GroovyWorkspaceService implements WorkspaceService {
     }
 
     private void publishDiagnostics(Set<Diagnostic> diagnostics) {
+        if (diagnostics.isEmpty()) {
+            return;
+        }
         PublishDiagnosticsParamsBuilder paramsBuilder =
                 new PublishDiagnosticsParamsBuilder()
                     .uri(provider.get().getWorkspaceRoot().toAbsolutePath().toString());

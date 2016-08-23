@@ -198,6 +198,9 @@ public final class GroovyTextDocumentService implements TextDocumentService {
     }
 
     private void publishDiagnostics(Set<Diagnostic> diagnostics) {
+        if (diagnostics.isEmpty()) {
+            return;
+        }
         PublishDiagnosticsParamsBuilder paramsBuilder =
                 new PublishDiagnosticsParamsBuilder()
                     .uri(provider.get().getWorkspaceRoot().toAbsolutePath().toString());
