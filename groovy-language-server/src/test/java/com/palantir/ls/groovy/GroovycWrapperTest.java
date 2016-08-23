@@ -31,11 +31,13 @@ import com.palantir.ls.util.DefaultDiagnosticBuilder;
 import com.palantir.ls.util.Ranges;
 import io.typefox.lsapi.Diagnostic;
 import io.typefox.lsapi.DiagnosticSeverity;
+import io.typefox.lsapi.FileChangeType;
 import io.typefox.lsapi.Location;
 import io.typefox.lsapi.Range;
 import io.typefox.lsapi.ReferenceParams;
 import io.typefox.lsapi.SymbolInformation;
 import io.typefox.lsapi.SymbolKind;
+import io.typefox.lsapi.builders.FileEventBuilder;
 import io.typefox.lsapi.builders.LocationBuilder;
 import io.typefox.lsapi.builders.ReferenceParamsBuilder;
 import io.typefox.lsapi.builders.SymbolInformationBuilder;
@@ -1039,6 +1041,126 @@ public final class GroovycWrapperTest {
         symbols = wrapper.getFileSymbols().get(catFile.toString());
         assertFalse(symbols.contains(catSymbol));
         assertTrue(symbols.contains(dogSymbol));
+    }
+
+    @Test
+    public void testHandleChangeWatchedFiles_changed() throws IOException {
+        File newFolder1 = root.newFolder();
+        File catFile = addFileToFolder(newFolder1, "Cat.groovy",
+                "class Cat {\n"
+                        + "}\n");
+        GroovycWrapper wrapper =
+                GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath(), changedOutput.getRoot().toPath());
+        // Compile
+        assertEquals(0, wrapper.compile().size());
+        Set<SymbolInformation> symbols = wrapper.getFileSymbols().get(catFile.getAbsolutePath());
+        SymbolInformation catSymbol = new SymbolInformationBuilder()
+                .name("Cat")
+                .kind(SymbolKind.Class)
+                .location(catFile.getAbsolutePath(), Ranges.createRange(0, 0, 1, 1))
+                .build();
+        SymbolInformation dogSymbol = new SymbolInformationBuilder()
+                .name("Dog")
+                .kind(SymbolKind.Class)
+                .location(catFile.getAbsolutePath(), Ranges.createRange(0, 0, 1, 1))
+                .build();
+
+        assertTrue(symbols.contains(catSymbol));
+        assertFalse(symbols.contains(dogSymbol));
+
+        // First change
+        wrapper.handleFileChanged(catFile.toPath(), Lists.newArrayList(new TextDocumentContentChangeEventBuilder()
+                .range(Ranges.createRange(0, 6, 0, 9)).rangeLength(3).text("Dog").build()));
+
+        // Re-compile
+        assertEquals(0, wrapper.compile().size());
+
+        // Assert that the symbol Cat no longer exists and that the symbol Dog now exists.
+        symbols = wrapper.getFileSymbols().get(catFile.toString());
+        assertFalse(symbols.contains(catSymbol));
+        assertTrue(symbols.contains(dogSymbol));
+
+        // Call handleChangeWatchedFile with a change saying this file has been changed outside this language server
+        wrapper.handleChangeWatchedFiles(Lists.newArrayList(
+                new FileEventBuilder().uri(root.getRoot().toPath().relativize(catFile.toPath()).toString())
+                        .type(FileChangeType.Changed).build()));
+        // The changed file should have been deleted
+        assertFalse(changedOutput.getRoot().toPath().resolve(root.getRoot().toPath().relativize(catFile.toPath()))
+                .toFile().exists());
+
+        // Re-compile
+        assertEquals(0, wrapper.compile().size());
+
+        // Assert symbols are back to the original
+        symbols = wrapper.getFileSymbols().get(catFile.toString());
+        assertTrue(symbols.contains(catSymbol));
+        assertFalse(symbols.contains(dogSymbol));
+    }
+
+    @Test
+    public void testHandleChangeWatchedFiles_deleted() throws IOException {
+        File newFolder1 = root.newFolder();
+        File catFile = addFileToFolder(newFolder1, "Cat.groovy",
+                "class Cat {\n"
+                        + "}\n");
+        GroovycWrapper wrapper =
+                GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath(), changedOutput.getRoot().toPath());
+        // Compile
+        assertEquals(0, wrapper.compile().size());
+        Set<SymbolInformation> symbols = wrapper.getFileSymbols().get(catFile.getAbsolutePath());
+        SymbolInformation catSymbol = new SymbolInformationBuilder()
+                .name("Cat")
+                .kind(SymbolKind.Class)
+                .location(catFile.getAbsolutePath(), Ranges.createRange(0, 0, 1, 1))
+                .build();
+
+        assertTrue(symbols.contains(catSymbol));
+
+        // Delete the file
+        assertTrue(catFile.delete());
+
+        // Call handleChangeWatchedFile with a change saying this file has been deleted outside this language server
+        wrapper.handleChangeWatchedFiles(Lists.newArrayList(
+                new FileEventBuilder().uri(root.getRoot().toPath().relativize(catFile.toPath()).toString())
+                        .type(FileChangeType.Changed).build()));
+
+        // Re-compile
+        assertEquals(0, wrapper.compile().size());
+
+        // Assert no more symbols exist
+        assertEquals(0, wrapper.getFileSymbols().values().size());
+    }
+
+    @Test
+    public void testHandleChangeWatchedFiles_created() throws IOException {
+        File newFolder1 = root.newFolder();
+        GroovycWrapper wrapper =
+                GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath(), changedOutput.getRoot().toPath());
+        // Compile
+        assertEquals(0, wrapper.compile().size());
+        // Assert no symbols exist
+        assertEquals(0, wrapper.getFileSymbols().values().size());
+
+        File catFile = addFileToFolder(newFolder1, "Cat.groovy",
+                "class Cat {\n"
+                        + "}\n");
+
+        // Call handleChangeWatchedFile with a change saying this file has been changed outside this language server
+        wrapper.handleChangeWatchedFiles(Lists.newArrayList(
+                new FileEventBuilder().uri(root.getRoot().toPath().relativize(catFile.toPath()).toString())
+                        .type(FileChangeType.Created).build()));
+
+        // Re-compile
+        assertEquals(0, wrapper.compile().size());
+
+        // Assert the cat symbol now exists
+        Set<SymbolInformation> symbols = wrapper.getFileSymbols().get(catFile.toString());
+        SymbolInformation catSymbol = new SymbolInformationBuilder()
+                .name("Cat")
+                .kind(SymbolKind.Class)
+                .location(catFile.getAbsolutePath(), Ranges.createRange(0, 0, 1, 1))
+                .build();
+        assertTrue(symbols.contains(catSymbol));
     }
 
     private boolean mapHasSymbol(Map<String, Set<SymbolInformation>> map, Optional<String> container, String fieldName,

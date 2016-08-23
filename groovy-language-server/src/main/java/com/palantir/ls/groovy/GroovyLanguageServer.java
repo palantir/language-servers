@@ -124,8 +124,8 @@ public final class GroovyLanguageServer implements LanguageServer {
         CompilerWrapperProvider provider = new SingleCompilerWrapperProvider();
         LanguageServerConfig config = new GroovyLanguageServerConfig();
         LanguageServer server =
-                new GroovyLanguageServer(provider, config, new GroovyTextDocumentService(provider),
-                        new GroovyWorkspaceService(provider), new GroovyWindowService(config));
+                new GroovyLanguageServer(provider, config, new GroovyTextDocumentService(provider, config),
+                        new GroovyWorkspaceService(provider, config), new GroovyWindowService(config));
 
         StreamLanguageServerLauncher launcher = new StreamLanguageServerLauncher(server, System.in, System.out);
         launcher.setLogger(logger);

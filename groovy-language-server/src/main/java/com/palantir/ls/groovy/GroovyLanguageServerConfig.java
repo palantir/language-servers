@@ -17,6 +17,7 @@
 package com.palantir.ls.groovy;
 
 import io.typefox.lsapi.MessageParams;
+import io.typefox.lsapi.PublishDiagnosticsParams;
 import io.typefox.lsapi.ShowMessageRequestParams;
 import java.util.function.Consumer;
 
@@ -26,6 +27,7 @@ public final class GroovyLanguageServerConfig implements LanguageServerConfig {
     private Consumer<ShowMessageRequestParams> showMessageRequest = m -> { };
     private Consumer<MessageParams> logMessage = m -> { };
     private Consumer<Object> telemetryEvent = e -> { };
+    private Consumer<PublishDiagnosticsParams> publishDiagnostics = p -> { };
 
     @Override
     public Consumer<MessageParams> getShowMessage() {
@@ -65,6 +67,16 @@ public final class GroovyLanguageServerConfig implements LanguageServerConfig {
     @Override
     public void setTelemetryEvent(Consumer<Object> telemetryEvent) {
         this.telemetryEvent = telemetryEvent;
+    }
+
+    @Override
+    public Consumer<PublishDiagnosticsParams> getPublishDiagnostics() {
+        return publishDiagnostics;
+    }
+
+    @Override
+    public void setPublishDiagnostics(Consumer<PublishDiagnosticsParams> callback) {
+        this.publishDiagnostics = callback;
     }
 
 }

@@ -140,7 +140,7 @@ public final class GroovyTextDocumentServiceTest {
 
         when(provider.get()).thenReturn(compilerWrapper);
 
-        service = new GroovyTextDocumentService(provider);
+        service = new GroovyTextDocumentService(provider, new GroovyLanguageServerConfig());
 
         Consumer<PublishDiagnosticsParams> callback = p -> {
             publishDiagnostics(p);
