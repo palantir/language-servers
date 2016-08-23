@@ -16,6 +16,8 @@
 
 package com.palantir.ls.groovy;
 
+import static com.google.common.base.Preconditions.checkArgument;
+
 import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 import com.palantir.ls.util.Ranges;
@@ -112,14 +114,11 @@ public final class GroovyTextDocumentService implements TextDocumentService {
 
     @Override
     public CompletableFuture<List<? extends SymbolInformation>> documentSymbol(DocumentSymbolParams params) {
-        String uri = params.getTextDocument().getUri();
-        Path filePath = Paths.get(uri);
-        if (!filePath.isAbsolute()) {
-            uri = provider.get().getWorkspaceRoot().resolve(uri).toAbsolutePath().toString();
-        }
+        Path absoluteUri = resolveUriToWorkspaceRoot(params.getTextDocument().getUri());
+        assertFileExists(absoluteUri);
         List<SymbolInformation> symbols =
-                Optional.fromNullable(provider.get().getFileSymbols().get(uri).stream().collect(Collectors.toList()))
-                        .or(Lists.newArrayList());
+                Optional.fromNullable(provider.get().getFileSymbols().get(absoluteUri.toString()).stream()
+                        .collect(Collectors.toList())).or(Lists.newArrayList());
         return CompletableFuture.completedFuture(symbols);
     }
 
@@ -160,21 +159,36 @@ public final class GroovyTextDocumentService implements TextDocumentService {
 
     @Override
     public void didOpen(DidOpenTextDocumentParams params) {
+        Path absoluteUri = resolveUriToWorkspaceRoot(params.getTextDocument().getUri());
+        assertFileExists(absoluteUri);
         publishDiagnostics(provider.get().compile());
     }
 
     @Override
     public void didChange(DidChangeTextDocumentParams params) {
+        Path absoluteUri = resolveUriToWorkspaceRoot(params.getTextDocument().getUri());
+        assertFileExists(absoluteUri);
+        if (params.getContentChanges() == null || params.getContentChanges().isEmpty()) {
+            throw new IllegalArgumentException(
+                    String.format("Calling didChange with no changes on uri '%s'", absoluteUri.toString()));
+        }
+        provider.get().handleFileChanged(absoluteUri, Lists.newArrayList(params.getContentChanges()));
         publishDiagnostics(provider.get().compile());
     }
 
     @Override
     public void didClose(DidCloseTextDocumentParams params) {
+        Path absoluteUri = resolveUriToWorkspaceRoot(params.getTextDocument().getUri());
+        assertFileExists(absoluteUri);
+        provider.get().handleFileClosed(absoluteUri);
         publishDiagnostics(provider.get().compile());
     }
 
     @Override
     public void didSave(DidSaveTextDocumentParams params) {
+        Path absoluteUri = resolveUriToWorkspaceRoot(params.getTextDocument().getUri());
+        assertFileExists(absoluteUri);
+        provider.get().handleFileSaved(absoluteUri);
         publishDiagnostics(provider.get().compile());
     }
 
@@ -189,6 +203,15 @@ public final class GroovyTextDocumentService implements TextDocumentService {
                     .uri(provider.get().getWorkspaceRoot().toAbsolutePath().toString());
         diagnostics.stream().forEach(d -> paramsBuilder.diagnostic(d));
         publishDiagnostics.accept(paramsBuilder.build());
+    }
+
+    private Path resolveUriToWorkspaceRoot(String uri) {
+        Path filePath = Paths.get(uri);
+        return filePath.isAbsolute() ? filePath : provider.get().getWorkspaceRoot().resolve(uri).toAbsolutePath();
+    }
+
+    private void assertFileExists(Path uri) {
+        checkArgument(uri.toFile().exists(), String.format("Uri '%s' does not exist", uri));
     }
 
     private static CompletionList createCompletionListFromSymbols(Set<SymbolInformation> symbols) {

@@ -20,12 +20,14 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.base.Optional;
+import com.google.common.base.Throwables;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.io.Files;
 import com.palantir.ls.util.DefaultDiagnosticBuilder;
 import com.palantir.ls.util.GroovyConstants;
 import com.palantir.ls.util.Ranges;
+import com.palantir.ls.util.SourceWriter;
 import io.typefox.lsapi.Diagnostic;
 import io.typefox.lsapi.DiagnosticSeverity;
 import io.typefox.lsapi.Location;
@@ -33,12 +35,15 @@ import io.typefox.lsapi.Range;
 import io.typefox.lsapi.ReferenceParams;
 import io.typefox.lsapi.SymbolInformation;
 import io.typefox.lsapi.SymbolKind;
+import io.typefox.lsapi.TextDocumentContentChangeEvent;
 import io.typefox.lsapi.builders.LocationBuilder;
 import io.typefox.lsapi.builders.SymbolInformationBuilder;
 import java.io.File;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -47,6 +52,7 @@ import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.apache.commons.io.FileUtils;
 import org.codehaus.groovy.ast.ASTNode;
 import org.codehaus.groovy.ast.ClassNode;
 import org.codehaus.groovy.ast.DynamicVariable;
@@ -73,38 +79,50 @@ import org.slf4j.LoggerFactory;
  */
 public final class GroovycWrapper implements CompilerWrapper {
 
-    private static final Logger log = LoggerFactory.getLogger(GroovycWrapper.class);
+    private static final Logger logger = LoggerFactory.getLogger(GroovycWrapper.class);
 
     private static final String GROOVY_DEFAULT_INTERFACE = "groovy.lang.GroovyObject";
     private static final String JAVA_DEFAULT_OBJECT = "java.lang.Object";
 
     private final Path workspaceRoot;
-    private final CompilationUnit unit;
+    private final Path changedFilesRoot;
+    private final CompilerConfiguration config;
+
+    private CompilationUnit unit;
+
     // Maps from source file -> set of symbols in that file
     private Map<String, Set<SymbolInformation>> fileSymbols = Maps.newHashMap();
     // Maps from type -> set of references of this type
     private Map<String, Set<SymbolInformation>> typeReferences = Maps.newHashMap();
+    // Map from origin source filename to its changed version source writer
+    private Map<Path, SourceWriter> originalSourceToChangedSource = Maps.newHashMap();
 
-    private GroovycWrapper(CompilationUnit unit, Path workspaceRoot) {
-        this.unit = unit;
+    private GroovycWrapper(Path workspaceRoot, Path changedFilesRoot, CompilerConfiguration config) {
         this.workspaceRoot = workspaceRoot;
+        this.changedFilesRoot = changedFilesRoot;
+        this.config = config;
+        unit = new CompilationUnit(config);
     }
 
     /**
      * Creates a new instance of GroovycWrapper.
+     *
      * @param targetDirectory the directory in which to put generated files
      * @param workspaceRoot the directory to compile
+     * @param changedFilesRoot the directory in which to temporarily store incrementally changed files
      * @return the newly created GroovycWrapper
      */
-    public static GroovycWrapper of(Path targetDirectory, Path workspaceRoot) {
+    public static GroovycWrapper of(Path targetDirectory, Path workspaceRoot, Path changedFilesRoot) {
         checkNotNull(targetDirectory, "targetDirectory must not be null");
         checkNotNull(workspaceRoot, "workspaceRoot must not be null");
+        checkNotNull(changedFilesRoot, "changedFilesRoot must not be null");
         checkArgument(targetDirectory.toFile().isDirectory(), "targetDirectory must be a directory");
         checkArgument(workspaceRoot.toFile().isDirectory(), "workspaceRoot must be a directory");
+        checkArgument(changedFilesRoot.toFile().isDirectory(), "changedFilesRoot must be a directory");
 
         CompilerConfiguration config = new CompilerConfiguration();
         config.setTargetDirectory(targetDirectory.toFile());
-        GroovycWrapper wrapper = new GroovycWrapper(new CompilationUnit(config), workspaceRoot);
+        GroovycWrapper wrapper = new GroovycWrapper(workspaceRoot, changedFilesRoot, config);
         wrapper.addAllSourcesToCompilationUnit();
 
         return wrapper;
@@ -128,6 +146,59 @@ public final class GroovycWrapper implements CompilerWrapper {
     }
 
     @Override
+    public void handleFileChanged(Path originalFile, List<TextDocumentContentChangeEvent> contentChanges) {
+        try {
+            SourceWriter sourceWriter = null;
+            if (originalSourceToChangedSource.containsKey(originalFile)) {
+                // New change on existing changed source
+                sourceWriter = originalSourceToChangedSource.get(originalFile);
+            } else {
+                // New source to switch out
+                Path newSourcePath = changedFilesRoot.resolve(workspaceRoot.relativize(originalFile));
+                sourceWriter = SourceWriter.of(originalFile, newSourcePath);
+                originalSourceToChangedSource.put(originalFile, sourceWriter);
+            }
+            // Apply changes to source writer and reset compilation unit
+            sourceWriter.applyChanges(contentChanges);
+            resetCompilationUnit();
+        } catch (IOException e) {
+            Throwables.propagate(e);
+        }
+    }
+
+    @Override
+    public void handleFileClosed(Path originalFile) {
+        if (!originalSourceToChangedSource.containsKey(originalFile)) {
+            return;
+        }
+        Path changedSource = originalSourceToChangedSource.get(originalFile).getDestination();
+        originalSourceToChangedSource.remove(originalFile);
+        // Deleted the changed file
+        if (!changedSource.toFile().delete()) {
+            logger.error("Unable to delete file '{}'", changedSource.toAbsolutePath());
+        }
+        resetCompilationUnit();
+    }
+
+    @Override
+    public void handleFileSaved(Path originalFile) {
+        try {
+            if (originalSourceToChangedSource.containsKey(originalFile)) {
+                Path changedSource = originalSourceToChangedSource.get(originalFile).getDestination();
+                originalSourceToChangedSource.get(originalFile).saveChanges();
+                originalSourceToChangedSource.remove(originalFile);
+                // Deleted the changed file
+                if (!changedSource.toFile().delete()) {
+                    logger.error("Unable to delete file '{}'", changedSource.toAbsolutePath());
+                }
+                resetCompilationUnit();
+            }
+        } catch (IOException e) {
+            Throwables.propagate(e);
+        }
+    }
+
+    @Override
     public Map<String, Set<SymbolInformation>> getFileSymbols() {
         return fileSymbols;
     }
@@ -145,9 +216,9 @@ public final class GroovycWrapper implements CompilerWrapper {
         }
         List<SymbolInformation> foundSymbolInformations = symbols.stream()
                 .filter(s -> Ranges.isValid(s.getLocation().getRange())
-                            && Ranges.contains(s.getLocation().getRange(), params.getPosition())
-                            && (s.getKind() == SymbolKind.Class || s.getKind() == SymbolKind.Interface
-                                    || s.getKind() == SymbolKind.Enum))
+                        && Ranges.contains(s.getLocation().getRange(), params.getPosition())
+                        && (s.getKind() == SymbolKind.Class || s.getKind() == SymbolKind.Interface
+                                || s.getKind() == SymbolKind.Enum))
                 // If there is more than one result, we want the symbol whose range starts the latest.
                 .sorted((s1, s2) -> Ranges.POSITION_COMPARATOR.reversed()
                         .compare(s1.getLocation().getRange().getStart(), s2.getLocation().getRange().getStart()))
@@ -185,17 +256,37 @@ public final class GroovycWrapper implements CompilerWrapper {
         try {
             return Pattern.compile(newQuery);
         } catch (PatternSyntaxException e) {
-            log.warn("Could not create valid pattern from query {}", query);
+            logger.warn("Could not create valid pattern from query '{}'", query);
         }
         return Pattern.compile("^" + escaped);
     }
 
     private void addAllSourcesToCompilationUnit() {
+        // We don't include the files that have a corresponding SourceWriter since that means they will be replaced.
         for (File file : Files.fileTreeTraverser().preOrderTraversal(workspaceRoot.toFile())) {
-            String fileExtension = Files.getFileExtension(file.getAbsolutePath());
-            if (file.isFile() && fileExtension.equals(GroovyConstants.GROOVY_LANGUAGE_EXTENSION)) {
+            if (!originalSourceToChangedSource.containsKey(file.toPath()) && file.isFile() && Files
+                    .getFileExtension(file.getAbsolutePath()).equals(GroovyConstants.GROOVY_LANGUAGE_EXTENSION)) {
                 unit.addSource(file);
             }
+        }
+        // Add the replaced sources
+        originalSourceToChangedSource.values()
+                .forEach(sourceWriter -> unit.addSource(sourceWriter.getDestination().toFile()));
+    }
+
+    private void resetCompilationUnit() {
+        try {
+            FileUtils.deleteDirectory(config.getTargetDirectory());
+            if (!config.getTargetDirectory().mkdir()) {
+                logger.error("Could not recreate target directory: '{}'",
+                        config.getTargetDirectory().getAbsolutePath());
+                throw new RuntimeException("Could not reset compiled files after changes. "
+                        + "Make sure you have permission to modify your target directory.");
+            }
+            unit = new CompilationUnit(config);
+            addAllSourcesToCompilationUnit();
+        } catch (IOException e) {
+            Throwables.propagate(e);
         }
     }
 
@@ -218,9 +309,9 @@ public final class GroovycWrapper implements CompilerWrapper {
                                 cause.getEndColumn());
 
                 diagnostic = new DefaultDiagnosticBuilder(cause.getMessage(), DiagnosticSeverity.Error)
-                                .range(range)
-                                .source(cause.getSourceLocator())
-                                .build();
+                        .range(range)
+                        .source(cause.getSourceLocator())
+                        .build();
             } else {
                 StringWriter data = new StringWriter();
                 PrintWriter writer = new PrintWriter(data);
@@ -284,7 +375,7 @@ public final class GroovycWrapper implements CompilerWrapper {
                             symbols.add(symbol);
                         });
             }
-            newFileSymbols.put(sourcePath, symbols);
+            newFileSymbols.put(getWorkspaceUri(sourcePath), symbols);
         });
         // Set the new references and new symbols
         typeReferences = newTypeReferences;
@@ -353,6 +444,19 @@ public final class GroovycWrapper implements CompilerWrapper {
         return symbols;
     }
 
+    private String getWorkspaceUri(String uri) {
+        return uri.startsWith(workspaceRoot.toString()) ? uri
+                : workspaceRoot.resolve(changedFilesRoot.relativize(Paths.get(uri))).toString();
+    }
+
+    private Location createLocation(String uri, ASTNode node) {
+        return new LocationBuilder()
+                .uri(getWorkspaceUri(uri))
+                .range(Ranges.createZeroBasedRange(node.getLineNumber(), node.getColumnNumber(),
+                        node.getLastLineNumber(), node.getLastColumnNumber()))
+                .build();
+    }
+
     private static SymbolInformation createSymbolInformation(String name, SymbolKind kind, Location location,
             Optional<String> parentName) {
         return new SymbolInformationBuilder()
@@ -360,14 +464,6 @@ public final class GroovycWrapper implements CompilerWrapper {
                 .kind(kind)
                 .location(location)
                 .name(name)
-                .build();
-    }
-
-    private static Location createLocation(String uri, ASTNode node) {
-        return new LocationBuilder()
-                .uri(uri)
-                .range(Ranges.createZeroBasedRange(node.getLineNumber(), node.getColumnNumber(),
-                        node.getLastLineNumber(), node.getLastColumnNumber()))
                 .build();
     }
 
