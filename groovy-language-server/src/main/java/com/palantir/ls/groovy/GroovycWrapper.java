@@ -279,7 +279,8 @@ public final class GroovycWrapper implements CompilerWrapper {
             if (!config.getTargetDirectory().mkdir()) {
                 logger.error("Could not recreate target directory: '{}'",
                         config.getTargetDirectory().getAbsolutePath());
-                throw new RuntimeException("Could not reset compiled files after changes");
+                throw new RuntimeException("Could not reset compiled files after changes. "
+                        + "Make sure you have permission to modify your target directory.");
             }
             unit = new CompilationUnit(config);
             addAllSourcesToCompilationUnit();

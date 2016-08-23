@@ -16,6 +16,7 @@
 
 package com.palantir.ls.util;
 
+import com.google.common.base.Throwables;
 import io.typefox.lsapi.Position;
 import io.typefox.lsapi.TextDocumentContentChangeEvent;
 import java.io.BufferedReader;
@@ -75,8 +76,7 @@ public final class SourceWriter {
         handleChanges(sortedChanges);
     }
 
-    private synchronized void handleChanges(List<TextDocumentContentChangeEvent> sortedChanges)
-            throws IOException {
+    private synchronized void handleChanges(List<TextDocumentContentChangeEvent> sortedChanges) throws IOException {
         BufferedReader file =
                 new BufferedReader(new InputStreamReader(new FileInputStream(destination.toAbsolutePath().toString()),
                         StandardCharsets.UTF_8.toString()));
@@ -164,11 +164,15 @@ public final class SourceWriter {
 
     private synchronized void appendRemainingRanges(List<TextDocumentContentChangeEvent> sortedChanges, int changeIdx,
             BufferedWriter output) throws IOException {
-        for (int i = changeIdx; i < sortedChanges.size(); i++) {
-            output.write(sortedChanges.get(i).getText());
-            if (i == sortedChanges.size() - 1) {
-                output.newLine();
+        sortedChanges.listIterator(changeIdx).forEachRemaining(change -> {
+            try {
+                output.write(change.getText());
+            } catch (IOException e) {
+                Throwables.propagate(e);
             }
+        });
+        if (changeIdx < sortedChanges.size()) {
+            output.newLine();
         }
     }
 
