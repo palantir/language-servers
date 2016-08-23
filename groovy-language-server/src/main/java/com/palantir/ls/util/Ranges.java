@@ -110,8 +110,7 @@ public final class Ranges {
 
         Position maxStart = max(range1.getStart(), range2.getStart());
         Position minEnd = min(range1.getEnd(), range2.getEnd());
-        return maxStart.getLine() < minEnd.getLine()
-                || (maxStart.getLine() == minEnd.getLine() && maxStart.getCharacter() < minEnd.getCharacter());
+        return POSITION_COMPARATOR.compare(maxStart, minEnd) < 0;
     }
 
     /**
