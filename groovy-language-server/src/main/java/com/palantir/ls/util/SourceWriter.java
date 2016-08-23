@@ -16,6 +16,8 @@
 
 package com.palantir.ls.util;
 
+import static com.google.common.base.Preconditions.checkArgument;
+
 import com.google.common.base.Throwables;
 import io.typefox.lsapi.Position;
 import io.typefox.lsapi.TextDocumentContentChangeEvent;
@@ -72,7 +74,13 @@ public final class SourceWriter {
                 contentChanges.stream().sorted((c1, c2) -> Ranges.POSITION_COMPARATOR.compare(c1.getRange().getStart(),
                         c2.getRange().getStart())).collect(Collectors.toList());
 
-        // TODO(#60): Check if any of the changes intersect and throw an exception
+        // Check if any of the ranges intersect
+        checkArgument(
+                !Ranges.checkSortedRangesIntersect(
+                        sortedChanges.stream().map(change -> change.getRange()).collect(Collectors.toList())),
+                String.format("Cannot apply changes with intersecting ranges in changes: %s",
+                        contentChanges.toString()));
+
         handleChanges(sortedChanges);
     }
 

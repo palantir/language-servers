@@ -23,6 +23,7 @@ import io.typefox.lsapi.Range;
 import io.typefox.lsapi.builders.RangeBuilder;
 import io.typefox.lsapi.impl.PositionImpl;
 import java.util.Comparator;
+import java.util.List;
 
 public final class Ranges {
 
@@ -83,6 +84,48 @@ public final class Ranges {
 
         return POSITION_COMPARATOR.compare(range.getStart(), position) <= 0
                 && POSITION_COMPARATOR.compare(range.getEnd(), position) >= 0;
+    }
+
+    /**
+     * Returns the maximum position.
+     */
+    public static Position max(Position position1, Position position2) {
+        return POSITION_COMPARATOR.compare(position1, position2) >= 0 ? position1 : position2;
+    }
+
+    /**
+     * Returns the minimum position.
+     */
+    public static Position min(Position position1, Position position2) {
+        return POSITION_COMPARATOR.compare(position1, position2) < 0 ? position1 : position2;
+    }
+
+    /**
+     * Returns whether range1 and range2 intersect. Assumes that a range is inclusive on its start and exclusive on its
+     * end, which means that if range1 ends on the same position as range2 starts, this is not considered intersecting.
+     */
+    public static boolean intersects(Range range1, Range range2) {
+        checkArgument(isValid(range1), String.format("range1 is not valid: %s", range1.toString()));
+        checkArgument(isValid(range2), String.format("range2 is not valid: %s", range2.toString()));
+
+        Position maxStart = max(range1.getStart(), range2.getStart());
+        Position minEnd = min(range1.getEnd(), range2.getEnd());
+        return POSITION_COMPARATOR.compare(maxStart, minEnd) < 0;
+    }
+
+    /**
+     * Returns whether any of the given sorted ranges intersect. The ranges need to be sorted from first occurrence to
+     * last occurrence.
+     */
+    public static boolean checkSortedRangesIntersect(List<Range> sortedRanges) {
+        for (int i = 0; i < sortedRanges.size() - 1; i++) {
+            Range range1 = sortedRanges.get(i);
+            Range range2 = sortedRanges.get(i + 1);
+            if (Ranges.intersects(range1, range2)) {
+                return true;
+            }
+        }
+        return false;
     }
 
 }
