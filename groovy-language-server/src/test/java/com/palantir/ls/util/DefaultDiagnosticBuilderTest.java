@@ -19,6 +19,7 @@ package com.palantir.ls.util;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.typefox.lsapi.Diagnostic;
 import io.typefox.lsapi.DiagnosticSeverity;
 import io.typefox.lsapi.Range;
@@ -31,7 +32,7 @@ public final class DefaultDiagnosticBuilderTest {
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
 
-    @SuppressWarnings("UWF_NULL_FIELD")
+    @SuppressFBWarnings("NP_NULL_PARAM_DEREF")
     @Test
     public void testExceptionOnNullMessage() {
         expectedException.expect(NullPointerException.class);
