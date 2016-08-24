@@ -19,6 +19,7 @@ package com.palantir.ls.groovy;
 import com.google.common.io.Files;
 import com.palantir.ls.server.StreamLanguageServerLauncher;
 import com.palantir.ls.util.GroovyConstants;
+import com.palantir.ls.util.Uris;
 import io.typefox.lsapi.InitializeParams;
 import io.typefox.lsapi.InitializeResult;
 import io.typefox.lsapi.LanguageDescription;
@@ -32,9 +33,7 @@ import io.typefox.lsapi.services.LanguageServer;
 import io.typefox.lsapi.services.TextDocumentService;
 import io.typefox.lsapi.services.WindowService;
 import io.typefox.lsapi.services.WorkspaceService;
-import java.net.URI;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
@@ -63,12 +62,7 @@ public final class GroovyLanguageServer implements LanguageServer {
 
     @Override
     public CompletableFuture<InitializeResult> initialize(InitializeParams params) {
-        try {
-            workspaceRoot = Paths.get(URI.create(params.getRootPath())).toAbsolutePath().normalize();
-        } catch (IllegalArgumentException e) {
-            logger.debug("Initialize rootPath was not valid URI '{}'", params.getRootPath());
-            workspaceRoot = Paths.get(params.getRootPath()).toAbsolutePath().normalize();
-        }
+        workspaceRoot = Uris.getAbsolutePath(params.getRootPath());
 
         ServerCapabilities capabilities = new ServerCapabilitiesBuilder()
                 .textDocumentSync(TextDocumentSyncKind.Incremental)

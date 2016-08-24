@@ -92,24 +92,25 @@ public final class GroovyLanguageServerTest {
 
     @Test
     public void testInitialize_relativeWorkspacePath() throws InterruptedException, ExecutionException, IOException {
-        File workspaceRoot = Paths.get("").toAbsolutePath().resolve("something").toFile();
+        File workspaceRoot = Paths.get("").toAbsolutePath().resolve("test-directory-to-be-deleted").toFile();
         // Create a directory in our working directory
+        // If this fails, make sure ./groovy-language-server/test-directory-to-be-deleted doesn't exist.
         assertTrue(workspaceRoot.mkdir());
 
         InitializeParams params =
                 new InitializeParamsBuilder().capabilities(new ClientCapabilitiesImpl()).processId(1)
-                        .rootPath("something").build();
+                        .rootPath("test-directory-to-be-deleted").build();
         InitializeResult result = server.initialize(params).get();
         assertInitializeResultIsCorrect(workspaceRoot.toPath(), result);
 
         // Test normalization
         params = new InitializeParamsBuilder().capabilities(new ClientCapabilitiesImpl()).processId(1)
-                        .rootPath("./something").build();
+                        .rootPath("./test-directory-to-be-deleted").build();
         result = server.initialize(params).get();
         assertInitializeResultIsCorrect(workspaceRoot.toPath(), result);
 
         params = new InitializeParamsBuilder().capabilities(new ClientCapabilitiesImpl()).processId(1)
-                        .rootPath("somethingelse/../something/../something").build();
+                        .rootPath("somethingelse/../something/../test-directory-to-be-deleted").build();
         result = server.initialize(params).get();
         assertInitializeResultIsCorrect(workspaceRoot.toPath(), result);
 

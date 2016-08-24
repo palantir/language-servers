@@ -65,7 +65,7 @@ public interface CompilerWrapper {
     /**
      * Returns a mapping from absolute path of source file to symbols located within these source files.
      */
-    Map<String, Set<SymbolInformation>> getFileSymbols();
+    Map<Path, Set<SymbolInformation>> getFileSymbols();
 
     /**
      * Returns a mapping from a type name (class, interface, or enum) to symbols which reference those types.

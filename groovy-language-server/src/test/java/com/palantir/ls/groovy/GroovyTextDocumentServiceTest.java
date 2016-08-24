@@ -83,7 +83,7 @@ public final class GroovyTextDocumentServiceTest {
     private Path file;
     private List<PublishDiagnosticsParams> publishedDiagnostics = Lists.newArrayList();
     private Set<Diagnostic> expectedDiagnostics = Sets.newHashSet();
-    private Map<String, Set<SymbolInformation>> symbolsMap = Maps.newHashMap();
+    private Map<Path, Set<SymbolInformation>> symbolsMap = Maps.newHashMap();
     private Set<SymbolInformation> expectedReferences = Sets.newHashSet();
 
     @Mock
@@ -102,7 +102,7 @@ public final class GroovyTextDocumentServiceTest {
         file = workspace.newFile("something.groovy").toPath();
         SymbolInformation symbol1 = new SymbolInformationBuilder().name("ThisIsASymbol").kind(SymbolKind.Field).build();
         SymbolInformation symbol2 = new SymbolInformationBuilder().name("methodA").kind(SymbolKind.Method).build();
-        symbolsMap.put(file.toAbsolutePath().toString(), Sets.newHashSet(symbol1, symbol2));
+        symbolsMap.put(file.toAbsolutePath(), Sets.newHashSet(symbol1, symbol2));
 
         expectedReferences.add(new SymbolInformationBuilder()
                 .containerName("Something")
@@ -263,7 +263,7 @@ public final class GroovyTextDocumentServiceTest {
         CompletableFuture<List<? extends SymbolInformation>> response =
                 service.documentSymbol(new DocumentSymbolParamsBuilder().textDocument(textDocument).build());
         assertThat(response.get().stream().collect(Collectors.toSet()),
-                is(symbolsMap.get(file.toAbsolutePath().toString())));
+                is(symbolsMap.get(file.toAbsolutePath())));
     }
 
     @Test
@@ -272,7 +272,7 @@ public final class GroovyTextDocumentServiceTest {
         CompletableFuture<List<? extends SymbolInformation>> response =
                 service.documentSymbol(new DocumentSymbolParamsBuilder().textDocument(textDocument).build());
         assertThat(response.get().stream().collect(Collectors.toSet()),
-                is(symbolsMap.get(file.toAbsolutePath().toString())));
+                is(symbolsMap.get(file.toAbsolutePath())));
     }
 
     @Test
