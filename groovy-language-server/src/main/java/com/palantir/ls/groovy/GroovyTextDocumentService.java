@@ -55,8 +55,8 @@ import io.typefox.lsapi.builders.CompletionListBuilder;
 import io.typefox.lsapi.builders.PublishDiagnosticsParamsBuilder;
 import io.typefox.lsapi.impl.CompletionListImpl;
 import io.typefox.lsapi.services.TextDocumentService;
+import java.io.File;
 import java.net.URI;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -211,7 +211,7 @@ public final class GroovyTextDocumentService implements TextDocumentService {
     }
 
     private void assertFileExists(URI uri) {
-        checkArgument(Paths.get(uri).toFile().exists(), String.format("Uri '%s' does not exist", uri));
+        checkArgument(new File(uri).exists(), String.format("Uri '%s' does not exist", uri));
     }
 
     private static CompletionList createCompletionListFromSymbols(Set<SymbolInformation> symbols) {
