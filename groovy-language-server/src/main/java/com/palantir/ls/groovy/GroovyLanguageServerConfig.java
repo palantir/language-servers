@@ -16,9 +16,15 @@
 
 package com.palantir.ls.groovy;
 
+import com.google.common.collect.Maps;
+import io.typefox.lsapi.Diagnostic;
 import io.typefox.lsapi.MessageParams;
 import io.typefox.lsapi.PublishDiagnosticsParams;
 import io.typefox.lsapi.ShowMessageRequestParams;
+import io.typefox.lsapi.builders.PublishDiagnosticsParamsBuilder;
+import java.nio.file.Paths;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
 
 public final class GroovyLanguageServerConfig implements LanguageServerConfig {
@@ -70,13 +76,33 @@ public final class GroovyLanguageServerConfig implements LanguageServerConfig {
     }
 
     @Override
-    public Consumer<PublishDiagnosticsParams> getPublishDiagnostics() {
-        return publishDiagnostics;
+    public void setPublishDiagnostics(Consumer<PublishDiagnosticsParams> callback) {
+        this.publishDiagnostics = callback;
     }
 
     @Override
-    public void setPublishDiagnostics(Consumer<PublishDiagnosticsParams> callback) {
-        this.publishDiagnostics = callback;
+    public void publishDiagnostics(String workspaceUri, Set<Diagnostic> diagnostics) {
+        if (diagnostics.isEmpty()) {
+            return;
+        }
+        Map<String, PublishDiagnosticsParamsBuilder> diagnosticsByFile = Maps.newHashMap();
+
+        diagnostics.forEach(diagnostic -> {
+            try {
+                String uri = Paths.get(diagnostic.getSource()).toUri().toString();
+                diagnosticsByFile.computeIfAbsent(uri, (value) -> new PublishDiagnosticsParamsBuilder().uri(uri))
+                        .diagnostic(diagnostic);
+            } catch (IllegalArgumentException e) {
+                // The compiler can give errors not associated with a particular source file, in which case we put it
+                // under the workspace uri.
+                diagnosticsByFile.computeIfAbsent(workspaceUri,
+                        (value) -> new PublishDiagnosticsParamsBuilder().uri(workspaceUri))
+                        .diagnostic(diagnostic);
+            }
+        });
+
+        diagnosticsByFile.values().stream().map(paramsBuilder -> paramsBuilder.build())
+                .forEach(publishDiagnostics::accept);
     }
 
 }

@@ -96,11 +96,14 @@ public final class GroovyTextDocumentServiceTest {
     public void setup() throws IOException {
         MockitoAnnotations.initMocks(this);
 
-        expectedDiagnostics.add(new DefaultDiagnosticBuilder("Some message", DiagnosticSeverity.Error).build());
-        expectedDiagnostics.add(new DefaultDiagnosticBuilder("Some other message", DiagnosticSeverity.Warning).build());
+        filePath = workspace.newFile("something.groovy").toPath();
+
+        expectedDiagnostics.add(new DefaultDiagnosticBuilder("Some message", DiagnosticSeverity.Error)
+                .source(filePath.toString()).build());
+        expectedDiagnostics.add(new DefaultDiagnosticBuilder("Some other message", DiagnosticSeverity.Warning)
+                .source(filePath.toString()).build());
         Set<Diagnostic> diagnostics = Sets.newHashSet(expectedDiagnostics);
 
-        filePath = workspace.newFile("something.groovy").toPath();
         SymbolInformation symbol1 = new SymbolInformationBuilder().name("ThisIsASymbol").kind(SymbolKind.Field).build();
         SymbolInformation symbol2 = new SymbolInformationBuilder().name("methodA").kind(SymbolKind.Method).build();
         symbolsMap.put(filePath.toUri(), Sets.newHashSet(symbol1, symbol2));
@@ -119,9 +122,9 @@ public final class GroovyTextDocumentServiceTest {
                 .kind(SymbolKind.Class)
                 .name("MyClassName2")
                 .location(new LocationBuilder()
-                            .uri("uri")
-                            .range(Ranges.createRange(1, 1, 9, 9))
-                            .build())
+                        .uri("uri")
+                        .range(Ranges.createRange(1, 1, 9, 9))
+                        .build())
                 .build());
         Set<SymbolInformation> allReferencesReturned = Sets.newHashSet(expectedReferences);
         // The reference that will be filtered out
@@ -130,9 +133,9 @@ public final class GroovyTextDocumentServiceTest {
                 .kind(SymbolKind.Class)
                 .name("MyClassName3")
                 .location(new LocationBuilder()
-                            .uri("uri")
-                            .range(Ranges.UNDEFINED_RANGE)
-                            .build())
+                        .uri("uri")
+                        .range(Ranges.UNDEFINED_RANGE)
+                        .build())
                 .build());
         when(compilerWrapper.getWorkspaceRoot()).thenReturn(workspace.getRoot().toPath());
         when(compilerWrapper.compile()).thenReturn(diagnostics);
@@ -166,7 +169,7 @@ public final class GroovyTextDocumentServiceTest {
         // assert diagnostics were published
         assertEquals(1, publishedDiagnostics.size());
         assertEquals(expectedDiagnostics, Sets.newHashSet(publishedDiagnostics.get(0).getDiagnostics()));
-        assertEquals(workspace.getRoot().toString(), publishedDiagnostics.get(0).getUri());
+        assertEquals(filePath.toUri().toString(), publishedDiagnostics.get(0).getUri());
     }
 
     @Test
@@ -181,7 +184,7 @@ public final class GroovyTextDocumentServiceTest {
         // assert diagnostics were published
         assertEquals(1, publishedDiagnostics.size());
         assertEquals(expectedDiagnostics, Sets.newHashSet(publishedDiagnostics.get(0).getDiagnostics()));
-        assertEquals(workspace.getRoot().toString(), publishedDiagnostics.get(0).getUri());
+        assertEquals(filePath.toUri().toString(), publishedDiagnostics.get(0).getUri());
     }
 
     @Test
@@ -219,7 +222,7 @@ public final class GroovyTextDocumentServiceTest {
         // assert diagnostics were published
         assertEquals(1, publishedDiagnostics.size());
         assertEquals(expectedDiagnostics, Sets.newHashSet(publishedDiagnostics.get(0).getDiagnostics()));
-        assertEquals(workspace.getRoot().toString(), publishedDiagnostics.get(0).getUri());
+        assertEquals(filePath.toUri().toString(), publishedDiagnostics.get(0).getUri());
     }
 
     @Test
@@ -242,7 +245,7 @@ public final class GroovyTextDocumentServiceTest {
         // assert diagnostics were published
         assertEquals(1, publishedDiagnostics.size());
         assertEquals(expectedDiagnostics, Sets.newHashSet(publishedDiagnostics.get(0).getDiagnostics()));
-        assertEquals(workspace.getRoot().toString(), publishedDiagnostics.get(0).getUri());
+        assertEquals(filePath.toUri().toString(), publishedDiagnostics.get(0).getUri());
     }
 
     @Test

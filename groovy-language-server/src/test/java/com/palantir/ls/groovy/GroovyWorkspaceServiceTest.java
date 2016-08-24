@@ -17,18 +17,15 @@
 package com.palantir.ls.groovy;
 
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.when;
 
-import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.palantir.ls.util.DefaultDiagnosticBuilder;
 import com.palantir.ls.util.Ranges;
 import io.typefox.lsapi.Diagnostic;
 import io.typefox.lsapi.DiagnosticSeverity;
 import io.typefox.lsapi.FileChangeType;
-import io.typefox.lsapi.PublishDiagnosticsParams;
 import io.typefox.lsapi.SymbolInformation;
 import io.typefox.lsapi.SymbolKind;
 import io.typefox.lsapi.builders.DidChangeWatchedFilesParamsBuilder;
@@ -40,7 +37,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.junit.Before;
 import org.junit.Rule;
@@ -56,7 +52,6 @@ public final class GroovyWorkspaceServiceTest {
     public TemporaryFolder workspace = new TemporaryFolder();
 
     private GroovyWorkspaceService service;
-    private List<PublishDiagnosticsParams> publishedDiagnostics = Lists.newArrayList();
     private Set<Diagnostic> expectedDiagnostics = Sets.newHashSet();
     private Set<SymbolInformation> expectedReferences = Sets.newHashSet();
 
@@ -105,21 +100,12 @@ public final class GroovyWorkspaceServiceTest {
                             .build())
                 .build());
 
-        Consumer<PublishDiagnosticsParams> callback = p -> {
-            publishDiagnostics(p);
-        };
-
         when(compilerWrapper.getWorkspaceRoot()).thenReturn(workspace.getRoot().toPath());
         when(compilerWrapper.compile()).thenReturn(diagnostics);
         when(compilerWrapper.getFilteredSymbols(Mockito.any())).thenReturn(allReferencesReturned);
         when(provider.get()).thenReturn(compilerWrapper);
-        when(config.getPublishDiagnostics()).thenReturn(callback);
 
         service = new GroovyWorkspaceService(provider, config);
-    }
-
-    private void publishDiagnostics(PublishDiagnosticsParams params) {
-        publishedDiagnostics.add(params);
     }
 
     @Test
@@ -134,9 +120,8 @@ public final class GroovyWorkspaceServiceTest {
         service.didChangeWatchedFiles(new DidChangeWatchedFilesParamsBuilder().change("uri", FileChangeType.Deleted)
                 .change("uri", FileChangeType.Created).change("uri", FileChangeType.Changed).build());
         // assert diagnostics were published
-        assertEquals(1, publishedDiagnostics.size());
-        assertEquals(expectedDiagnostics, Sets.newHashSet(publishedDiagnostics.get(0).getDiagnostics()));
-        assertEquals(workspace.getRoot().toString(), publishedDiagnostics.get(0).getUri());
+        Mockito.verify(config, Mockito.times(1)).publishDiagnostics(workspace.getRoot().toPath().toUri().toString(),
+                expectedDiagnostics);
     }
 
 }

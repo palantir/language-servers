@@ -17,15 +17,12 @@
 package com.palantir.ls.groovy;
 
 import com.palantir.ls.util.Ranges;
-import io.typefox.lsapi.Diagnostic;
 import io.typefox.lsapi.DidChangeConfigurationParams;
 import io.typefox.lsapi.DidChangeWatchedFilesParams;
 import io.typefox.lsapi.SymbolInformation;
 import io.typefox.lsapi.WorkspaceSymbolParams;
-import io.typefox.lsapi.builders.PublishDiagnosticsParamsBuilder;
 import io.typefox.lsapi.services.WorkspaceService;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
@@ -53,18 +50,7 @@ public final class GroovyWorkspaceService implements WorkspaceService {
     @Override
     public void didChangeWatchedFiles(DidChangeWatchedFilesParams params) {
         provider.get().handleChangeWatchedFiles(params.getChanges());
-        publishDiagnostics(provider.get().compile());
-    }
-
-    private void publishDiagnostics(Set<Diagnostic> diagnostics) {
-        if (diagnostics.isEmpty()) {
-            return;
-        }
-        PublishDiagnosticsParamsBuilder paramsBuilder =
-                new PublishDiagnosticsParamsBuilder()
-                    .uri(provider.get().getWorkspaceRoot().toAbsolutePath().toString());
-        diagnostics.stream().forEach(d -> paramsBuilder.diagnostic(d));
-        config.getPublishDiagnostics().accept(paramsBuilder.build());
+        config.publishDiagnostics(provider.get().getWorkspaceRoot().toUri().toString(), provider.get().compile());
     }
 
 }
