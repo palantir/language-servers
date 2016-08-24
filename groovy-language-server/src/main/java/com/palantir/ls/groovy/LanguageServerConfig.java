@@ -16,9 +16,12 @@
 
 package com.palantir.ls.groovy;
 
+import io.typefox.lsapi.Diagnostic;
 import io.typefox.lsapi.MessageParams;
 import io.typefox.lsapi.PublishDiagnosticsParams;
 import io.typefox.lsapi.ShowMessageRequestParams;
+import java.nio.file.Path;
+import java.util.Set;
 import java.util.function.Consumer;
 
 /**
@@ -42,8 +45,8 @@ public interface LanguageServerConfig {
 
     void setTelemetryEvent(Consumer<Object> callback);
 
-    Consumer<PublishDiagnosticsParams> getPublishDiagnostics();
-
     void setPublishDiagnostics(Consumer<PublishDiagnosticsParams> callback);
+
+    void publishDiagnostics(Path workspaceRoot, Set<Diagnostic> diagnostics);
 
 }

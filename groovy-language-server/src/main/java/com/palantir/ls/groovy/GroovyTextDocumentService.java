@@ -29,7 +29,6 @@ import io.typefox.lsapi.Command;
 import io.typefox.lsapi.CompletionItem;
 import io.typefox.lsapi.CompletionItemKind;
 import io.typefox.lsapi.CompletionList;
-import io.typefox.lsapi.Diagnostic;
 import io.typefox.lsapi.DidChangeTextDocumentParams;
 import io.typefox.lsapi.DidCloseTextDocumentParams;
 import io.typefox.lsapi.DidOpenTextDocumentParams;
@@ -52,7 +51,6 @@ import io.typefox.lsapi.TextEdit;
 import io.typefox.lsapi.WorkspaceEdit;
 import io.typefox.lsapi.builders.CompletionItemBuilder;
 import io.typefox.lsapi.builders.CompletionListBuilder;
-import io.typefox.lsapi.builders.PublishDiagnosticsParamsBuilder;
 import io.typefox.lsapi.impl.CompletionListImpl;
 import io.typefox.lsapi.services.TextDocumentService;
 import java.io.File;
@@ -163,7 +161,7 @@ public final class GroovyTextDocumentService implements TextDocumentService {
     public void didOpen(DidOpenTextDocumentParams params) {
         URI uri = Uris.resolveToRoot(provider.get().getWorkspaceRoot(), params.getTextDocument().getUri());
         assertFileExists(uri);
-        publishDiagnostics(provider.get().compile());
+        config.publishDiagnostics(provider.get().getWorkspaceRoot(), provider.get().compile());
     }
 
     @Override
@@ -175,7 +173,7 @@ public final class GroovyTextDocumentService implements TextDocumentService {
                     String.format("Calling didChange with no changes on uri '%s'", uri.toString()));
         }
         provider.get().handleFileChanged(uri, Lists.newArrayList(params.getContentChanges()));
-        publishDiagnostics(provider.get().compile());
+        config.publishDiagnostics(provider.get().getWorkspaceRoot(), provider.get().compile());
     }
 
     @Override
@@ -183,7 +181,7 @@ public final class GroovyTextDocumentService implements TextDocumentService {
         URI uri = Uris.resolveToRoot(provider.get().getWorkspaceRoot(), params.getTextDocument().getUri());
         assertFileExists(uri);
         provider.get().handleFileClosed(uri);
-        publishDiagnostics(provider.get().compile());
+        config.publishDiagnostics(provider.get().getWorkspaceRoot(), provider.get().compile());
     }
 
     @Override
@@ -191,23 +189,12 @@ public final class GroovyTextDocumentService implements TextDocumentService {
         URI uri = Uris.resolveToRoot(provider.get().getWorkspaceRoot(), params.getTextDocument().getUri());
         assertFileExists(uri);
         provider.get().handleFileSaved(uri);
-        publishDiagnostics(provider.get().compile());
+        config.publishDiagnostics(provider.get().getWorkspaceRoot(), provider.get().compile());
     }
 
     @Override
     public void onPublishDiagnostics(Consumer<PublishDiagnosticsParams> callback) {
         config.setPublishDiagnostics(callback);
-    }
-
-    private void publishDiagnostics(Set<Diagnostic> diagnostics) {
-        if (diagnostics.isEmpty()) {
-            return;
-        }
-        PublishDiagnosticsParamsBuilder paramsBuilder =
-                new PublishDiagnosticsParamsBuilder()
-                    .uri(provider.get().getWorkspaceRoot().toAbsolutePath().toString());
-        diagnostics.stream().forEach(d -> paramsBuilder.diagnostic(d));
-        config.getPublishDiagnostics().accept(paramsBuilder.build());
     }
 
     private void assertFileExists(URI uri) {
