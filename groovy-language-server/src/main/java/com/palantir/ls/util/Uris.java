@@ -50,26 +50,17 @@ public final class Uris {
     }
 
     /**
-     * Normalizes the given URI and resolves it on the given absolutePathOfRoot if it is not already an absolute path.
-     * @throws IllegalArgumentException if absolutePathOfRoot is not an absolute path
+     * Normalizes the given URI and resolves it on the given absoluteRootPath if it is not already an absolute path.
+     * @throws IllegalArgumentException if absoluteRootPath is not an absolute path
      */
-    public static Path resolveToRoot(Path absolutePathOfRoot, String uri) {
-        checkArgument(absolutePathOfRoot.isAbsolute(), "absolutePathOfRoot must be absolute");
+    public static URI resolveToRoot(Path absoluteRootPath, String uri) {
+        checkArgument(absoluteRootPath.isAbsolute(), "absoluteRootPath must be absolute");
         if (isFileUri(uri)) {
-            return getAbsolutePath(uri);
+            return getAbsolutePath(uri).toUri();
         } else {
             Path path = Paths.get(uri).normalize();
-            return path.isAbsolute() ? path : absolutePathOfRoot.resolve(path).toAbsolutePath();
+            return path.isAbsolute() ? path.toUri() : absoluteRootPath.resolve(path).toAbsolutePath().toUri();
         }
-    }
-
-    /**
-     * Returns the given absolutePath as a file URI.
-     * @throws IllegalArgumentException if absolutePath is not an absolute path
-     */
-    public static String absolutePathAsFileUri(Path absolutePath) {
-        checkArgument(absolutePath.isAbsolute(), "absolutePath must be absolute");
-        return "file:" + absolutePath.normalize().toString();
     }
 
 }

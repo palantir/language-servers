@@ -21,6 +21,7 @@ import io.typefox.lsapi.FileEvent;
 import io.typefox.lsapi.ReferenceParams;
 import io.typefox.lsapi.SymbolInformation;
 import io.typefox.lsapi.TextDocumentContentChangeEvent;
+import java.net.URI;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -42,19 +43,19 @@ public interface CompilerWrapper {
     /**
      * Handle adding incremental changes to open files to be included in compilation.
      */
-    void handleFileChanged(Path originalFile, List<TextDocumentContentChangeEvent> contentChanges);
+    void handleFileChanged(URI originalFile, List<TextDocumentContentChangeEvent> contentChanges);
 
     /**
      * Handle removing non-saved changes to open files from compiled source files.
-     * @param originalFile the absolute file path of the original file
+     * @param originalFile the URI of the original file
      */
-    void handleFileClosed(Path originalFile);
+    void handleFileClosed(URI originalFile);
 
     /**
      * Handle saving the accumulated changes to the origin source.
-     * @param originalFile the absolute file path of the original file
+     * @param originalFile the URI of the original file
      */
-    void handleFileSaved(Path originalFile);
+    void handleFileSaved(URI originalFile);
 
     /**
      * Handles reconfiguring the compiled files in the event some files were created, changed or deleted outside of the
@@ -63,9 +64,9 @@ public interface CompilerWrapper {
     void handleChangeWatchedFiles(List<? extends FileEvent> changes);
 
     /**
-     * Returns a mapping from absolute path of source file to symbols located within these source files.
+     * Returns a mapping from the URI of source file to symbols located within these source files.
      */
-    Map<Path, Set<SymbolInformation>> getFileSymbols();
+    Map<URI, Set<SymbolInformation>> getFileSymbols();
 
     /**
      * Returns a mapping from a type name (class, interface, or enum) to symbols which reference those types.

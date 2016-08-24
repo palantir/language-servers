@@ -55,7 +55,8 @@ import io.typefox.lsapi.builders.CompletionListBuilder;
 import io.typefox.lsapi.builders.PublishDiagnosticsParamsBuilder;
 import io.typefox.lsapi.impl.CompletionListImpl;
 import io.typefox.lsapi.services.TextDocumentService;
-import java.nio.file.Path;
+import java.net.URI;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -114,11 +115,11 @@ public final class GroovyTextDocumentService implements TextDocumentService {
 
     @Override
     public CompletableFuture<List<? extends SymbolInformation>> documentSymbol(DocumentSymbolParams params) {
-        Path absoluteUri = Uris.resolveToRoot(provider.get().getWorkspaceRoot(), params.getTextDocument().getUri());
-        assertFileExists(absoluteUri);
+        URI uri = Uris.resolveToRoot(provider.get().getWorkspaceRoot(), params.getTextDocument().getUri());
+        assertFileExists(uri);
         List<SymbolInformation> symbols =
                 Optional.fromNullable(
-                        provider.get().getFileSymbols().get(absoluteUri).stream().collect(Collectors.toList()))
+                        provider.get().getFileSymbols().get(uri).stream().collect(Collectors.toList()))
                         .or(Lists.newArrayList());
         return CompletableFuture.completedFuture(symbols);
     }
@@ -160,36 +161,36 @@ public final class GroovyTextDocumentService implements TextDocumentService {
 
     @Override
     public void didOpen(DidOpenTextDocumentParams params) {
-        Path absoluteUri = Uris.resolveToRoot(provider.get().getWorkspaceRoot(), params.getTextDocument().getUri());
-        assertFileExists(absoluteUri);
+        URI uri = Uris.resolveToRoot(provider.get().getWorkspaceRoot(), params.getTextDocument().getUri());
+        assertFileExists(uri);
         publishDiagnostics(provider.get().compile());
     }
 
     @Override
     public void didChange(DidChangeTextDocumentParams params) {
-        Path absoluteUri = Uris.resolveToRoot(provider.get().getWorkspaceRoot(), params.getTextDocument().getUri());
-        assertFileExists(absoluteUri);
+        URI uri = Uris.resolveToRoot(provider.get().getWorkspaceRoot(), params.getTextDocument().getUri());
+        assertFileExists(uri);
         if (params.getContentChanges() == null || params.getContentChanges().isEmpty()) {
             throw new IllegalArgumentException(
-                    String.format("Calling didChange with no changes on uri '%s'", absoluteUri.toString()));
+                    String.format("Calling didChange with no changes on uri '%s'", uri.toString()));
         }
-        provider.get().handleFileChanged(absoluteUri, Lists.newArrayList(params.getContentChanges()));
+        provider.get().handleFileChanged(uri, Lists.newArrayList(params.getContentChanges()));
         publishDiagnostics(provider.get().compile());
     }
 
     @Override
     public void didClose(DidCloseTextDocumentParams params) {
-        Path absoluteUri = Uris.resolveToRoot(provider.get().getWorkspaceRoot(), params.getTextDocument().getUri());
-        assertFileExists(absoluteUri);
-        provider.get().handleFileClosed(absoluteUri);
+        URI uri = Uris.resolveToRoot(provider.get().getWorkspaceRoot(), params.getTextDocument().getUri());
+        assertFileExists(uri);
+        provider.get().handleFileClosed(uri);
         publishDiagnostics(provider.get().compile());
     }
 
     @Override
     public void didSave(DidSaveTextDocumentParams params) {
-        Path absoluteUri = Uris.resolveToRoot(provider.get().getWorkspaceRoot(), params.getTextDocument().getUri());
-        assertFileExists(absoluteUri);
-        provider.get().handleFileSaved(absoluteUri);
+        URI uri = Uris.resolveToRoot(provider.get().getWorkspaceRoot(), params.getTextDocument().getUri());
+        assertFileExists(uri);
+        provider.get().handleFileSaved(uri);
         publishDiagnostics(provider.get().compile());
     }
 
@@ -209,8 +210,8 @@ public final class GroovyTextDocumentService implements TextDocumentService {
         config.getPublishDiagnostics().accept(paramsBuilder.build());
     }
 
-    private void assertFileExists(Path uri) {
-        checkArgument(uri.toFile().exists(), String.format("Uri '%s' does not exist", uri));
+    private void assertFileExists(URI uri) {
+        checkArgument(Paths.get(uri).toFile().exists(), String.format("Uri '%s' does not exist", uri));
     }
 
     private static CompletionList createCompletionListFromSymbols(Set<SymbolInformation> symbols) {

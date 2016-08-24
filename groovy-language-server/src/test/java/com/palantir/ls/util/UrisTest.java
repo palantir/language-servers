@@ -37,7 +37,11 @@ public final class UrisTest {
     @Test
     public void testIsFileUri() {
         assertTrue(Uris.isFileUri("file:/var/my/path/to/something"));
+        assertTrue(Uris.isFileUri("file:///var/my/path/to/something"));
+        assertTrue(Uris.isFileUri("file:////var/my/path/to/something"));
+        assertTrue(Uris.isFileUri("file://///var/my/path/to/something"));
         assertTrue(Uris.isFileUri("file:/var/my/path/to/something/file.txt"));
+        assertFalse(Uris.isFileUri("file://var/my/path/to/something"));
         assertFalse(Uris.isFileUri("/var/my/path/to/something"));
         assertFalse(Uris.isFileUri("/var/my/path/to/something/file.txt"));
         assertFalse(Uris.isFileUri("var/my/path/to/something"));
@@ -56,12 +60,14 @@ public final class UrisTest {
 
     @Test
     public void testResolveToRoot() {
-        String expectedPath = root.getRoot().getAbsolutePath() + "/myfile.txt";
-        String uri = "file:" + root.getRoot().getAbsolutePath() + "/myfile.txt";
+        String expectedPath = "file://" + root.getRoot().getAbsolutePath() + "/myfile.txt";
+        String uri1 = "file:" + root.getRoot().getAbsolutePath() + "/myfile.txt";
+        String uri2 = "file://" + root.getRoot().getAbsolutePath() + "/myfile.txt";
         String relativePath = "something/somethingelse/../somethingelse/./../../myfile.txt";
         String absolutePath =
                 root.getRoot().getAbsolutePath() + "/something/somethingelse/../somethingelse/./../../myfile.txt";
-        assertEquals(expectedPath, Uris.resolveToRoot(root.getRoot().toPath(), uri).toString());
+        assertEquals(expectedPath, Uris.resolveToRoot(root.getRoot().toPath(), uri1).toString());
+        assertEquals(expectedPath, Uris.resolveToRoot(root.getRoot().toPath(), uri2).toString());
         assertEquals(expectedPath, Uris.resolveToRoot(root.getRoot().toPath(), absolutePath).toString());
         assertEquals(expectedPath, Uris.resolveToRoot(root.getRoot().toPath(), relativePath).toString());
     }
@@ -69,23 +75,8 @@ public final class UrisTest {
     @Test
     public void testResolveToRoot_nonAbsoluteUri() {
         expectedException.expect(IllegalArgumentException.class);
-        expectedException.expectMessage("absolutePathOfRoot must be absolute");
+        expectedException.expectMessage("absoluteRootPath must be absolute");
         Uris.resolveToRoot(Paths.get("foo"), "foo");
-    }
-
-    @Test
-    public void testAbsolutePathAsFileUri() {
-        String expectedPath = "file:" + root.getRoot().getAbsolutePath() + "/myfile.txt";
-        String absolutePath =
-                root.getRoot().getAbsolutePath() + "/something/somethingelse/../somethingelse/./../../myfile.txt";
-        assertEquals(expectedPath, Uris.absolutePathAsFileUri(Paths.get(absolutePath)).toString());
-    }
-
-    @Test
-    public void testAbsolutePathAsFileUri_nonAbsoluteUri() {
-        expectedException.expect(IllegalArgumentException.class);
-        expectedException.expectMessage("absolutePath must be absolute");
-        Uris.absolutePathAsFileUri(Paths.get("foo"));
     }
 
 }

@@ -29,7 +29,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.palantir.ls.util.DefaultDiagnosticBuilder;
 import com.palantir.ls.util.Ranges;
-import com.palantir.ls.util.Uris;
 import io.typefox.lsapi.Diagnostic;
 import io.typefox.lsapi.DiagnosticSeverity;
 import io.typefox.lsapi.FileChangeType;
@@ -46,6 +45,7 @@ import io.typefox.lsapi.builders.TextDocumentContentChangeEventBuilder;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -100,7 +100,7 @@ public final class GroovycWrapperTest {
                 GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath(), changedOutput.getRoot().toPath());
         Set<Diagnostic> diagnostics = wrapper.compile();
         assertEquals(0, diagnostics.size());
-        Map<Path, Set<SymbolInformation>> symbols = wrapper.getFileSymbols();
+        Map<URI, Set<SymbolInformation>> symbols = wrapper.getFileSymbols();
         assertEquals(0, symbols.values().size());
     }
 
@@ -168,7 +168,12 @@ public final class GroovycWrapperTest {
                 GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath(), changedOutput.getRoot().toPath());
         Set<Diagnostic> diagnostics = wrapper.compile();
         assertEquals(0, diagnostics.size());
-        Map<Path, Set<SymbolInformation>> symbols = wrapper.getFileSymbols();
+        Map<URI, Set<SymbolInformation>> symbols = wrapper.getFileSymbols();
+
+        // Assert that the format of the URI doesn't change the result (i.e whether it starts with file:/ or file:///)
+        assertEquals(wrapper.getFileSymbols().get(newFolder1.toURI()),
+                wrapper.getFileSymbols().get(newFolder1.toPath().toUri()));
+
         // The symbols will contain a lot of inherited fields and methods, so we just check to make sure it contains our
         // custom fields and methods.
         assertTrue(mapHasSymbol(symbols, Optional.absent(), "Coordinates", SymbolKind.Class));
@@ -193,7 +198,7 @@ public final class GroovycWrapperTest {
                 GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath(), changedOutput.getRoot().toPath());
         Set<Diagnostic> diagnostics = wrapper.compile();
         assertEquals(0, diagnostics.size());
-        Map<Path, Set<SymbolInformation>> symbols = wrapper.getFileSymbols();
+        Map<URI, Set<SymbolInformation>> symbols = wrapper.getFileSymbols();
         // The symbols will contain a lot of inherited and default fields and methods, so we just check to make sure it
         // contains our custom fields and methods.
         assertTrue(mapHasSymbol(symbols, Optional.absent(), "ICoordinates", SymbolKind.Interface));
@@ -212,7 +217,7 @@ public final class GroovycWrapperTest {
                 GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath(), changedOutput.getRoot().toPath());
         Set<Diagnostic> diagnostics = wrapper.compile();
         assertEquals(0, diagnostics.size());
-        Map<Path, Set<SymbolInformation>> symbols = wrapper.getFileSymbols();
+        Map<URI, Set<SymbolInformation>> symbols = wrapper.getFileSymbols();
         // The symbols will contain a lot of inherited and default fields and methods, so we just check to make sure it
         // contains our custom fields and methods.
         assertTrue(mapHasSymbol(symbols, Optional.absent(), "Type", SymbolKind.Enum));
@@ -247,7 +252,7 @@ public final class GroovycWrapperTest {
                 GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath(), changedOutput.getRoot().toPath());
         Set<Diagnostic> diagnostics = wrapper.compile();
         assertEquals(0, diagnostics.size());
-        Map<Path, Set<SymbolInformation>> symbols = wrapper.getFileSymbols();
+        Map<URI, Set<SymbolInformation>> symbols = wrapper.getFileSymbols();
         // The symbols will contain a lot of inherited fields and methods, so we just check to make sure it contains our
         // custom fields and methods.
         assertTrue(mapHasSymbol(symbols, Optional.absent(), "Coordinates", SymbolKind.Class));
@@ -281,7 +286,7 @@ public final class GroovycWrapperTest {
                 GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath(), changedOutput.getRoot().toPath());
         Set<Diagnostic> diagnostics = wrapper.compile();
         assertEquals(0, diagnostics.size());
-        Map<Path, Set<SymbolInformation>> symbols = wrapper.getFileSymbols();
+        Map<URI, Set<SymbolInformation>> symbols = wrapper.getFileSymbols();
         assertTrue(mapHasSymbol(symbols, Optional.of("test"), "myMethod", SymbolKind.Method));
         assertTrue(mapHasSymbol(symbols, Optional.of("test"), "name", SymbolKind.Variable));
         assertTrue(mapHasSymbol(symbols, Optional.of("myMethod"), "someString", SymbolKind.Variable));
@@ -455,9 +460,9 @@ public final class GroovycWrapperTest {
         assertEquals(0, diagnostics.size());
 
         // Right before "Cat", therefore should not find any symbol
-        assertEquals(0, wrapper.findReferences(createReferenceParams(file.toPath(), 7, 0, false)).size());
+        assertEquals(0, wrapper.findReferences(createReferenceParams(file.toURI(), 7, 0, false)).size());
         // Right after "Cat", therefore should not find any symbol
-        assertEquals(0, wrapper.findReferences(createReferenceParams(file.toPath(), 10, 2, false)).size());
+        assertEquals(0, wrapper.findReferences(createReferenceParams(file.toURI(), 10, 2, false)).size());
 
         // InnerCat2 references - testing finding more specific symbols that are contained inside another symbol's
         // range.
@@ -471,7 +476,7 @@ public final class GroovycWrapperTest {
                         createLocation(file.toPath(), Ranges.UNDEFINED_RANGE), Optional.of("setMyFriend")));
         assertEquals(innerCat2ExpectedResult, wrapper.getTypeReferences().get("Cat2$InnerCat2"));
         assertEquals(innerCat2ExpectedResult,
-                wrapper.findReferences(createReferenceParams(file.toPath(), 13, 9, false)));
+                wrapper.findReferences(createReferenceParams(file.toURI(), 13, 9, false)));
     }
 
     @Test
@@ -513,7 +518,7 @@ public final class GroovycWrapperTest {
                         Optional.of("MyEnum")));
         assertEquals(myEnumExpectedResult, wrapper.getTypeReferences().get("MyEnum"));
         assertEquals(myEnumExpectedResult,
-                wrapper.findReferences(createReferenceParams(enumFile.toPath(), 0, 6, false)));
+                wrapper.findReferences(createReferenceParams(enumFile.toURI(), 0, 6, false)));
     }
 
     @Test
@@ -543,7 +548,7 @@ public final class GroovycWrapperTest {
                         Optional.of("setA")));
         assertEquals(typeAExpectedResult, wrapper.getTypeReferences().get("A"));
         assertEquals(typeAExpectedResult,
-                wrapper.findReferences(createReferenceParams(innerClass.toPath(), 0, 6, false)));
+                wrapper.findReferences(createReferenceParams(innerClass.toURI(), 0, 6, false)));
         // Identify type B correctly
         Set<SymbolInformation> typeBExpectedResult = Sets.newHashSet(
                 createSymbolInformation("b", SymbolKind.Field,
@@ -557,13 +562,13 @@ public final class GroovycWrapperTest {
                         Optional.of("setB")));
         assertEquals(typeBExpectedResult, wrapper.getTypeReferences().get("A$B"));
         assertEquals(typeBExpectedResult,
-                wrapper.findReferences(createReferenceParams(innerClass.toPath(), 0, 17, false)));
+                wrapper.findReferences(createReferenceParams(innerClass.toURI(), 0, 17, false)));
     }
 
     @Test
     public void testReferences_classesAndInterfaces() throws InterruptedException, ExecutionException, IOException {
         File newFolder1 = root.newFolder();
-        File extendedCoordinatesFile = addFileToFolder(newFolder1, "ExtendedCoordinates.groovy",
+        File extendedcoordinatesFile = addFileToFolder(newFolder1, "ExtendedCoordinates.groovy",
                 "class ExtendedCoordinates extends Coordinates{\n"
                         + "   void somethingElse() {\n"
                         + "      println \"Hi again!\"\n"
@@ -603,7 +608,7 @@ public final class GroovycWrapperTest {
                 "interface ICoordinatesSuper {\n"
                         + "   abstract void superInterfaceMethod()\n"
                         + "}\n");
-        File abstractCoordinatesFile = addFileToFolder(newFolder1, "AbstractCoordinates.groovy",
+        File abstractcoordinatesFile = addFileToFolder(newFolder1, "AbstractCoordinates.groovy",
                 "abstract class AbstractCoordinates {\n"
                         + "   abstract void something();\n"
                         + "}\n");
@@ -615,18 +620,18 @@ public final class GroovycWrapperTest {
         // ExtendedCoordinates should have no references
         assertNull(references.get("ExtendedCoordinates"));
         assertEquals(0, wrapper
-                .findReferences(createReferenceParams(extendedCoordinatesFile.toPath(), 0, 7, false))
+                .findReferences(createReferenceParams(extendedcoordinatesFile.toURI(), 0, 7, false))
                 .size());
         // ExtendedCoordinates2 should have no references
         assertNull(references.get("ExtendedCoordinates2"));
         assertEquals(0, wrapper
-                .findReferences(createReferenceParams(extendedCoordinates2File.toPath(), 0, 7, false))
+                .findReferences(createReferenceParams(extendedCoordinates2File.toURI(), 0, 7, false))
                 .size());
 
         // Coordinates is only referenced in ExtendedCoordinates and ExtendedCoordinates2
         Set<SymbolInformation> coordinatesExpectedResult = Sets.newHashSet(
                 createSymbolInformation("ExtendedCoordinates", SymbolKind.Class,
-                        createLocation(extendedCoordinatesFile.toPath(), Ranges.createRange(0, 0, 4, 1)),
+                        createLocation(extendedcoordinatesFile.toPath(), Ranges.createRange(0, 0, 4, 1)),
                         Optional.absent()),
                 createSymbolInformation("ExtendedCoordinates2", SymbolKind.Class,
                         createLocation(extendedCoordinates2File.toPath(), Ranges.createRange(0, 0, 4, 1)),
@@ -635,14 +640,14 @@ public final class GroovycWrapperTest {
                         createLocation(coordinatesFile.toPath(), Ranges.createRange(12, 18, 12, 30)),
                         Optional.of("superInterfaceMethod")),
                 createSymbolInformation("myCoordinate", SymbolKind.Variable,
-                        createLocation(extendedCoordinatesFile.toPath(), Ranges.createRange(12, 18, 12, 30)),
+                        createLocation(extendedcoordinatesFile.toPath(), Ranges.createRange(12, 18, 12, 30)),
                         Optional.of("superInterfaceMethod")),
                 createSymbolInformation("myCoordinate", SymbolKind.Variable,
                         createLocation(extendedCoordinates2File.toPath(), Ranges.createRange(12, 18, 12, 30)),
                         Optional.of("superInterfaceMethod")));
         assertEquals(coordinatesExpectedResult, references.get("Coordinates"));
         assertEquals(coordinatesExpectedResult,
-                wrapper.findReferences(createReferenceParams(coordinatesFile.toPath(), 0, 9, false)));
+                wrapper.findReferences(createReferenceParams(coordinatesFile.toURI(), 0, 9, false)));
 
         // ICoordinates is only referenced in Coordinates
         Set<SymbolInformation> icoordinatesExpectedResult = Sets.newHashSet(
@@ -651,7 +656,7 @@ public final class GroovycWrapperTest {
                         Optional.absent()));
         assertEquals(icoordinatesExpectedResult, references.get("ICoordinates"));
         assertEquals(icoordinatesExpectedResult,
-                wrapper.findReferences(createReferenceParams(icoordinatesFile.toPath(), 0, 14, false)));
+                wrapper.findReferences(createReferenceParams(icoordinatesFile.toURI(), 0, 14, false)));
 
         // AbstractCoordinates is only referenced in Coordinates
         Set<SymbolInformation> abstractCoordinatesExpectedResult = Sets.newHashSet(
@@ -660,7 +665,7 @@ public final class GroovycWrapperTest {
                         Optional.absent()));
         assertEquals(abstractCoordinatesExpectedResult, references.get("AbstractCoordinates"));
         assertEquals(abstractCoordinatesExpectedResult,
-                wrapper.findReferences(createReferenceParams(abstractCoordinatesFile.toPath(), 0, 19, false)));
+                wrapper.findReferences(createReferenceParams(abstractcoordinatesFile.toURI(), 0, 19, false)));
 
         // ICoordinatesSuper is only referenced in ICoordinates
         Set<SymbolInformation> icoordinatesSuperExpectedResult = Sets.newHashSet(
@@ -669,7 +674,7 @@ public final class GroovycWrapperTest {
                         Optional.absent()));
         assertEquals(icoordinatesSuperExpectedResult, references.get("ICoordinatesSuper"));
         assertEquals(icoordinatesSuperExpectedResult,
-                wrapper.findReferences(createReferenceParams(icoordinatesSuperFile.toPath(), 0, 13, false)));
+                wrapper.findReferences(createReferenceParams(icoordinatesSuperFile.toURI(), 0, 13, false)));
     }
 
     @Test
@@ -697,7 +702,7 @@ public final class GroovycWrapperTest {
 
         // Dog should have no references
         assertNull(wrapper.getTypeReferences().get("Dog"));
-        assertEquals(0, wrapper.findReferences(createReferenceParams(dogFile.toPath(), 0, 7, false)).size());
+        assertEquals(0, wrapper.findReferences(createReferenceParams(dogFile.toURI(), 0, 7, false)).size());
 
         Set<SymbolInformation> expectedResult = Sets.newHashSet(
                 createSymbolInformation("friend1", SymbolKind.Field,
@@ -726,7 +731,7 @@ public final class GroovycWrapperTest {
                         createLocation(dogFile.toPath(), Ranges.UNDEFINED_RANGE), Optional.of("Dog")));
         assertEquals(expectedResult, wrapper.getTypeReferences().get("Cat"));
         assertEquals(expectedResult,
-                wrapper.findReferences(createReferenceParams(catFile.toPath(), 0, 7, false)));
+                wrapper.findReferences(createReferenceParams(catFile.toURI(), 0, 7, false)));
     }
 
     @Test
@@ -768,7 +773,7 @@ public final class GroovycWrapperTest {
                         Optional.of("MyScript")));
         assertEquals(expectedResult, wrapper.getTypeReferences().get("Cat"));
         assertEquals(expectedResult,
-                wrapper.findReferences(createReferenceParams(catFile.toPath(), 0, 7, false)));
+                wrapper.findReferences(createReferenceParams(catFile.toURI(), 0, 7, false)));
     }
 
     @Test
@@ -839,7 +844,7 @@ public final class GroovycWrapperTest {
         // We check the references, after filtering out the generated ones.
         assertEquals(expectedResult, wrapper.getTypeReferences().get("Animal"));
         assertEquals(expectedResult,
-                wrapper.findReferences(createReferenceParams(animalFile.toPath(), 0, 5, false)));
+                wrapper.findReferences(createReferenceParams(animalFile.toURI(), 0, 5, false)));
     }
 
     @Test
@@ -883,7 +888,7 @@ public final class GroovycWrapperTest {
                         createLocation(catFile.toPath(), Ranges.createRange(0, 0, 1, 1)),
                         Optional.absent()));
         assertEquals(expectedResult,
-                wrapper.findReferences(createReferenceParams(catFile.toPath(), 0, 7, true)));
+                wrapper.findReferences(createReferenceParams(catFile.toURI(), 0, 7, true)));
     }
 
     @Test
@@ -896,7 +901,7 @@ public final class GroovycWrapperTest {
                 GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath(), changedOutput.getRoot().toPath());
         // Compile
         assertEquals(0, wrapper.compile().size());
-        Set<SymbolInformation> symbols = wrapper.getFileSymbols().get(catFile.toPath());
+        Set<SymbolInformation> symbols = wrapper.getFileSymbols().get(catFile.toURI());
 
         SymbolInformation catSymbol = new SymbolInformationBuilder()
                 .name("Cat")
@@ -913,26 +918,26 @@ public final class GroovycWrapperTest {
         assertFalse(symbols.contains(dogSymbol));
 
         // First change
-        wrapper.handleFileChanged(catFile.toPath(), Lists.newArrayList(new TextDocumentContentChangeEventBuilder()
+        wrapper.handleFileChanged(catFile.toURI(), Lists.newArrayList(new TextDocumentContentChangeEventBuilder()
                 .range(Ranges.createRange(0, 6, 0, 9)).rangeLength(3).text("Dog").build()));
 
         // Re-compile
         assertEquals(0, wrapper.compile().size());
 
         // Assert that the symbol Cat no longer exists and that the symbol Dog now exists.
-        symbols = wrapper.getFileSymbols().get(catFile.toPath());
+        symbols = wrapper.getFileSymbols().get(catFile.toURI());
         assertFalse(symbols.contains(catSymbol));
         assertTrue(symbols.contains(dogSymbol));
 
         // Second change
-        wrapper.handleFileChanged(catFile.toPath(), Lists.newArrayList(new TextDocumentContentChangeEventBuilder()
+        wrapper.handleFileChanged(catFile.toURI(), Lists.newArrayList(new TextDocumentContentChangeEventBuilder()
                 .range(Ranges.createRange(0, 6, 0, 9)).rangeLength(6).text("Turtle").build()));
 
         // Re-compile
         assertEquals(0, wrapper.compile().size());
 
         // Assert symbols are back to the original
-        symbols = wrapper.getFileSymbols().get(catFile.toPath());
+        symbols = wrapper.getFileSymbols().get(catFile.toURI());
         assertFalse(symbols.contains(dogSymbol));
         assertTrue(symbols.contains(new SymbolInformationBuilder().name("Turtle")
                 .kind(SymbolKind.Class)
@@ -950,7 +955,7 @@ public final class GroovycWrapperTest {
                 GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath(), changedOutput.getRoot().toPath());
         // Compile
         assertEquals(0, wrapper.compile().size());
-        Set<SymbolInformation> symbols = wrapper.getFileSymbols().get(catFile.toPath());
+        Set<SymbolInformation> symbols = wrapper.getFileSymbols().get(catFile.toURI());
         SymbolInformation catSymbol = new SymbolInformationBuilder()
                 .name("Cat")
                 .kind(SymbolKind.Class)
@@ -966,19 +971,19 @@ public final class GroovycWrapperTest {
         assertFalse(symbols.contains(dogSymbol));
 
         // First change
-        wrapper.handleFileChanged(catFile.toPath(), Lists.newArrayList(new TextDocumentContentChangeEventBuilder()
+        wrapper.handleFileChanged(catFile.toURI(), Lists.newArrayList(new TextDocumentContentChangeEventBuilder()
                 .range(Ranges.createRange(0, 6, 0, 9)).rangeLength(3).text("Dog").build()));
 
         // Re-compile
         assertEquals(0, wrapper.compile().size());
 
         // Assert that the symbol Cat no longer exists and that the symbol Dog now exists.
-        symbols = wrapper.getFileSymbols().get(catFile.toPath());
+        symbols = wrapper.getFileSymbols().get(catFile.toURI());
         assertFalse(symbols.contains(catSymbol));
         assertTrue(symbols.contains(dogSymbol));
 
         // Call handleClose
-        wrapper.handleFileClosed(catFile.toPath());
+        wrapper.handleFileClosed(catFile.toURI());
         // The changed file should have been deleted
         assertFalse(changedOutput.getRoot().toPath().resolve(root.getRoot().toPath().relativize(catFile.toPath()))
                 .toFile().exists());
@@ -987,7 +992,7 @@ public final class GroovycWrapperTest {
         assertEquals(0, wrapper.compile().size());
 
         // Assert symbols are back to the original
-        symbols = wrapper.getFileSymbols().get(catFile.toPath());
+        symbols = wrapper.getFileSymbols().get(catFile.toURI());
         assertTrue(symbols.contains(catSymbol));
         assertFalse(symbols.contains(dogSymbol));
     }
@@ -1002,7 +1007,7 @@ public final class GroovycWrapperTest {
                 GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath(), changedOutput.getRoot().toPath());
         // Compile
         assertEquals(0, wrapper.compile().size());
-        Set<SymbolInformation> symbols = wrapper.getFileSymbols().get(catFile.toPath());
+        Set<SymbolInformation> symbols = wrapper.getFileSymbols().get(catFile.toURI());
 
         SymbolInformation catSymbol = new SymbolInformationBuilder()
                 .name("Cat")
@@ -1019,19 +1024,19 @@ public final class GroovycWrapperTest {
         assertFalse(symbols.contains(dogSymbol));
 
         // First change
-        wrapper.handleFileChanged(catFile.toPath(), Lists.newArrayList(new TextDocumentContentChangeEventBuilder()
+        wrapper.handleFileChanged(catFile.toURI(), Lists.newArrayList(new TextDocumentContentChangeEventBuilder()
                 .range(Ranges.createRange(0, 6, 0, 9)).rangeLength(3).text("Dog").build()));
 
         // Re-compile
         assertEquals(0, wrapper.compile().size());
 
         // Assert that the symbol Cat no longer exists and that the symbol Dog now exists.
-        symbols = wrapper.getFileSymbols().get(catFile.toPath());
+        symbols = wrapper.getFileSymbols().get(catFile.toURI());
         assertFalse(symbols.contains(catSymbol));
         assertTrue(symbols.contains(dogSymbol));
 
         // Call handleClose
-        wrapper.handleFileSaved(catFile.toPath());
+        wrapper.handleFileSaved(catFile.toURI());
         // The changed file should have been deleted
         assertFalse(changedOutput.getRoot().toPath().resolve(root.getRoot().toPath().relativize(catFile.toPath()))
                 .toFile().exists());
@@ -1040,7 +1045,7 @@ public final class GroovycWrapperTest {
         assertEquals(0, wrapper.compile().size());
 
         // Assert new symbols persist
-        symbols = wrapper.getFileSymbols().get(catFile.toPath());
+        symbols = wrapper.getFileSymbols().get(catFile.toURI());
         assertFalse(symbols.contains(catSymbol));
         assertTrue(symbols.contains(dogSymbol));
     }
@@ -1055,7 +1060,7 @@ public final class GroovycWrapperTest {
                 GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath(), changedOutput.getRoot().toPath());
         // Compile
         assertEquals(0, wrapper.compile().size());
-        Set<SymbolInformation> symbols = wrapper.getFileSymbols().get(catFile.toPath());
+        Set<SymbolInformation> symbols = wrapper.getFileSymbols().get(catFile.toURI());
         SymbolInformation catSymbol = new SymbolInformationBuilder()
                 .name("Cat")
                 .kind(SymbolKind.Class)
@@ -1071,14 +1076,14 @@ public final class GroovycWrapperTest {
         assertFalse(symbols.contains(dogSymbol));
 
         // First change
-        wrapper.handleFileChanged(catFile.toPath(), Lists.newArrayList(new TextDocumentContentChangeEventBuilder()
+        wrapper.handleFileChanged(catFile.toURI(), Lists.newArrayList(new TextDocumentContentChangeEventBuilder()
                 .range(Ranges.createRange(0, 6, 0, 9)).rangeLength(3).text("Dog").build()));
 
         // Re-compile
         assertEquals(0, wrapper.compile().size());
 
         // Assert that the symbol Cat no longer exists and that the symbol Dog now exists.
-        symbols = wrapper.getFileSymbols().get(catFile.toPath());
+        symbols = wrapper.getFileSymbols().get(catFile.toURI());
         assertFalse(symbols.contains(catSymbol));
         assertTrue(symbols.contains(dogSymbol));
 
@@ -1094,7 +1099,7 @@ public final class GroovycWrapperTest {
         assertEquals(0, wrapper.compile().size());
 
         // Assert symbols are back to the original
-        symbols = wrapper.getFileSymbols().get(catFile.toPath());
+        symbols = wrapper.getFileSymbols().get(catFile.toURI());
         assertTrue(symbols.contains(catSymbol));
         assertFalse(symbols.contains(dogSymbol));
     }
@@ -1109,7 +1114,7 @@ public final class GroovycWrapperTest {
                 GroovycWrapper.of(output.getRoot().toPath(), root.getRoot().toPath(), changedOutput.getRoot().toPath());
         // Compile
         assertEquals(0, wrapper.compile().size());
-        Set<SymbolInformation> symbols = wrapper.getFileSymbols().get(catFile.toPath());
+        Set<SymbolInformation> symbols = wrapper.getFileSymbols().get(catFile.toURI());
         SymbolInformation catSymbol = new SymbolInformationBuilder()
                 .name("Cat")
                 .kind(SymbolKind.Class)
@@ -1156,7 +1161,7 @@ public final class GroovycWrapperTest {
         assertEquals(0, wrapper.compile().size());
 
         // Assert the cat symbol now exists
-        Set<SymbolInformation> symbols = wrapper.getFileSymbols().get(catFile.toPath());
+        Set<SymbolInformation> symbols = wrapper.getFileSymbols().get(catFile.toURI());
         SymbolInformation catSymbol = new SymbolInformationBuilder()
                 .name("Cat")
                 .kind(SymbolKind.Class)
@@ -1165,7 +1170,7 @@ public final class GroovycWrapperTest {
         assertTrue(symbols.contains(catSymbol));
     }
 
-    private boolean mapHasSymbol(Map<Path, Set<SymbolInformation>> map, Optional<String> container, String fieldName,
+    private boolean mapHasSymbol(Map<URI, Set<SymbolInformation>> map, Optional<String> container, String fieldName,
             SymbolKind kind) {
         return map.values().stream().flatMap(Collection::stream)
                 .anyMatch(symbol -> symbol.getKind() == kind
@@ -1192,14 +1197,14 @@ public final class GroovycWrapperTest {
     }
 
     private static Location createLocation(Path path, Range range) {
-        return new LocationBuilder().uri(Uris.absolutePathAsFileUri(path)).range(range).build();
+        return new LocationBuilder().uri(path.toUri().toString()).range(range).build();
     }
 
-    private static ReferenceParams createReferenceParams(Path path, int line, int col, boolean includeDeclaration) {
+    private static ReferenceParams createReferenceParams(URI uri, int line, int col, boolean includeDeclaration) {
         // HACK, blocked on https://github.com/TypeFox/ls-api/issues/39
         return (ReferenceParams) new ReferenceParamsBuilder()
                 .context(includeDeclaration)
-                .textDocument(Uris.absolutePathAsFileUri(path))
+                .textDocument(uri.toString())
                 .position(line, col).build();
     }
 

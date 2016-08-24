@@ -94,11 +94,11 @@ public final class GroovycWrapper implements CompilerWrapper {
     private CompilationUnit unit;
 
     // Maps from source file path -> set of symbols in that file
-    private Map<Path, Set<SymbolInformation>> fileSymbols = Maps.newHashMap();
+    private Map<URI, Set<SymbolInformation>> fileSymbols = Maps.newHashMap();
     // Maps from type -> set of references of this type
     private Map<String, Set<SymbolInformation>> typeReferences = Maps.newHashMap();
     // Map from origin source filename to its changed version source writer
-    private Map<Path, SourceWriter> originalSourceToChangedSource = Maps.newHashMap();
+    private Map<URI, SourceWriter> originalSourceToChangedSource = Maps.newHashMap();
 
     private GroovycWrapper(Path workspaceRoot, Path changedFilesRoot, CompilerConfiguration config) {
         this.workspaceRoot = workspaceRoot;
@@ -149,7 +149,7 @@ public final class GroovycWrapper implements CompilerWrapper {
     }
 
     @Override
-    public void handleFileChanged(Path originalFile, List<TextDocumentContentChangeEvent> contentChanges) {
+    public void handleFileChanged(URI originalFile, List<TextDocumentContentChangeEvent> contentChanges) {
         try {
             SourceWriter sourceWriter = null;
             if (originalSourceToChangedSource.containsKey(originalFile)) {
@@ -157,8 +157,8 @@ public final class GroovycWrapper implements CompilerWrapper {
                 sourceWriter = originalSourceToChangedSource.get(originalFile);
             } else {
                 // New source to switch out
-                Path newChangedFilePath = changedFilesRoot.resolve(workspaceRoot.relativize(originalFile));
-                sourceWriter = SourceWriter.of(originalFile, newChangedFilePath);
+                Path newChangedFilePath = changedFilesRoot.resolve(workspaceRoot.relativize(Paths.get(originalFile)));
+                sourceWriter = SourceWriter.of(Paths.get(originalFile), newChangedFilePath);
                 originalSourceToChangedSource.put(originalFile, sourceWriter);
             }
             // Apply changes to source writer and reset compilation unit
@@ -170,7 +170,7 @@ public final class GroovycWrapper implements CompilerWrapper {
     }
 
     @Override
-    public void handleFileClosed(Path originalFile) {
+    public void handleFileClosed(URI originalFile) {
         if (!originalSourceToChangedSource.containsKey(originalFile)) {
             return;
         }
@@ -184,7 +184,7 @@ public final class GroovycWrapper implements CompilerWrapper {
     }
 
     @Override
-    public void handleFileSaved(Path originalFile) {
+    public void handleFileSaved(URI originalFile) {
         try {
             if (originalSourceToChangedSource.containsKey(originalFile)) {
                 Path changedSource = originalSourceToChangedSource.get(originalFile).getDestination();
@@ -204,17 +204,17 @@ public final class GroovycWrapper implements CompilerWrapper {
     @Override
     public void handleChangeWatchedFiles(List<? extends FileEvent> changes) {
         changes.forEach(change -> {
-            Path absoluteUri = Uris.resolveToRoot(workspaceRoot, change.getUri());
+            URI uri = Uris.resolveToRoot(workspaceRoot, change.getUri());
             switch (change.getType()) {
                 case Changed:
                 case Deleted:
-                    if (originalSourceToChangedSource.containsKey(absoluteUri)) {
-                        Path changedSource = originalSourceToChangedSource.get(absoluteUri).getDestination();
+                    if (originalSourceToChangedSource.containsKey(uri)) {
+                        Path changedSource = originalSourceToChangedSource.get(uri).getDestination();
                         // Deleted the changed file
                         if (!changedSource.toFile().delete()) {
                             logger.error("Unable to delete file '{}'", changedSource.toAbsolutePath());
                         }
-                        originalSourceToChangedSource.remove(absoluteUri);
+                        originalSourceToChangedSource.remove(uri);
                     }
                     break;
                 default:
@@ -226,7 +226,7 @@ public final class GroovycWrapper implements CompilerWrapper {
     }
 
     @Override
-    public Map<Path, Set<SymbolInformation>> getFileSymbols() {
+    public Map<URI, Set<SymbolInformation>> getFileSymbols() {
         return fileSymbols;
     }
 
@@ -293,7 +293,7 @@ public final class GroovycWrapper implements CompilerWrapper {
     private void addAllSourcesToCompilationUnit() {
         // We don't include the files that have a corresponding SourceWriter since that means they will be replaced.
         for (File file : Files.fileTreeTraverser().preOrderTraversal(workspaceRoot.toFile())) {
-            if (!originalSourceToChangedSource.containsKey(file.toPath()) && file.isFile() && Files
+            if (!originalSourceToChangedSource.containsKey(file.toURI()) && file.isFile() && Files
                     .getFileExtension(file.getAbsolutePath()).equals(GroovyConstants.GROOVY_LANGUAGE_EXTENSION)) {
                 unit.addSource(file);
             }
@@ -353,13 +353,12 @@ public final class GroovycWrapper implements CompilerWrapper {
     }
 
     private void parseAllSymbols() {
-        Map<Path, Set<SymbolInformation>> newFileSymbols = Maps.newHashMap();
+        Map<URI, Set<SymbolInformation>> newFileSymbols = Maps.newHashMap();
         Map<String, Set<SymbolInformation>> newTypeReferences = Maps.newHashMap();
 
         unit.iterator().forEachRemaining(sourceUnit -> {
             Set<SymbolInformation> symbols = Sets.newHashSet();
-            URI sourceUri = sourceUnit.getSource().getURI();
-
+            URI sourceUri = getWorkspaceUri(sourceUnit.getSource().getURI());
             // This will iterate through all classes, interfaces and enums, including inner ones.
             sourceUnit.getAST().getClasses().forEach(clazz -> {
                 // Add class symbol
@@ -404,16 +403,19 @@ public final class GroovycWrapper implements CompilerWrapper {
                             symbols.add(symbol);
                         });
             }
-            newFileSymbols.put(getWorkspacePath(sourceUri), symbols);
+            newFileSymbols.put(getWorkspaceUri(sourceUri), symbols);
         });
         // Set the new references and new symbols
         typeReferences = newTypeReferences;
         fileSymbols = newFileSymbols;
     }
 
-    private Path getWorkspacePath(URI uri) {
-        return uri.getPath().startsWith(workspaceRoot.toString()) ? Paths.get(uri)
-                : workspaceRoot.resolve(changedFilesRoot.relativize(Paths.get(uri)));
+    private URI getWorkspaceUri(URI uri) {
+        // In the case that it's already relative to the workspace, we still convert it into a Path and then back into a
+        // URI to normalize the URI. Otherwise the URI could start with either 'file:///' or 'file:/'. Now it will
+        // always start with 'file:///'.
+        return uri.getPath().startsWith(workspaceRoot.toString()) ? Paths.get(uri).toUri()
+                : workspaceRoot.resolve(changedFilesRoot.relativize(Paths.get(uri))).toUri();
     }
 
     private static SymbolKind getKind(ClassNode node) {
@@ -480,14 +482,14 @@ public final class GroovycWrapper implements CompilerWrapper {
 
     private Location createLocation(URI uri) {
         return new LocationBuilder()
-                .uri(Uris.absolutePathAsFileUri(getWorkspacePath(uri)))
+                .uri(getWorkspaceUri(uri).toString())
                 .range(Ranges.UNDEFINED_RANGE)
                 .build();
     }
 
     private Location createLocation(URI uri, ASTNode node) {
         return new LocationBuilder()
-                .uri(Uris.absolutePathAsFileUri(getWorkspacePath(uri)))
+                .uri(getWorkspaceUri(uri).toString())
                 .range(Ranges.createZeroBasedRange(node.getLineNumber(), node.getColumnNumber(),
                         node.getLastLineNumber(), node.getLastColumnNumber()))
                 .build();
