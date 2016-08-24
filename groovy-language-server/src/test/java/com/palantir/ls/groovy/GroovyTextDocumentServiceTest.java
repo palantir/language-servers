@@ -54,6 +54,7 @@ import io.typefox.lsapi.builders.TextDocumentItemBuilder;
 import io.typefox.lsapi.builders.TextDocumentPositionParamsBuilder;
 import io.typefox.lsapi.builders.VersionedTextDocumentIdentifierBuilder;
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -80,10 +81,10 @@ public final class GroovyTextDocumentServiceTest {
     public ExpectedException expectedException = ExpectedException.none();
 
     private GroovyTextDocumentService service;
-    private Path file;
+    private Path filePath;
     private List<PublishDiagnosticsParams> publishedDiagnostics = Lists.newArrayList();
     private Set<Diagnostic> expectedDiagnostics = Sets.newHashSet();
-    private Map<String, Set<SymbolInformation>> symbolsMap = Maps.newHashMap();
+    private Map<URI, Set<SymbolInformation>> symbolsMap = Maps.newHashMap();
     private Set<SymbolInformation> expectedReferences = Sets.newHashSet();
 
     @Mock
@@ -99,10 +100,10 @@ public final class GroovyTextDocumentServiceTest {
         expectedDiagnostics.add(new DefaultDiagnosticBuilder("Some other message", DiagnosticSeverity.Warning).build());
         Set<Diagnostic> diagnostics = Sets.newHashSet(expectedDiagnostics);
 
-        file = workspace.newFile("something.groovy").toPath();
+        filePath = workspace.newFile("something.groovy").toPath();
         SymbolInformation symbol1 = new SymbolInformationBuilder().name("ThisIsASymbol").kind(SymbolKind.Field).build();
         SymbolInformation symbol2 = new SymbolInformationBuilder().name("methodA").kind(SymbolKind.Method).build();
-        symbolsMap.put(file.toAbsolutePath().toString(), Sets.newHashSet(symbol1, symbol2));
+        symbolsMap.put(filePath.toUri(), Sets.newHashSet(symbol1, symbol2));
 
         expectedReferences.add(new SymbolInformationBuilder()
                 .containerName("Something")
@@ -156,7 +157,7 @@ public final class GroovyTextDocumentServiceTest {
     @Test
     public void testDidOpen() {
         TextDocumentItem textDocument = new TextDocumentItemBuilder()
-                .uri(file.toAbsolutePath().toString())
+                .uri(filePath.toAbsolutePath().toString())
                 .languageId("groovy")
                 .version(1)
                 .text("something")
@@ -174,7 +175,7 @@ public final class GroovyTextDocumentServiceTest {
                 .contentChange(Ranges.createRange(0, 0, 1, 1), 3, "Hello")
                 .textDocument((VersionedTextDocumentIdentifier) new VersionedTextDocumentIdentifierBuilder()
                         .version(0)
-                        .uri(file.toAbsolutePath().toString())
+                        .uri(filePath.toAbsolutePath().toString())
                         .build())
                 .build());
         // assert diagnostics were published
@@ -187,11 +188,11 @@ public final class GroovyTextDocumentServiceTest {
     public void testDidChange_noChanges() {
         expectedException.expect(IllegalArgumentException.class);
         expectedException.expectMessage(
-                String.format("Calling didChange with no changes on uri '%s'", file.toAbsolutePath().toString()));
+                String.format("Calling didChange with no changes on uri '%s'", filePath.toUri()));
         service.didChange(new DidChangeTextDocumentParamsBuilder()
                 .textDocument((VersionedTextDocumentIdentifier) new VersionedTextDocumentIdentifierBuilder()
                         .version(0)
-                        .uri(file.toAbsolutePath().toString())
+                        .uri(filePath.toAbsolutePath().toString())
                         .build())
                 .build());
     }
@@ -200,11 +201,11 @@ public final class GroovyTextDocumentServiceTest {
     public void testDidChange_nonExistantUri() {
         expectedException.expect(IllegalArgumentException.class);
         expectedException
-                .expectMessage(String.format("Uri '%s' does not exist", file.toAbsolutePath().toString() + "boo"));
+                .expectMessage(String.format("Uri '%s' does not exist", filePath.toUri() + "boo"));
         service.didChange(new DidChangeTextDocumentParamsBuilder()
                 .textDocument((VersionedTextDocumentIdentifier) new VersionedTextDocumentIdentifierBuilder()
                         .version(0)
-                        .uri(file.toAbsolutePath().toString() + "boo")
+                        .uri(filePath.toAbsolutePath().toString() + "boo")
                         .build())
                 .build());
     }
@@ -212,7 +213,7 @@ public final class GroovyTextDocumentServiceTest {
     @Test
     public void testDidClose() {
         TextDocumentIdentifier textDocument = new TextDocumentIdentifierBuilder()
-                .uri(file.toAbsolutePath().toString())
+                .uri(filePath.toAbsolutePath().toString())
                 .build();
         service.didClose(new DidCloseTextDocumentParamsBuilder().textDocument(textDocument).build());
         // assert diagnostics were published
@@ -224,18 +225,18 @@ public final class GroovyTextDocumentServiceTest {
     @Test
     public void testDidClose_nonExistantUri() {
         TextDocumentIdentifier textDocument = new TextDocumentIdentifierBuilder()
-                .uri(file.toAbsolutePath().toString() + "boo")
+                .uri(filePath.toAbsolutePath().toString() + "boo")
                 .build();
         expectedException.expect(IllegalArgumentException.class);
         expectedException
-                .expectMessage(String.format("Uri '%s' does not exist", file.toAbsolutePath().toString() + "boo"));
+                .expectMessage(String.format("Uri '%s' does not exist", filePath.toUri() + "boo"));
         service.didClose(new DidCloseTextDocumentParamsBuilder().textDocument(textDocument).build());
     }
 
     @Test
     public void testDidSave() {
         TextDocumentIdentifier textDocument = new TextDocumentIdentifierBuilder()
-                .uri(file.toAbsolutePath().toString())
+                .uri(filePath.toAbsolutePath().toString())
                 .build();
         service.didSave(new DidSaveTextDocumentParamsBuilder().textDocument(textDocument).build());
         // assert diagnostics were published
@@ -247,23 +248,23 @@ public final class GroovyTextDocumentServiceTest {
     @Test
     public void testDidSave_nonExistantUri() {
         TextDocumentIdentifier textDocument = new TextDocumentIdentifierBuilder()
-                .uri(file.toAbsolutePath().toString() + "boo")
+                .uri(filePath.toAbsolutePath().toString() + "boo")
                 .build();
         expectedException.expect(IllegalArgumentException.class);
         expectedException
-                .expectMessage(String.format("Uri '%s' does not exist", file.toAbsolutePath().toString() + "boo"));
+                .expectMessage(String.format("Uri '%s' does not exist", filePath.toUri() + "boo"));
         service.didSave(new DidSaveTextDocumentParamsBuilder().textDocument(textDocument).build());
     }
 
     @Test
     public void testDocumentSymbols_absolutePath() throws InterruptedException, ExecutionException {
         TextDocumentIdentifier textDocument = new TextDocumentIdentifierBuilder()
-                .uri(file.toAbsolutePath().toString())
+                .uri(filePath.toAbsolutePath().toString())
                 .build();
         CompletableFuture<List<? extends SymbolInformation>> response =
                 service.documentSymbol(new DocumentSymbolParamsBuilder().textDocument(textDocument).build());
         assertThat(response.get().stream().collect(Collectors.toSet()),
-                is(symbolsMap.get(file.toAbsolutePath().toString())));
+                is(symbolsMap.get(filePath.toUri())));
     }
 
     @Test
@@ -272,17 +273,17 @@ public final class GroovyTextDocumentServiceTest {
         CompletableFuture<List<? extends SymbolInformation>> response =
                 service.documentSymbol(new DocumentSymbolParamsBuilder().textDocument(textDocument).build());
         assertThat(response.get().stream().collect(Collectors.toSet()),
-                is(symbolsMap.get(file.toAbsolutePath().toString())));
+                is(symbolsMap.get(filePath.toUri())));
     }
 
     @Test
     public void testDocumentSymbols_nonExistantUri() throws InterruptedException, ExecutionException {
         TextDocumentIdentifier textDocument = new TextDocumentIdentifierBuilder()
-                .uri(file.toAbsolutePath().toString() + "boo")
+                .uri(filePath.toAbsolutePath().toString() + "boo")
                 .build();
         expectedException.expect(IllegalArgumentException.class);
         expectedException
-                .expectMessage(String.format("Uri '%s' does not exist", file.toAbsolutePath().toString() + "boo"));
+                .expectMessage(String.format("Uri '%s' does not exist", filePath.toUri() + "boo"));
         service.documentSymbol(new DocumentSymbolParamsBuilder().textDocument(textDocument).build());
     }
 
@@ -302,7 +303,7 @@ public final class GroovyTextDocumentServiceTest {
 
     @Test
     public void testCompletion() throws InterruptedException, ExecutionException {
-        String uri = file.toAbsolutePath().toString();
+        String uri = filePath.toAbsolutePath().toString();
         TextDocumentPositionParams params = new TextDocumentPositionParamsBuilder()
                 .position(5, 5)
                 .textDocument(uri)
