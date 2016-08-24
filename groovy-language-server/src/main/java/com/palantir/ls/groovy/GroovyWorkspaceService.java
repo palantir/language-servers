@@ -50,7 +50,7 @@ public final class GroovyWorkspaceService implements WorkspaceService {
     @Override
     public void didChangeWatchedFiles(DidChangeWatchedFilesParams params) {
         provider.get().handleChangeWatchedFiles(params.getChanges());
-        config.publishDiagnostics(provider.get().getWorkspaceRoot().toUri().toString(), provider.get().compile());
+        config.publishDiagnostics(provider.get().getWorkspaceRoot(), provider.get().compile());
     }
 
 }

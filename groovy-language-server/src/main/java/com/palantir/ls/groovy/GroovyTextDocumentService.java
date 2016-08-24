@@ -161,7 +161,7 @@ public final class GroovyTextDocumentService implements TextDocumentService {
     public void didOpen(DidOpenTextDocumentParams params) {
         URI uri = Uris.resolveToRoot(provider.get().getWorkspaceRoot(), params.getTextDocument().getUri());
         assertFileExists(uri);
-        config.publishDiagnostics(provider.get().getWorkspaceRoot().toUri().toString(), provider.get().compile());
+        config.publishDiagnostics(provider.get().getWorkspaceRoot(), provider.get().compile());
     }
 
     @Override
@@ -173,7 +173,7 @@ public final class GroovyTextDocumentService implements TextDocumentService {
                     String.format("Calling didChange with no changes on uri '%s'", uri.toString()));
         }
         provider.get().handleFileChanged(uri, Lists.newArrayList(params.getContentChanges()));
-        config.publishDiagnostics(provider.get().getWorkspaceRoot().toUri().toString(), provider.get().compile());
+        config.publishDiagnostics(provider.get().getWorkspaceRoot(), provider.get().compile());
     }
 
     @Override
@@ -181,7 +181,7 @@ public final class GroovyTextDocumentService implements TextDocumentService {
         URI uri = Uris.resolveToRoot(provider.get().getWorkspaceRoot(), params.getTextDocument().getUri());
         assertFileExists(uri);
         provider.get().handleFileClosed(uri);
-        config.publishDiagnostics(provider.get().getWorkspaceRoot().toUri().toString(), provider.get().compile());
+        config.publishDiagnostics(provider.get().getWorkspaceRoot(), provider.get().compile());
     }
 
     @Override
@@ -189,7 +189,7 @@ public final class GroovyTextDocumentService implements TextDocumentService {
         URI uri = Uris.resolveToRoot(provider.get().getWorkspaceRoot(), params.getTextDocument().getUri());
         assertFileExists(uri);
         provider.get().handleFileSaved(uri);
-        config.publishDiagnostics(provider.get().getWorkspaceRoot().toUri().toString(), provider.get().compile());
+        config.publishDiagnostics(provider.get().getWorkspaceRoot(), provider.get().compile());
     }
 
     @Override

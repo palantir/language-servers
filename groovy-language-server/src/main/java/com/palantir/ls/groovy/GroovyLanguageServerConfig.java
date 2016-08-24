@@ -22,6 +22,8 @@ import io.typefox.lsapi.MessageParams;
 import io.typefox.lsapi.PublishDiagnosticsParams;
 import io.typefox.lsapi.ShowMessageRequestParams;
 import io.typefox.lsapi.builders.PublishDiagnosticsParamsBuilder;
+import java.net.URI;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
 import java.util.Set;
@@ -81,22 +83,23 @@ public final class GroovyLanguageServerConfig implements LanguageServerConfig {
     }
 
     @Override
-    public void publishDiagnostics(String workspaceUri, Set<Diagnostic> diagnostics) {
+    public void publishDiagnostics(Path workspaceRoot, Set<Diagnostic> diagnostics) {
         if (diagnostics.isEmpty()) {
             return;
         }
-        Map<String, PublishDiagnosticsParamsBuilder> diagnosticsByFile = Maps.newHashMap();
+        Map<URI, PublishDiagnosticsParamsBuilder> diagnosticsByFile = Maps.newHashMap();
 
         diagnostics.forEach(diagnostic -> {
             try {
-                String uri = Paths.get(diagnostic.getSource()).toUri().toString();
-                diagnosticsByFile.computeIfAbsent(uri, (value) -> new PublishDiagnosticsParamsBuilder().uri(uri))
+                URI uri = Paths.get(diagnostic.getSource()).toUri();
+                diagnosticsByFile
+                        .computeIfAbsent(uri, (value) -> new PublishDiagnosticsParamsBuilder().uri(uri.toString()))
                         .diagnostic(diagnostic);
             } catch (IllegalArgumentException e) {
                 // The compiler can give errors not associated with a particular source file, in which case we put it
                 // under the workspace uri.
-                diagnosticsByFile.computeIfAbsent(workspaceUri,
-                        (value) -> new PublishDiagnosticsParamsBuilder().uri(workspaceUri))
+                diagnosticsByFile.computeIfAbsent(workspaceRoot.toUri(),
+                        (value) -> new PublishDiagnosticsParamsBuilder().uri(workspaceRoot.toUri().toString()))
                         .diagnostic(diagnostic);
             }
         });

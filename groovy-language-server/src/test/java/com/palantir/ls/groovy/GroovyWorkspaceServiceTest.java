@@ -120,8 +120,7 @@ public final class GroovyWorkspaceServiceTest {
         service.didChangeWatchedFiles(new DidChangeWatchedFilesParamsBuilder().change("uri", FileChangeType.Deleted)
                 .change("uri", FileChangeType.Created).change("uri", FileChangeType.Changed).build());
         // assert diagnostics were published
-        Mockito.verify(config, Mockito.times(1)).publishDiagnostics(workspace.getRoot().toPath().toUri().toString(),
-                expectedDiagnostics);
+        Mockito.verify(config, Mockito.times(1)).publishDiagnostics(workspace.getRoot().toPath(), expectedDiagnostics);
     }
 
 }
