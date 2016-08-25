@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.palantir.ls.groovy;
+package com.palantir.ls.groovy.compilation;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
@@ -27,12 +27,11 @@ import com.google.common.base.Optional;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import com.palantir.ls.groovy.compilation.DefaultWorkspaceUriSupplier;
-import com.palantir.ls.groovy.compilation.GroovyTreeParser;
-import com.palantir.ls.groovy.compilation.GroovyWorkspaceCompiler;
-import com.palantir.ls.groovy.compilation.GroovycWrapper;
+import com.palantir.ls.groovy.CompilationUnitProvider;
+import com.palantir.ls.groovy.DefaultCompilationUnitProvider;
 import com.palantir.ls.util.DefaultDiagnosticBuilder;
 import com.palantir.ls.util.Ranges;
+import com.palantir.ls.util.WorkspaceUriSupplier;
 import io.typefox.lsapi.Diagnostic;
 import io.typefox.lsapi.DiagnosticSeverity;
 import io.typefox.lsapi.FileChangeType;
@@ -83,7 +82,7 @@ public final class GroovycWrapperTest {
                 GroovyWorkspaceCompiler.of(unitProvider, output.getRoot().toPath(), root.getRoot().toPath(),
                         changedOutput.getRoot().toPath()),
                 GroovyTreeParser.of(unitProvider, root.getRoot().toPath(),
-                        new DefaultWorkspaceUriSupplier(root.getRoot().toPath(), changedOutput.getRoot().toPath())));
+                        new WorkspaceUriSupplier(root.getRoot().toPath(), changedOutput.getRoot().toPath())));
     }
 
     @Test
@@ -95,7 +94,7 @@ public final class GroovycWrapperTest {
                 GroovyWorkspaceCompiler.of(unitProvider, output.newFile().toPath(), root.getRoot().toPath(),
                         changedOutput.getRoot().toPath()),
                 GroovyTreeParser.of(unitProvider, root.getRoot().toPath(),
-                        new DefaultWorkspaceUriSupplier(root.getRoot().toPath(), changedOutput.getRoot().toPath())));
+                        new WorkspaceUriSupplier(root.getRoot().toPath(), changedOutput.getRoot().toPath())));
     }
 
     @Test
@@ -107,7 +106,7 @@ public final class GroovycWrapperTest {
                 GroovyWorkspaceCompiler.of(unitProvider, output.getRoot().toPath(), root.newFile().toPath(),
                         changedOutput.getRoot().toPath()),
                 GroovyTreeParser.of(unitProvider, root.newFile().toPath(),
-                        new DefaultWorkspaceUriSupplier(root.getRoot().toPath(), changedOutput.getRoot().toPath())));
+                        new WorkspaceUriSupplier(root.getRoot().toPath(), changedOutput.getRoot().toPath())));
     }
 
     @Test
@@ -119,7 +118,7 @@ public final class GroovycWrapperTest {
                 GroovyWorkspaceCompiler.of(unitProvider, output.getRoot().toPath(), root.getRoot().toPath(),
                         changedOutput.newFile().toPath()),
                 GroovyTreeParser.of(unitProvider, root.getRoot().toPath(),
-                        new DefaultWorkspaceUriSupplier(root.getRoot().toPath(), changedOutput.getRoot().toPath())));
+                        new WorkspaceUriSupplier(root.getRoot().toPath(), changedOutput.getRoot().toPath())));
     }
 
     @Test

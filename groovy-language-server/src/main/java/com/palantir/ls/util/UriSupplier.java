@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package com.palantir.ls.groovy.compilation;
+package com.palantir.ls.util;
 
 import java.net.URI;
 
-public interface WorkspaceUriSupplier {
+public interface UriSupplier {
 
     URI get(URI uri);
 

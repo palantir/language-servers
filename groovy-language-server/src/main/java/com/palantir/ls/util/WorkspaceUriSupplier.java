@@ -14,18 +14,18 @@
  * limitations under the License.
  */
 
-package com.palantir.ls.groovy.compilation;
+package com.palantir.ls.util;
 
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-public final class DefaultWorkspaceUriSupplier implements WorkspaceUriSupplier {
+public final class WorkspaceUriSupplier implements UriSupplier {
 
     private final Path workspaceRoot;
     private final Path other;
 
-    public DefaultWorkspaceUriSupplier(Path workspaceRoot, Path other) {
+    public WorkspaceUriSupplier(Path workspaceRoot, Path other) {
         this.workspaceRoot = workspaceRoot;
         this.other = other;
     }

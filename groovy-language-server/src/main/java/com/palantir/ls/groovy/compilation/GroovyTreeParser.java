@@ -25,6 +25,7 @@ import com.google.common.collect.Sets;
 import com.palantir.ls.api.TreeParser;
 import com.palantir.ls.groovy.CompilationUnitProvider;
 import com.palantir.ls.util.Ranges;
+import com.palantir.ls.util.UriSupplier;
 import com.palantir.ls.util.Uris;
 import io.typefox.lsapi.Location;
 import io.typefox.lsapi.ReferenceParams;
@@ -69,11 +70,11 @@ public final class GroovyTreeParser implements TreeParser {
 
     private final CompilationUnitProvider unitProvider;
     private final Path workspaceRoot;
-    private final WorkspaceUriSupplier workspaceUriSupplier;
+    private final UriSupplier workspaceUriSupplier;
 
 
     private GroovyTreeParser(CompilationUnitProvider unitProvider, Path workspaceRoot,
-            WorkspaceUriSupplier workspaceUriSupplier) {
+            UriSupplier workspaceUriSupplier) {
         this.unitProvider = unitProvider;
         this.workspaceRoot = workspaceRoot;
         this.workspaceUriSupplier = workspaceUriSupplier;
@@ -88,7 +89,7 @@ public final class GroovyTreeParser implements TreeParser {
      * @return the newly created GroovyTreeParser
      */
     public static GroovyTreeParser of(CompilationUnitProvider unitProvider, Path workspaceRoot,
-            WorkspaceUriSupplier workspaceUriSupplier) {
+            UriSupplier workspaceUriSupplier) {
         checkNotNull(unitProvider, "unitProvider must not be null");
         checkNotNull(workspaceRoot, "workspaceRoot must not be null");
         checkNotNull(workspaceUriSupplier, "workspaceUriSupplier must not be null");

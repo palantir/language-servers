@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.palantir.ls.groovy;
+package com.palantir.ls.groovy.services;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
@@ -22,7 +22,7 @@ import static org.mockito.Mockito.when;
 
 import com.google.common.collect.Sets;
 import com.palantir.ls.api.CompilerWrapper;
-import com.palantir.ls.groovy.services.GroovyWorkspaceService;
+import com.palantir.ls.groovy.LanguageServerConfig;
 import com.palantir.ls.util.DefaultDiagnosticBuilder;
 import com.palantir.ls.util.Ranges;
 import io.typefox.lsapi.Diagnostic;

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.palantir.ls.groovy;
+package com.palantir.ls.groovy.services;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
@@ -25,7 +25,8 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.palantir.ls.api.CompilerWrapper;
-import com.palantir.ls.groovy.services.GroovyTextDocumentService;
+import com.palantir.ls.groovy.GroovyLanguageServerConfig;
+import com.palantir.ls.groovy.LanguageServerConfig;
 import com.palantir.ls.util.DefaultDiagnosticBuilder;
 import com.palantir.ls.util.Ranges;
 import io.typefox.lsapi.CompletionItemKind;
