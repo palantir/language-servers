@@ -16,13 +16,13 @@ shadowJar {
 
 publishing {
     publications {
-        sourceJarPublication(MavenPublication) {
+        source(MavenPublication) {
             from components.java
             artifact(sourceJar) {
                 classifier 'sources'
             }
         }
-        shadowJarPublication(MavenPublication) {
+        shadow(MavenPublication) {
             artifact(shadowJar)
         }
     }
@@ -45,7 +45,8 @@ bintrayUpload.onlyIf {
     project.version ==~ /\d+\.\d+\.\d+(-rc[0-9]+)?/
 }
 
-bintrayUpload.dependsOn { generatePomFileForBintrayPublication }
+bintrayUpload.dependsOn { generatePomFileForSourcePublication }
+bintrayUpload.dependsOn { generatePomFileForShadowPublication }
 bintrayUpload.dependsOn { shadowJar }
 bintrayUpload.dependsOn { sourceJar }
 bintrayUpload.dependsOn { build }
