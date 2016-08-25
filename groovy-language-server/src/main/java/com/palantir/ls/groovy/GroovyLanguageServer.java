@@ -17,6 +17,7 @@
 package com.palantir.ls.groovy;
 
 import com.google.common.io.Files;
+import com.palantir.ls.groovy.compilation.DefaultWorkspaceUriSupplier;
 import com.palantir.ls.groovy.compilation.GroovyTreeParser;
 import com.palantir.ls.groovy.compilation.GroovyWorkspaceCompiler;
 import com.palantir.ls.groovy.compilation.GroovycWrapper;
@@ -94,7 +95,8 @@ public final class GroovyLanguageServer implements LanguageServer {
                 new GroovycWrapper(
                         GroovyWorkspaceCompiler.of(unitProvider, Files.createTempDir().toPath(), workspaceRoot,
                                 changedFilesDirectory),
-                        GroovyTreeParser.of(unitProvider, workspaceRoot, changedFilesDirectory));
+                        GroovyTreeParser.of(unitProvider, workspaceRoot,
+                                new DefaultWorkspaceUriSupplier(workspaceRoot, changedFilesDirectory)));
         config.setCompilerWrapper(groovycWrapper);
 
         return CompletableFuture.completedFuture(result);

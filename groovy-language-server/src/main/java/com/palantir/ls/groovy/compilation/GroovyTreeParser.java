@@ -34,7 +34,6 @@ import io.typefox.lsapi.builders.LocationBuilder;
 import io.typefox.lsapi.builders.SymbolInformationBuilder;
 import java.net.URI;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -70,13 +69,14 @@ public final class GroovyTreeParser implements TreeParser {
 
     private final CompilationUnitProvider unitProvider;
     private final Path workspaceRoot;
-    private final Path changedFilesRoot;
+    private final WorkspaceUriSupplier workspaceUriSupplier;
 
 
-    private GroovyTreeParser(CompilationUnitProvider unitProvider, Path workspaceRoot, Path changedFilesRoot) {
+    private GroovyTreeParser(CompilationUnitProvider unitProvider, Path workspaceRoot,
+            WorkspaceUriSupplier workspaceUriSupplier) {
         this.unitProvider = unitProvider;
         this.workspaceRoot = workspaceRoot;
-        this.changedFilesRoot = changedFilesRoot;
+        this.workspaceUriSupplier = workspaceUriSupplier;
     }
 
     /**
@@ -84,17 +84,17 @@ public final class GroovyTreeParser implements TreeParser {
      *
      * @param unitProvider the compilation unit provider in which to store our current unit
      * @param workspaceRoot the directory to compile
-     * @param changedFilesRoot the directory in which to temporarily store incrementally changed files
+     * @param workspaceUriSupplier the provider use to resolve uris
      * @return the newly created GroovyTreeParser
      */
-    public static GroovyTreeParser of(CompilationUnitProvider unitProvider, Path workspaceRoot, Path changedFilesRoot) {
+    public static GroovyTreeParser of(CompilationUnitProvider unitProvider, Path workspaceRoot,
+            WorkspaceUriSupplier workspaceUriSupplier) {
         checkNotNull(unitProvider, "unitProvider must not be null");
         checkNotNull(workspaceRoot, "workspaceRoot must not be null");
-        checkNotNull(changedFilesRoot, "changedFilesRoot must not be null");
+        checkNotNull(workspaceUriSupplier, "workspaceUriSupplier must not be null");
         checkArgument(workspaceRoot.toFile().isDirectory(), "workspaceRoot must be a directory");
-        checkArgument(changedFilesRoot.toFile().isDirectory(), "changedFilesRoot must be a directory");
 
-        return new GroovyTreeParser(unitProvider, workspaceRoot, changedFilesRoot);
+        return new GroovyTreeParser(unitProvider, workspaceRoot, workspaceUriSupplier);
     }
 
     @Override
@@ -104,7 +104,7 @@ public final class GroovyTreeParser implements TreeParser {
 
         unitProvider.get().iterator().forEachRemaining(sourceUnit -> {
             Set<SymbolInformation> symbols = Sets.newHashSet();
-            URI sourceUri = getWorkspaceUri(sourceUnit.getSource().getURI());
+            URI sourceUri = workspaceUriSupplier.get(sourceUnit.getSource().getURI());
             // This will iterate through all classes, interfaces and enums, including inner ones.
             sourceUnit.getAST().getClasses().forEach(clazz -> {
                 // Add class symbol
@@ -149,7 +149,7 @@ public final class GroovyTreeParser implements TreeParser {
                             symbols.add(symbol);
                         });
             }
-            newFileSymbols.put(getWorkspaceUri(sourceUri), symbols);
+            newFileSymbols.put(workspaceUriSupplier.get(sourceUri), symbols);
         });
         // Set the new references and new symbols
         typeReferences = newTypeReferences;
@@ -207,14 +207,6 @@ public final class GroovyTreeParser implements TreeParser {
         return fileSymbols.values().stream().flatMap(Collection::stream)
                 .filter(symbol -> pattern.matcher(symbol.getName()).matches())
                 .collect(Collectors.toSet());
-    }
-
-    private URI getWorkspaceUri(URI uri) {
-        // In the case that it's already relative to the workspace, we still convert it into a Path and then back into a
-        // URI to normalize the URI. Otherwise the URI could start with either 'file:///' or 'file:/'. Now it will
-        // always start with 'file:///'.
-        return uri.getPath().startsWith(workspaceRoot.toString()) ? Paths.get(uri).toUri()
-                : workspaceRoot.resolve(changedFilesRoot.relativize(Paths.get(uri))).toUri();
     }
 
     private Pattern getQueryPattern(String query) {
@@ -293,14 +285,14 @@ public final class GroovyTreeParser implements TreeParser {
 
     private Location createLocation(URI uri) {
         return new LocationBuilder()
-                .uri(getWorkspaceUri(uri).toString())
+                .uri(workspaceUriSupplier.get(uri).toString())
                 .range(Ranges.UNDEFINED_RANGE)
                 .build();
     }
 
     private Location createLocation(URI uri, ASTNode node) {
         return new LocationBuilder()
-                .uri(getWorkspaceUri(uri).toString())
+                .uri(workspaceUriSupplier.get(uri).toString())
                 .range(Ranges.createZeroBasedRange(node.getLineNumber(), node.getColumnNumber(),
                         node.getLastLineNumber(), node.getLastColumnNumber()))
                 .build();

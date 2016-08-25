@@ -49,7 +49,6 @@ public final class GroovyLanguageServerConfig implements LanguageServerConfig {
         this.compilerWrapper = compilerWrapper;
     }
 
-
     @Override
     public Consumer<MessageParams> getShowMessage() {
         return showMessage;
