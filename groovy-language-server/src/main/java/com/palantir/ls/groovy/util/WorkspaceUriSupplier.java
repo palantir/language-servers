@@ -16,6 +16,9 @@
 
 package com.palantir.ls.groovy.util;
 
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -26,6 +29,10 @@ public final class WorkspaceUriSupplier implements UriSupplier {
     private final Path other;
 
     public WorkspaceUriSupplier(Path workspaceRoot, Path other) {
+        checkNotNull(workspaceRoot, "workspaceRoot must not be null");
+        checkNotNull(other, "other must not be null");
+        checkArgument(workspaceRoot.toFile().isDirectory(), "workspaceRoot must be a directory");
+        checkArgument(other.toFile().isDirectory(), "other must be a directory");
         this.workspaceRoot = workspaceRoot;
         this.other = other;
     }
