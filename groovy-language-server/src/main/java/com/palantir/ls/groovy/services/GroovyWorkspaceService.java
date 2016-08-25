@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-package com.palantir.ls.groovy;
+package com.palantir.ls.groovy.services;
 
+import com.palantir.ls.groovy.LanguageServerConfig;
 import com.palantir.ls.util.Ranges;
 import io.typefox.lsapi.DidChangeConfigurationParams;
 import io.typefox.lsapi.DidChangeWatchedFilesParams;
@@ -28,18 +29,17 @@ import java.util.stream.Collectors;
 
 public final class GroovyWorkspaceService implements WorkspaceService {
 
-    private final CompilerWrapperProvider provider;
     private final LanguageServerConfig config;
 
-    public GroovyWorkspaceService(CompilerWrapperProvider provider, LanguageServerConfig config) {
-        this.provider = provider;
+    public GroovyWorkspaceService(LanguageServerConfig config) {
         this.config = config;
     }
 
     @Override
     public CompletableFuture<List<? extends SymbolInformation>> symbol(WorkspaceSymbolParams params) {
-        return CompletableFuture.completedFuture(provider.get().getFilteredSymbols(params.getQuery()).stream()
-                .filter(symbol -> Ranges.isValid(symbol.getLocation().getRange())).collect(Collectors.toList()));
+        return CompletableFuture.completedFuture(config.getCompilerWrapper().getFilteredSymbols(params.getQuery())
+                .stream().filter(symbol -> Ranges.isValid(symbol.getLocation().getRange()))
+                .collect(Collectors.toList()));
     }
 
     @Override
@@ -49,8 +49,9 @@ public final class GroovyWorkspaceService implements WorkspaceService {
 
     @Override
     public void didChangeWatchedFiles(DidChangeWatchedFilesParams params) {
-        provider.get().handleChangeWatchedFiles(params.getChanges());
-        config.publishDiagnostics(provider.get().getWorkspaceRoot(), provider.get().compile());
+        config.getCompilerWrapper().handleChangeWatchedFiles(params.getChanges());
+        config.publishDiagnostics(config.getCompilerWrapper().getWorkspaceRoot(),
+                config.getCompilerWrapper().compile());
     }
 
 }

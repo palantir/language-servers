@@ -24,6 +24,8 @@ import static org.mockito.Mockito.when;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import com.palantir.ls.api.CompilerWrapper;
+import com.palantir.ls.groovy.services.GroovyTextDocumentService;
 import com.palantir.ls.util.DefaultDiagnosticBuilder;
 import com.palantir.ls.util.Ranges;
 import io.typefox.lsapi.CompletionItemKind;
@@ -89,8 +91,6 @@ public final class GroovyTextDocumentServiceTest {
 
     @Mock
     private CompilerWrapper compilerWrapper;
-    @Mock
-    private CompilerWrapperProvider provider;
 
     @Before
     public void setup() throws IOException {
@@ -142,9 +142,10 @@ public final class GroovyTextDocumentServiceTest {
         when(compilerWrapper.getFileSymbols()).thenReturn(symbolsMap);
         when(compilerWrapper.findReferences(Mockito.any())).thenReturn(allReferencesReturned);
 
-        when(provider.get()).thenReturn(compilerWrapper);
+        LanguageServerConfig config = new GroovyLanguageServerConfig();
+        config.setCompilerWrapper(compilerWrapper);
 
-        service = new GroovyTextDocumentService(provider, new GroovyLanguageServerConfig());
+        service = new GroovyTextDocumentService(config);
 
         Consumer<PublishDiagnosticsParams> callback = p -> {
             publishDiagnostics(p);

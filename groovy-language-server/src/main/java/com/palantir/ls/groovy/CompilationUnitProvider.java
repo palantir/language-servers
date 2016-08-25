@@ -16,13 +16,15 @@
 
 package com.palantir.ls.groovy;
 
+import org.codehaus.groovy.control.CompilationUnit;
+
 /**
- * Holds and provides a {@link CompilerWrapper}.
+ * Holds and provides a Groovy CompilationUnit.
  */
-public interface CompilerWrapperProvider {
+public interface CompilationUnitProvider {
 
-    void set(CompilerWrapper compilerWrapper);
+    void set(CompilationUnit compilerWrapper);
 
-    CompilerWrapper get();
+    CompilationUnit get();
 
 }

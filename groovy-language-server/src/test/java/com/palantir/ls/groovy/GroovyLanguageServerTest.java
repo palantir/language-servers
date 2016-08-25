@@ -48,16 +48,9 @@ public final class GroovyLanguageServerTest {
 
     @Before
     public void before() {
-        server = new GroovyLanguageServer(new CompilerWrapperProvider() {
-            @Override
-            public void set(CompilerWrapper compilerWrapper) {}
-
-            @Override
-            public CompilerWrapper get() {
-                return Mockito.mock(CompilerWrapper.class);
-            }
-        }, Mockito.mock(LanguageServerConfig.class), Mockito.mock(TextDocumentService.class),
-                Mockito.mock(WorkspaceService.class), Mockito.mock(WindowService.class));
+        server = new GroovyLanguageServer(Mockito.mock(LanguageServerConfig.class),
+                Mockito.mock(TextDocumentService.class), Mockito.mock(WorkspaceService.class),
+                Mockito.mock(WindowService.class));
     }
 
     @Test

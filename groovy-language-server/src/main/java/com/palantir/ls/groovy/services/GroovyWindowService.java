@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-package com.palantir.ls.groovy;
+package com.palantir.ls.groovy.services;
 
+import com.palantir.ls.groovy.LanguageServerConfig;
 import io.typefox.lsapi.MessageParams;
 import io.typefox.lsapi.ShowMessageRequestParams;
 import io.typefox.lsapi.services.WindowService;

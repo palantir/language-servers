@@ -17,6 +17,12 @@
 package com.palantir.ls.groovy;
 
 import com.google.common.io.Files;
+import com.palantir.ls.groovy.compilation.GroovyTreeParser;
+import com.palantir.ls.groovy.compilation.GroovyWorkspaceCompiler;
+import com.palantir.ls.groovy.compilation.GroovycWrapper;
+import com.palantir.ls.groovy.services.GroovyTextDocumentService;
+import com.palantir.ls.groovy.services.GroovyWindowService;
+import com.palantir.ls.groovy.services.GroovyWorkspaceService;
 import com.palantir.ls.server.StreamLanguageServerLauncher;
 import com.palantir.ls.util.GroovyConstants;
 import com.palantir.ls.util.Uris;
@@ -43,7 +49,6 @@ public final class GroovyLanguageServer implements LanguageServer {
 
     private static final Logger logger = LoggerFactory.getLogger(GroovyLanguageServer.class);
 
-    private final CompilerWrapperProvider provider;
     private final LanguageServerConfig config;
     private final TextDocumentService textDocumentService;
     private final WorkspaceService workspaceService;
@@ -51,9 +56,8 @@ public final class GroovyLanguageServer implements LanguageServer {
 
     private Path workspaceRoot;
 
-    public GroovyLanguageServer(CompilerWrapperProvider provider, LanguageServerConfig config,
-            TextDocumentService textDocumentService, WorkspaceService workspaceService, WindowService windowService) {
-        this.provider = provider;
+    public GroovyLanguageServer(LanguageServerConfig config, TextDocumentService textDocumentService,
+            WorkspaceService workspaceService, WindowService windowService) {
         this.config = config;
         this.textDocumentService = textDocumentService;
         this.workspaceService = workspaceService;
@@ -83,9 +87,15 @@ public final class GroovyLanguageServer implements LanguageServer {
                 .supportedLanguage(languageDescription)
                 .build();
 
+        CompilationUnitProvider unitProvider = new DefaultCompilationUnitProvider();
+
+        Path changedFilesDirectory = Files.createTempDir().toPath();
         GroovycWrapper groovycWrapper =
-                GroovycWrapper.of(Files.createTempDir().toPath(), workspaceRoot, Files.createTempDir().toPath());
-        provider.set(groovycWrapper);
+                new GroovycWrapper(
+                        GroovyWorkspaceCompiler.of(unitProvider, Files.createTempDir().toPath(), workspaceRoot,
+                                changedFilesDirectory),
+                        GroovyTreeParser.of(unitProvider, workspaceRoot, changedFilesDirectory));
+        config.setCompilerWrapper(groovycWrapper);
 
         return CompletableFuture.completedFuture(result);
     }
@@ -121,11 +131,10 @@ public final class GroovyLanguageServer implements LanguageServer {
     }
 
     public static void main(String[] args) {
-        CompilerWrapperProvider provider = new SingleCompilerWrapperProvider();
         LanguageServerConfig config = new GroovyLanguageServerConfig();
         LanguageServer server =
-                new GroovyLanguageServer(provider, config, new GroovyTextDocumentService(provider, config),
-                        new GroovyWorkspaceService(provider, config), new GroovyWindowService(config));
+                new GroovyLanguageServer(config, new GroovyTextDocumentService(config),
+                        new GroovyWorkspaceService(config), new GroovyWindowService(config));
 
         StreamLanguageServerLauncher launcher = new StreamLanguageServerLauncher(server, System.in, System.out);
         launcher.setLogger(logger);

@@ -16,6 +16,7 @@
 
 package com.palantir.ls.groovy;
 
+import com.palantir.ls.api.CompilerWrapper;
 import io.typefox.lsapi.Diagnostic;
 import io.typefox.lsapi.MessageParams;
 import io.typefox.lsapi.PublishDiagnosticsParams;
@@ -25,9 +26,13 @@ import java.util.Set;
 import java.util.function.Consumer;
 
 /**
- * Used to share message callbacks between Language Server services.
+ * Used to share compilation state and message callbacks between Language Server services.
  */
 public interface LanguageServerConfig {
+
+    CompilerWrapper getCompilerWrapper();
+
+    void setCompilerWrapper(CompilerWrapper compilerWrapper);
 
     Consumer<MessageParams> getShowMessage();
 

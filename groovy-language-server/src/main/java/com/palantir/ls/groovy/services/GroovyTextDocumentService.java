@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-package com.palantir.ls.groovy;
+package com.palantir.ls.groovy.services;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
+import com.palantir.ls.groovy.LanguageServerConfig;
 import com.palantir.ls.util.Ranges;
 import com.palantir.ls.util.Uris;
 import io.typefox.lsapi.CodeActionParams;
@@ -63,18 +64,17 @@ import java.util.stream.Collectors;
 
 public final class GroovyTextDocumentService implements TextDocumentService {
 
-    private final CompilerWrapperProvider provider;
     private final LanguageServerConfig config;
 
-    public GroovyTextDocumentService(CompilerWrapperProvider provider, LanguageServerConfig config) {
-        this.provider = provider;
+    public GroovyTextDocumentService(LanguageServerConfig config) {
         this.config = config;
     }
 
     @Override
     public CompletableFuture<CompletionList> completion(TextDocumentPositionParams position) {
-        return CompletableFuture.completedFuture(createCompletionListFromSymbols(provider.get().getFileSymbols()
-                .get(Uris.resolveToRoot(provider.get().getWorkspaceRoot(), position.getTextDocument().getUri()))));
+        return CompletableFuture.completedFuture(
+                createCompletionListFromSymbols(config.getCompilerWrapper().getFileSymbols().get(Uris.resolveToRoot(
+                        config.getCompilerWrapper().getWorkspaceRoot(), position.getTextDocument().getUri()))));
     }
 
     @Override
@@ -100,7 +100,7 @@ public final class GroovyTextDocumentService implements TextDocumentService {
     @Override
     public CompletableFuture<List<? extends Location>> references(ReferenceParams params) {
         return CompletableFuture.completedFuture(
-                provider.get().findReferences(params).stream()
+                config.getCompilerWrapper().findReferences(params).stream()
                         .map(symbol -> symbol.getLocation())
                         .filter(location -> Ranges.isValid(location.getRange()))
                         .collect(Collectors.toList()));
@@ -113,11 +113,11 @@ public final class GroovyTextDocumentService implements TextDocumentService {
 
     @Override
     public CompletableFuture<List<? extends SymbolInformation>> documentSymbol(DocumentSymbolParams params) {
-        URI uri = Uris.resolveToRoot(provider.get().getWorkspaceRoot(), params.getTextDocument().getUri());
+        URI uri = Uris.resolveToRoot(config.getCompilerWrapper().getWorkspaceRoot(), params.getTextDocument().getUri());
         assertFileExists(uri);
         List<SymbolInformation> symbols =
                 Optional.fromNullable(
-                        provider.get().getFileSymbols().get(uri).stream().collect(Collectors.toList()))
+                        config.getCompilerWrapper().getFileSymbols().get(uri).stream().collect(Collectors.toList()))
                         .or(Lists.newArrayList());
         return CompletableFuture.completedFuture(symbols);
     }
@@ -159,37 +159,41 @@ public final class GroovyTextDocumentService implements TextDocumentService {
 
     @Override
     public void didOpen(DidOpenTextDocumentParams params) {
-        URI uri = Uris.resolveToRoot(provider.get().getWorkspaceRoot(), params.getTextDocument().getUri());
+        URI uri = Uris.resolveToRoot(config.getCompilerWrapper().getWorkspaceRoot(), params.getTextDocument().getUri());
         assertFileExists(uri);
-        config.publishDiagnostics(provider.get().getWorkspaceRoot(), provider.get().compile());
+        config.publishDiagnostics(config.getCompilerWrapper().getWorkspaceRoot(),
+                config.getCompilerWrapper().compile());
     }
 
     @Override
     public void didChange(DidChangeTextDocumentParams params) {
-        URI uri = Uris.resolveToRoot(provider.get().getWorkspaceRoot(), params.getTextDocument().getUri());
+        URI uri = Uris.resolveToRoot(config.getCompilerWrapper().getWorkspaceRoot(), params.getTextDocument().getUri());
         assertFileExists(uri);
         if (params.getContentChanges() == null || params.getContentChanges().isEmpty()) {
             throw new IllegalArgumentException(
                     String.format("Calling didChange with no changes on uri '%s'", uri.toString()));
         }
-        provider.get().handleFileChanged(uri, Lists.newArrayList(params.getContentChanges()));
-        config.publishDiagnostics(provider.get().getWorkspaceRoot(), provider.get().compile());
+        config.getCompilerWrapper().handleFileChanged(uri, Lists.newArrayList(params.getContentChanges()));
+        config.publishDiagnostics(config.getCompilerWrapper().getWorkspaceRoot(),
+                config.getCompilerWrapper().compile());
     }
 
     @Override
     public void didClose(DidCloseTextDocumentParams params) {
-        URI uri = Uris.resolveToRoot(provider.get().getWorkspaceRoot(), params.getTextDocument().getUri());
+        URI uri = Uris.resolveToRoot(config.getCompilerWrapper().getWorkspaceRoot(), params.getTextDocument().getUri());
         assertFileExists(uri);
-        provider.get().handleFileClosed(uri);
-        config.publishDiagnostics(provider.get().getWorkspaceRoot(), provider.get().compile());
+        config.getCompilerWrapper().handleFileClosed(uri);
+        config.publishDiagnostics(config.getCompilerWrapper().getWorkspaceRoot(),
+                config.getCompilerWrapper().compile());
     }
 
     @Override
     public void didSave(DidSaveTextDocumentParams params) {
-        URI uri = Uris.resolveToRoot(provider.get().getWorkspaceRoot(), params.getTextDocument().getUri());
+        URI uri = Uris.resolveToRoot(config.getCompilerWrapper().getWorkspaceRoot(), params.getTextDocument().getUri());
         assertFileExists(uri);
-        provider.get().handleFileSaved(uri);
-        config.publishDiagnostics(provider.get().getWorkspaceRoot(), provider.get().compile());
+        config.getCompilerWrapper().handleFileSaved(uri);
+        config.publishDiagnostics(config.getCompilerWrapper().getWorkspaceRoot(),
+                config.getCompilerWrapper().compile());
     }
 
     @Override

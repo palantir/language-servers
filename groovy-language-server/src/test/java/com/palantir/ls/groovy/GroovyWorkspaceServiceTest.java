@@ -21,6 +21,8 @@ import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.Sets;
+import com.palantir.ls.api.CompilerWrapper;
+import com.palantir.ls.groovy.services.GroovyWorkspaceService;
 import com.palantir.ls.util.DefaultDiagnosticBuilder;
 import com.palantir.ls.util.Ranges;
 import io.typefox.lsapi.Diagnostic;
@@ -57,8 +59,6 @@ public final class GroovyWorkspaceServiceTest {
 
     @Mock
     private CompilerWrapper compilerWrapper;
-    @Mock
-    private CompilerWrapperProvider provider;
     @Mock
     private LanguageServerConfig config;
 
@@ -103,9 +103,10 @@ public final class GroovyWorkspaceServiceTest {
         when(compilerWrapper.getWorkspaceRoot()).thenReturn(workspace.getRoot().toPath());
         when(compilerWrapper.compile()).thenReturn(diagnostics);
         when(compilerWrapper.getFilteredSymbols(Mockito.any())).thenReturn(allReferencesReturned);
-        when(provider.get()).thenReturn(compilerWrapper);
 
-        service = new GroovyWorkspaceService(provider, config);
+        when(config.getCompilerWrapper()).thenReturn(compilerWrapper);
+
+        service = new GroovyWorkspaceService(config);
     }
 
     @Test
