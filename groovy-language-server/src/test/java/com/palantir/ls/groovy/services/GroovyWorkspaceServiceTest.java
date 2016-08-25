@@ -22,7 +22,7 @@ import static org.mockito.Mockito.when;
 
 import com.google.common.collect.Sets;
 import com.palantir.ls.api.CompilerWrapper;
-import com.palantir.ls.groovy.LanguageServerConfig;
+import com.palantir.ls.groovy.LanguageServerState;
 import com.palantir.ls.util.DefaultDiagnosticBuilder;
 import com.palantir.ls.util.Ranges;
 import io.typefox.lsapi.Diagnostic;
@@ -60,7 +60,7 @@ public final class GroovyWorkspaceServiceTest {
     @Mock
     private CompilerWrapper compilerWrapper;
     @Mock
-    private LanguageServerConfig config;
+    private LanguageServerState state;
 
     @Before
     public void setup() throws IOException {
@@ -104,9 +104,9 @@ public final class GroovyWorkspaceServiceTest {
         when(compilerWrapper.compile()).thenReturn(diagnostics);
         when(compilerWrapper.getFilteredSymbols(Mockito.any())).thenReturn(allReferencesReturned);
 
-        when(config.getCompilerWrapper()).thenReturn(compilerWrapper);
+        when(state.getCompilerWrapper()).thenReturn(compilerWrapper);
 
-        service = new GroovyWorkspaceService(config);
+        service = new GroovyWorkspaceService(state);
     }
 
     @Test
@@ -121,7 +121,7 @@ public final class GroovyWorkspaceServiceTest {
         service.didChangeWatchedFiles(new DidChangeWatchedFilesParamsBuilder().change("uri", FileChangeType.Deleted)
                 .change("uri", FileChangeType.Created).change("uri", FileChangeType.Changed).build());
         // assert diagnostics were published
-        Mockito.verify(config, Mockito.times(1)).publishDiagnostics(workspace.getRoot().toPath(), expectedDiagnostics);
+        Mockito.verify(state, Mockito.times(1)).publishDiagnostics(workspace.getRoot().toPath(), expectedDiagnostics);
     }
 
 }

@@ -16,7 +16,7 @@
 
 package com.palantir.ls.groovy.services;
 
-import com.palantir.ls.groovy.LanguageServerConfig;
+import com.palantir.ls.groovy.LanguageServerState;
 import com.palantir.ls.util.Ranges;
 import io.typefox.lsapi.DidChangeConfigurationParams;
 import io.typefox.lsapi.DidChangeWatchedFilesParams;
@@ -29,15 +29,15 @@ import java.util.stream.Collectors;
 
 public final class GroovyWorkspaceService implements WorkspaceService {
 
-    private final LanguageServerConfig config;
+    private final LanguageServerState state;
 
-    public GroovyWorkspaceService(LanguageServerConfig config) {
-        this.config = config;
+    public GroovyWorkspaceService(LanguageServerState state) {
+        this.state = state;
     }
 
     @Override
     public CompletableFuture<List<? extends SymbolInformation>> symbol(WorkspaceSymbolParams params) {
-        return CompletableFuture.completedFuture(config.getCompilerWrapper().getFilteredSymbols(params.getQuery())
+        return CompletableFuture.completedFuture(state.getCompilerWrapper().getFilteredSymbols(params.getQuery())
                 .stream().filter(symbol -> Ranges.isValid(symbol.getLocation().getRange()))
                 .collect(Collectors.toList()));
     }
@@ -49,9 +49,9 @@ public final class GroovyWorkspaceService implements WorkspaceService {
 
     @Override
     public void didChangeWatchedFiles(DidChangeWatchedFilesParams params) {
-        config.getCompilerWrapper().handleChangeWatchedFiles(params.getChanges());
-        config.publishDiagnostics(config.getCompilerWrapper().getWorkspaceRoot(),
-                config.getCompilerWrapper().compile());
+        state.getCompilerWrapper().handleChangeWatchedFiles(params.getChanges());
+        state.publishDiagnostics(state.getCompilerWrapper().getWorkspaceRoot(),
+                state.getCompilerWrapper().compile());
     }
 
 }

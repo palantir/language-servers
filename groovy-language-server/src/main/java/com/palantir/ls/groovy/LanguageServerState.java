@@ -28,7 +28,7 @@ import java.util.function.Consumer;
 /**
  * Used to share compilation state and message callbacks between Language Server services.
  */
-public interface LanguageServerConfig {
+public interface LanguageServerState {
 
     CompilerWrapper getCompilerWrapper();
 

@@ -48,7 +48,7 @@ public final class GroovyLanguageServerTest {
 
     @Before
     public void before() {
-        server = new GroovyLanguageServer(Mockito.mock(LanguageServerConfig.class),
+        server = new GroovyLanguageServer(Mockito.mock(LanguageServerState.class),
                 Mockito.mock(TextDocumentService.class), Mockito.mock(WorkspaceService.class),
                 Mockito.mock(WindowService.class));
     }

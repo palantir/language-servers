@@ -30,7 +30,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 
-public final class GroovyLanguageServerConfig implements LanguageServerConfig {
+public final class GroovyLanguageServerState implements LanguageServerState {
 
     private CompilerWrapper compilerWrapper = null;
     private Consumer<MessageParams> showMessage = m -> { };

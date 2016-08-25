@@ -50,16 +50,16 @@ public final class GroovyLanguageServer implements LanguageServer {
 
     private static final Logger logger = LoggerFactory.getLogger(GroovyLanguageServer.class);
 
-    private final LanguageServerConfig config;
+    private final LanguageServerState state;
     private final TextDocumentService textDocumentService;
     private final WorkspaceService workspaceService;
     private final WindowService windowService;
 
     private Path workspaceRoot;
 
-    public GroovyLanguageServer(LanguageServerConfig config, TextDocumentService textDocumentService,
+    public GroovyLanguageServer(LanguageServerState state, TextDocumentService textDocumentService,
             WorkspaceService workspaceService, WindowService windowService) {
-        this.config = config;
+        this.state = state;
         this.textDocumentService = textDocumentService;
         this.workspaceService = workspaceService;
         this.windowService = windowService;
@@ -97,7 +97,7 @@ public final class GroovyLanguageServer implements LanguageServer {
                                 changedFilesDirectory),
                         GroovyTreeParser.of(unitProvider, workspaceRoot,
                                 new WorkspaceUriSupplier(workspaceRoot, changedFilesDirectory)));
-        config.setCompilerWrapper(groovycWrapper);
+        state.setCompilerWrapper(groovycWrapper);
 
         return CompletableFuture.completedFuture(result);
     }
@@ -125,7 +125,7 @@ public final class GroovyLanguageServer implements LanguageServer {
 
     @Override
     public void onTelemetryEvent(Consumer<Object> callback) {
-        config.setTelemetryEvent(callback);
+        state.setTelemetryEvent(callback);
     }
 
     public Path getWorkspaceRoot() {
@@ -133,10 +133,10 @@ public final class GroovyLanguageServer implements LanguageServer {
     }
 
     public static void main(String[] args) {
-        LanguageServerConfig config = new GroovyLanguageServerConfig();
+        LanguageServerState state = new GroovyLanguageServerState();
         LanguageServer server =
-                new GroovyLanguageServer(config, new GroovyTextDocumentService(config),
-                        new GroovyWorkspaceService(config), new GroovyWindowService(config));
+                new GroovyLanguageServer(state, new GroovyTextDocumentService(state),
+                        new GroovyWorkspaceService(state), new GroovyWindowService(state));
 
         StreamLanguageServerLauncher launcher = new StreamLanguageServerLauncher(server, System.in, System.out);
         launcher.setLogger(logger);

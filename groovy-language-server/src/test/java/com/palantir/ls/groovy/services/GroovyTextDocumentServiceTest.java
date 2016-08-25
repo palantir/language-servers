@@ -25,8 +25,8 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.palantir.ls.api.CompilerWrapper;
-import com.palantir.ls.groovy.GroovyLanguageServerConfig;
-import com.palantir.ls.groovy.LanguageServerConfig;
+import com.palantir.ls.groovy.GroovyLanguageServerState;
+import com.palantir.ls.groovy.LanguageServerState;
 import com.palantir.ls.util.DefaultDiagnosticBuilder;
 import com.palantir.ls.util.Ranges;
 import io.typefox.lsapi.CompletionItemKind;
@@ -143,10 +143,10 @@ public final class GroovyTextDocumentServiceTest {
         when(compilerWrapper.getFileSymbols()).thenReturn(symbolsMap);
         when(compilerWrapper.findReferences(Mockito.any())).thenReturn(allReferencesReturned);
 
-        LanguageServerConfig config = new GroovyLanguageServerConfig();
-        config.setCompilerWrapper(compilerWrapper);
+        LanguageServerState state = new GroovyLanguageServerState();
+        state.setCompilerWrapper(compilerWrapper);
 
-        service = new GroovyTextDocumentService(config);
+        service = new GroovyTextDocumentService(state);
 
         Consumer<PublishDiagnosticsParams> callback = p -> {
             publishDiagnostics(p);
