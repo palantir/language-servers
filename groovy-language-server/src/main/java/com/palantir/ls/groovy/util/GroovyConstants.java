@@ -24,5 +24,6 @@ public final class GroovyConstants {
 
     public static final String GROOVY_LANGUAGE_NAME = "groovy";
     public static final String GROOVY_LANGUAGE_EXTENSION = "groovy";
+    public static final String JAVA_LANGUAGE_EXTENSION = "java";
 
 }
