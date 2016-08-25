@@ -1,26 +1,11 @@
 ext.applicationName = 'groovy-language-server'
+ext.mainClass = 'com.palantir.ls.groovy.GroovyLanguageServer'
 
 apply from: "${rootDir}/gradle/java.gradle"
 apply from: "${rootDir}/gradle/immutables-processors.gradle"
-apply from: "${rootDir}/gradle/publish.gradle"
-apply plugin: 'com.github.johnrengelman.shadow'
+apply from: "${rootDir}/gradle/publish-runnable.gradle"
 
 sourceCompatibility = '1.8'
-
-shadowJar {
-    manifest {
-        attributes 'Main-Class': 'com.palantir.ls.groovy.GroovyLanguageServer'
-    }
-    mergeServiceFiles()
-}
-
-publishing {
-    publications {
-        shadowJarPublication(MavenPublication) {
-            artifact(shadowJar)
-        }
-    }
-}
 
 dependencies {
     compile "com.fasterxml.jackson.core:jackson-databind:${jacksonDatabindVersion}"
@@ -39,3 +24,4 @@ dependencies {
     testCompile "org.hamcrest:hamcrest-all:${hamcrestVersion}"
     testCompile "org.mockito:mockito-core:${mockitoVersion}"
 }
+
