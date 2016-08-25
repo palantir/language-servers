@@ -36,7 +36,7 @@ repositories {
 }
 
 allprojects {
-    group 'com.palantir.groovylanguageserver'
+    group 'com.palantir.ls'
     version gitVersion()
 
     repositories {
