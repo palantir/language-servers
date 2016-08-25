@@ -1,4 +1,5 @@
 apply plugin: 'maven-publish'
+apply plugin: 'com.github.johnrengelman.shadow'
 apply plugin: 'com.jfrog.bintray'
 
 task sourceJar(type: Jar) {
@@ -6,13 +7,23 @@ task sourceJar(type: Jar) {
     classifier 'sources'
 }
 
+shadowJar {
+    manifest {
+        attributes 'Main-Class': project.ext.get("mainClass")
+    }
+    mergeServiceFiles()
+}
+
 publishing {
     publications {
-        bintray(MavenPublication) {
+        sourceJarPublication(MavenPublication) {
             from components.java
             artifact(sourceJar) {
                 classifier 'sources'
             }
+        }
+        shadowJarPublication(MavenPublication) {
+            artifact(shadowJar)
         }
     }
 }
@@ -26,7 +37,7 @@ bintray {
         name = 'groovy-language-server'
         userOrg = 'palantir'
         licenses = ['Apache-2.0']
-        publications = ['bintray']
+        publications = ['sourceJarPublication', 'shadowJarPublication']
     }
 }
 
@@ -35,5 +46,6 @@ bintrayUpload.onlyIf {
 }
 
 bintrayUpload.dependsOn { generatePomFileForBintrayPublication }
+bintrayUpload.dependsOn { shadowJar }
 bintrayUpload.dependsOn { sourceJar }
 bintrayUpload.dependsOn { build }
