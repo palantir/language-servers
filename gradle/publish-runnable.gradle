@@ -37,7 +37,7 @@ bintray {
         name = 'groovy-language-server'
         userOrg = 'palantir'
         licenses = ['Apache-2.0']
-        publications = ['sourceJarPublication', 'shadowJarPublication']
+        publications = ['source', 'shadow']
     }
 }
 
