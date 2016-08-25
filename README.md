@@ -6,6 +6,8 @@ A groovy implementation of the [Microsoft Language Server Protocol](https://gith
 
 Uses the Java API definition in [typefox/ls-api](https://github.com/TypeFox/ls-api)
 
+Groovy language server is published to [bintray](https://bintray.com/palantir/releases/groovy-language-server)
+
 ## Dev setup
 - `git clone <repo link>`
 - `cd groovy-language-server`
