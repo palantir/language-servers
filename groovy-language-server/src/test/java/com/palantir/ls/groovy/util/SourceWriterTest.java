@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.palantir.ls.util;
+package com.palantir.ls.groovy.util;
 
 import static org.junit.Assert.assertEquals;
 

@@ -17,7 +17,7 @@
 package com.palantir.ls.groovy;
 
 import com.google.common.collect.Maps;
-import com.palantir.ls.api.CompilerWrapper;
+import com.palantir.ls.groovy.api.CompilerWrapper;
 import io.typefox.lsapi.Diagnostic;
 import io.typefox.lsapi.MessageParams;
 import io.typefox.lsapi.PublishDiagnosticsParams;

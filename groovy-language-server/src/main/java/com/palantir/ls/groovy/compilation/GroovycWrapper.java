@@ -16,9 +16,9 @@
 
 package com.palantir.ls.groovy.compilation;
 
-import com.palantir.ls.api.CompilerWrapper;
-import com.palantir.ls.api.TreeParser;
-import com.palantir.ls.api.WorkspaceCompiler;
+import com.palantir.ls.groovy.api.CompilerWrapper;
+import com.palantir.ls.groovy.api.TreeParser;
+import com.palantir.ls.groovy.api.WorkspaceCompiler;
 import io.typefox.lsapi.Diagnostic;
 import io.typefox.lsapi.FileEvent;
 import io.typefox.lsapi.ReferenceParams;

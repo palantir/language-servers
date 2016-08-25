@@ -17,7 +17,7 @@
 package com.palantir.ls.groovy.services;
 
 import com.palantir.ls.groovy.LanguageServerState;
-import com.palantir.ls.util.Ranges;
+import com.palantir.ls.groovy.util.Ranges;
 import io.typefox.lsapi.DidChangeConfigurationParams;
 import io.typefox.lsapi.DidChangeWatchedFilesParams;
 import io.typefox.lsapi.SymbolInformation;

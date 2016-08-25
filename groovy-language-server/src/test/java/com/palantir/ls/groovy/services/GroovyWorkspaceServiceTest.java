@@ -21,10 +21,10 @@ import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.Sets;
-import com.palantir.ls.api.CompilerWrapper;
 import com.palantir.ls.groovy.LanguageServerState;
-import com.palantir.ls.util.DefaultDiagnosticBuilder;
-import com.palantir.ls.util.Ranges;
+import com.palantir.ls.groovy.api.CompilerWrapper;
+import com.palantir.ls.groovy.util.DefaultDiagnosticBuilder;
+import com.palantir.ls.groovy.util.Ranges;
 import io.typefox.lsapi.Diagnostic;
 import io.typefox.lsapi.DiagnosticSeverity;
 import io.typefox.lsapi.FileChangeType;

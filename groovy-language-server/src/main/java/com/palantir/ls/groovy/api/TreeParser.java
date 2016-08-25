@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.palantir.ls.api;
+package com.palantir.ls.groovy.api;
 
 import io.typefox.lsapi.ReferenceParams;
 import io.typefox.lsapi.SymbolInformation;

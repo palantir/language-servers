@@ -14,21 +14,15 @@
  * limitations under the License.
  */
 
-package com.palantir.ls.util;
+package com.palantir.ls.groovy.util;
 
-import static com.google.common.base.Preconditions.checkNotNull;
+public final class GroovyConstants {
 
-import io.typefox.lsapi.DiagnosticSeverity;
-import io.typefox.lsapi.builders.DiagnosticBuilder;
-
-public final class DefaultDiagnosticBuilder extends DiagnosticBuilder {
-
-    public DefaultDiagnosticBuilder(String message, DiagnosticSeverity severity) {
-        checkNotNull(message, "message cannot be null");
-        this.message(message);
-        this.severity(severity);
-        this.range(Ranges.UNDEFINED_RANGE);
-        this.source("groovyc");
+    private GroovyConstants() {
+        // constant class
     }
+
+    public static final String GROOVY_LANGUAGE_NAME = "groovy";
+    public static final String GROOVY_LANGUAGE_EXTENSION = "groovy";
 
 }

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.palantir.ls.util;
+package com.palantir.ls.groovy.util;
 
 import io.typefox.lsapi.Message;
 import io.typefox.lsapi.NotificationMessage;
