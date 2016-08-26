@@ -19,11 +19,11 @@ package com.palantir.ls.groovy.compilation;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import com.google.common.base.Supplier;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.io.Files;
-import com.palantir.ls.groovy.CompilationUnitProvider;
 import com.palantir.ls.groovy.api.WorkspaceCompiler;
 import com.palantir.ls.groovy.util.DefaultDiagnosticBuilder;
 import com.palantir.ls.groovy.util.GroovyConstants;
@@ -57,38 +57,35 @@ import org.codehaus.groovy.syntax.SyntaxException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class GroovyWorkspaceCompiler implements WorkspaceCompiler {
+public final class GroovyWorkspaceCompiler implements WorkspaceCompiler, Supplier<CompilationUnit> {
 
     private static final Logger logger = LoggerFactory.getLogger(GroovyWorkspaceCompiler.class);
 
-    private final CompilationUnitProvider unitProvider;
     private final Path workspaceRoot;
     private final Path changedFilesRoot;
     private final CompilerConfiguration config;
 
+    private CompilationUnit unit;
+
     // Map from origin source filename to its changed version source writer
     private Map<URI, SourceWriter> originalSourceToChangedSource = Maps.newHashMap();
 
-    private GroovyWorkspaceCompiler(CompilationUnitProvider unitProvider, Path workspaceRoot, Path changedFilesRoot,
-            CompilerConfiguration config) {
-        this.unitProvider = unitProvider;
+    private GroovyWorkspaceCompiler(Path workspaceRoot, Path changedFilesRoot, CompilerConfiguration config) {
         this.workspaceRoot = workspaceRoot;
         this.changedFilesRoot = changedFilesRoot;
         this.config = config;
+        this.unit = new CompilationUnit(config);
     }
 
     /**
      * Creates a new instance of GroovyWorkspaceCompiler.
      *
-     * @param unitProvider the compilation unit provider in which to store our current unit
      * @param targetDirectory the directory in which to put generated files
      * @param workspaceRoot the directory to compile
      * @param changedFilesRoot the directory in which to temporarily store incrementally changed files
      * @return the newly created GroovyWorkspaceCompiler
      */
-    public static GroovyWorkspaceCompiler of(CompilationUnitProvider unitProvider, Path targetDirectory,
-            Path workspaceRoot, Path changedFilesRoot) {
-        checkNotNull(unitProvider, "unitProvider must not be null");
+    public static GroovyWorkspaceCompiler of(Path targetDirectory, Path workspaceRoot, Path changedFilesRoot) {
         checkNotNull(targetDirectory, "targetDirectory must not be null");
         checkNotNull(workspaceRoot, "workspaceRoot must not be null");
         checkNotNull(changedFilesRoot, "changedFilesRoot must not be null");
@@ -98,12 +95,16 @@ public final class GroovyWorkspaceCompiler implements WorkspaceCompiler {
 
         CompilerConfiguration config = new CompilerConfiguration();
         config.setTargetDirectory(targetDirectory.toFile());
-        GroovyWorkspaceCompiler wrapper =
-                new GroovyWorkspaceCompiler(unitProvider, workspaceRoot, changedFilesRoot, config);
-        unitProvider.set(new CompilationUnit(config));
-        wrapper.addAllSourcesToCompilationUnit(unitProvider.get());
+        GroovyWorkspaceCompiler workspaceCompiler =
+                new GroovyWorkspaceCompiler(workspaceRoot, changedFilesRoot, config);
+        workspaceCompiler.addAllSourcesToCompilationUnit();
 
-        return wrapper;
+        return workspaceCompiler;
+    }
+
+    @Override
+    public CompilationUnit get() {
+        return unit;
     }
 
     @Override
@@ -115,7 +116,7 @@ public final class GroovyWorkspaceCompiler implements WorkspaceCompiler {
 
     public Set<Diagnostic> compile() {
         try {
-            unitProvider.get().compile();
+            unit.compile();
         } catch (MultipleCompilationErrorsException e) {
             return parseErrors(e.getErrorCollector());
         }
@@ -199,7 +200,7 @@ public final class GroovyWorkspaceCompiler implements WorkspaceCompiler {
         resetCompilationUnit();
     }
 
-    private void addAllSourcesToCompilationUnit(CompilationUnit unit) {
+    private void addAllSourcesToCompilationUnit() {
         // We don't include the files that have a corresponding SourceWriter since that means they will be replaced.
         for (File file : Files.fileTreeTraverser().preOrderTraversal(workspaceRoot.toFile())) {
             if (!originalSourceToChangedSource.containsKey(file.toURI()) && file.isFile() && Files
@@ -221,9 +222,8 @@ public final class GroovyWorkspaceCompiler implements WorkspaceCompiler {
                 throw new RuntimeException("Could not reset compiled files after changes. "
                         + "Make sure you have permission to modify your target directory.");
             }
-            CompilationUnit unit = new CompilationUnit(config);
-            addAllSourcesToCompilationUnit(unit);
-            unitProvider.set(unit);
+            unit = new CompilationUnit(config);
+            addAllSourcesToCompilationUnit();
         } catch (IOException e) {
             Throwables.propagate(e);
         }

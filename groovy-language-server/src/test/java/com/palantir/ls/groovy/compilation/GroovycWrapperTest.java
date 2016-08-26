@@ -27,8 +27,7 @@ import com.google.common.base.Optional;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import com.palantir.ls.groovy.CompilationUnitProvider;
-import com.palantir.ls.groovy.DefaultCompilationUnitProvider;
+import com.palantir.ls.groovy.api.TreeParser;
 import com.palantir.ls.groovy.util.DefaultDiagnosticBuilder;
 import com.palantir.ls.groovy.util.Ranges;
 import com.palantir.ls.groovy.util.WorkspaceUriSupplier;
@@ -77,48 +76,52 @@ public final class GroovycWrapperTest {
     public TemporaryFolder root = new TemporaryFolder();
 
     private GroovycWrapper createGroovycWrapper() {
-        CompilationUnitProvider unitProvider = new DefaultCompilationUnitProvider();
-        return new GroovycWrapper(
-                GroovyWorkspaceCompiler.of(unitProvider, output.getRoot().toPath(), root.getRoot().toPath(),
-                        changedOutput.getRoot().toPath()),
-                GroovyTreeParser.of(unitProvider, root.getRoot().toPath(),
-                        new WorkspaceUriSupplier(root.getRoot().toPath(), changedOutput.getRoot().toPath())));
+        GroovyWorkspaceCompiler compiler =
+                GroovyWorkspaceCompiler.of(output.getRoot().toPath(), root.getRoot().toPath(),
+                        changedOutput.getRoot().toPath());
+        TreeParser parser =
+                GroovyTreeParser.of(compiler, root.getRoot().toPath(),
+                        new WorkspaceUriSupplier(root.getRoot().toPath(), changedOutput.getRoot().toPath()));
+        return new GroovycWrapper(compiler, parser);
     }
 
     @Test
     public void testTargetDirectoryNotFolder() throws IOException {
-        CompilationUnitProvider unitProvider = new DefaultCompilationUnitProvider();
         expectedException.expect(IllegalArgumentException.class);
         expectedException.expectMessage("targetDirectory must be a directory");
-        new GroovycWrapper(
-                GroovyWorkspaceCompiler.of(unitProvider, output.newFile().toPath(), root.getRoot().toPath(),
-                        changedOutput.getRoot().toPath()),
-                GroovyTreeParser.of(unitProvider, root.getRoot().toPath(),
-                        new WorkspaceUriSupplier(root.getRoot().toPath(), changedOutput.getRoot().toPath())));
+        GroovyWorkspaceCompiler compiler =
+                GroovyWorkspaceCompiler.of(output.newFile().toPath(), root.getRoot().toPath(),
+                        changedOutput.getRoot().toPath());
+        TreeParser parser =
+                GroovyTreeParser.of(compiler, root.getRoot().toPath(),
+                        new WorkspaceUriSupplier(root.getRoot().toPath(), changedOutput.getRoot().toPath()));
+        new GroovycWrapper(compiler, parser);
     }
 
     @Test
     public void testWorkspaceRootNotFolder() throws IOException {
-        CompilationUnitProvider unitProvider = new DefaultCompilationUnitProvider();
         expectedException.expect(IllegalArgumentException.class);
         expectedException.expectMessage("workspaceRoot must be a directory");
-        new GroovycWrapper(
-                GroovyWorkspaceCompiler.of(unitProvider, output.getRoot().toPath(), root.newFile().toPath(),
-                        changedOutput.getRoot().toPath()),
-                GroovyTreeParser.of(unitProvider, root.newFile().toPath(),
-                        new WorkspaceUriSupplier(root.getRoot().toPath(), changedOutput.getRoot().toPath())));
+        GroovyWorkspaceCompiler compiler =
+                GroovyWorkspaceCompiler.of(output.getRoot().toPath(), root.newFile().toPath(),
+                        changedOutput.getRoot().toPath());
+        TreeParser parser =
+                GroovyTreeParser.of(compiler, root.getRoot().toPath(),
+                        new WorkspaceUriSupplier(root.getRoot().toPath(), changedOutput.getRoot().toPath()));
+        new GroovycWrapper(compiler, parser);
     }
 
     @Test
     public void testChangedFilesRootNotFolder() throws IOException {
-        CompilationUnitProvider unitProvider = new DefaultCompilationUnitProvider();
         expectedException.expect(IllegalArgumentException.class);
         expectedException.expectMessage("changedFilesRoot must be a directory");
-        new GroovycWrapper(
-                GroovyWorkspaceCompiler.of(unitProvider, output.getRoot().toPath(), root.getRoot().toPath(),
-                        changedOutput.newFile().toPath()),
-                GroovyTreeParser.of(unitProvider, root.getRoot().toPath(),
-                        new WorkspaceUriSupplier(root.getRoot().toPath(), changedOutput.getRoot().toPath())));
+        GroovyWorkspaceCompiler compiler =
+                GroovyWorkspaceCompiler.of(output.getRoot().toPath(), root.getRoot().toPath(),
+                        changedOutput.newFile().toPath());
+        TreeParser parser =
+                GroovyTreeParser.of(compiler, root.getRoot().toPath(),
+                        new WorkspaceUriSupplier(root.getRoot().toPath(), changedOutput.getRoot().toPath()));
+        new GroovycWrapper(compiler, parser);
     }
 
     @Test

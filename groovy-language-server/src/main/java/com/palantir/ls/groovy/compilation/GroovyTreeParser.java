@@ -20,9 +20,9 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.base.Optional;
+import com.google.common.base.Supplier;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import com.palantir.ls.groovy.CompilationUnitProvider;
 import com.palantir.ls.groovy.api.TreeParser;
 import com.palantir.ls.groovy.util.Ranges;
 import com.palantir.ls.groovy.util.UriSupplier;
@@ -53,6 +53,7 @@ import org.codehaus.groovy.ast.PropertyNode;
 import org.codehaus.groovy.ast.Variable;
 import org.codehaus.groovy.ast.expr.VariableExpression;
 import org.codehaus.groovy.ast.stmt.BlockStatement;
+import org.codehaus.groovy.control.CompilationUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -68,14 +69,14 @@ public final class GroovyTreeParser implements TreeParser {
     // Maps from type -> set of references of this type
     private Map<String, Set<SymbolInformation>> typeReferences = Maps.newHashMap();
 
-    private final CompilationUnitProvider unitProvider;
+    private final Supplier<CompilationUnit> unitSupplier;
     private final Path workspaceRoot;
     private final UriSupplier workspaceUriSupplier;
 
 
-    private GroovyTreeParser(CompilationUnitProvider unitProvider, Path workspaceRoot,
+    private GroovyTreeParser(Supplier<CompilationUnit> unitSupplier, Path workspaceRoot,
             UriSupplier workspaceUriSupplier) {
-        this.unitProvider = unitProvider;
+        this.unitSupplier = unitSupplier;
         this.workspaceRoot = workspaceRoot;
         this.workspaceUriSupplier = workspaceUriSupplier;
     }
@@ -83,19 +84,19 @@ public final class GroovyTreeParser implements TreeParser {
     /**
      * Creates a new instance of GroovyTreeParser.
      *
-     * @param unitProvider the compilation unit provider in which to store our current unit
+     * @param unitSupplier the supplier of compilation unit to be parsed
      * @param workspaceRoot the directory to compile
      * @param workspaceUriSupplier the provider use to resolve uris
      * @return the newly created GroovyTreeParser
      */
-    public static GroovyTreeParser of(CompilationUnitProvider unitProvider, Path workspaceRoot,
+    public static GroovyTreeParser of(Supplier<CompilationUnit> unitSupplier, Path workspaceRoot,
             UriSupplier workspaceUriSupplier) {
-        checkNotNull(unitProvider, "unitProvider must not be null");
+        checkNotNull(unitSupplier, "unitSupplier must not be null");
         checkNotNull(workspaceRoot, "workspaceRoot must not be null");
         checkNotNull(workspaceUriSupplier, "workspaceUriSupplier must not be null");
         checkArgument(workspaceRoot.toFile().isDirectory(), "workspaceRoot must be a directory");
 
-        return new GroovyTreeParser(unitProvider, workspaceRoot, workspaceUriSupplier);
+        return new GroovyTreeParser(unitSupplier, workspaceRoot, workspaceUriSupplier);
     }
 
     @Override
@@ -103,7 +104,7 @@ public final class GroovyTreeParser implements TreeParser {
         Map<URI, Set<SymbolInformation>> newFileSymbols = Maps.newHashMap();
         Map<String, Set<SymbolInformation>> newTypeReferences = Maps.newHashMap();
 
-        unitProvider.get().iterator().forEachRemaining(sourceUnit -> {
+        unitSupplier.get().iterator().forEachRemaining(sourceUnit -> {
             Set<SymbolInformation> symbols = Sets.newHashSet();
             URI sourceUri = workspaceUriSupplier.get(sourceUnit.getSource().getURI());
             // This will iterate through all classes, interfaces and enums, including inner ones.
