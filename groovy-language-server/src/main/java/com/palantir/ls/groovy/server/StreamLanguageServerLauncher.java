@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package com.palantir.ls.server;
+package com.palantir.ls.groovy.server;
 
-import com.palantir.ls.util.LoggerMessageTracer;
+import com.palantir.ls.groovy.util.LoggerMessageTracer;
 import io.typefox.lsapi.services.LanguageServer;
 import io.typefox.lsapi.services.json.MessageJsonHandler;
 import io.typefox.lsapi.services.json.StreamMessageReader;

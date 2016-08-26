@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-package com.palantir.ls.groovy;
+package com.palantir.ls.groovy.util;
 
-/**
- * Holds and provides a {@link CompilerWrapper}.
- */
-public interface CompilerWrapperProvider {
+public final class GroovyConstants {
 
-    void set(CompilerWrapper compilerWrapper);
+    private GroovyConstants() {
+        // constant class
+    }
 
-    CompilerWrapper get();
+    public static final String GROOVY_LANGUAGE_NAME = "groovy";
+    public static final String GROOVY_LANGUAGE_EXTENSION = "groovy";
 
 }

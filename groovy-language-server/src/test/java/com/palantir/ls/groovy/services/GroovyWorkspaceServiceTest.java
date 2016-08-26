@@ -14,15 +14,17 @@
  * limitations under the License.
  */
 
-package com.palantir.ls.groovy;
+package com.palantir.ls.groovy.services;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.Sets;
-import com.palantir.ls.util.DefaultDiagnosticBuilder;
-import com.palantir.ls.util.Ranges;
+import com.palantir.ls.groovy.LanguageServerState;
+import com.palantir.ls.groovy.api.CompilerWrapper;
+import com.palantir.ls.groovy.util.DefaultDiagnosticBuilder;
+import com.palantir.ls.groovy.util.Ranges;
 import io.typefox.lsapi.Diagnostic;
 import io.typefox.lsapi.DiagnosticSeverity;
 import io.typefox.lsapi.FileChangeType;
@@ -58,9 +60,7 @@ public final class GroovyWorkspaceServiceTest {
     @Mock
     private CompilerWrapper compilerWrapper;
     @Mock
-    private CompilerWrapperProvider provider;
-    @Mock
-    private LanguageServerConfig config;
+    private LanguageServerState state;
 
     @Before
     public void setup() throws IOException {
@@ -103,9 +103,10 @@ public final class GroovyWorkspaceServiceTest {
         when(compilerWrapper.getWorkspaceRoot()).thenReturn(workspace.getRoot().toPath());
         when(compilerWrapper.compile()).thenReturn(diagnostics);
         when(compilerWrapper.getFilteredSymbols(Mockito.any())).thenReturn(allReferencesReturned);
-        when(provider.get()).thenReturn(compilerWrapper);
 
-        service = new GroovyWorkspaceService(provider, config);
+        when(state.getCompilerWrapper()).thenReturn(compilerWrapper);
+
+        service = new GroovyWorkspaceService(state);
     }
 
     @Test
@@ -120,7 +121,7 @@ public final class GroovyWorkspaceServiceTest {
         service.didChangeWatchedFiles(new DidChangeWatchedFilesParamsBuilder().change("uri", FileChangeType.Deleted)
                 .change("uri", FileChangeType.Created).change("uri", FileChangeType.Changed).build());
         // assert diagnostics were published
-        Mockito.verify(config, Mockito.times(1)).publishDiagnostics(workspace.getRoot().toPath(), expectedDiagnostics);
+        Mockito.verify(state, Mockito.times(1)).publishDiagnostics(workspace.getRoot().toPath(), expectedDiagnostics);
     }
 
 }

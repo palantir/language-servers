@@ -17,6 +17,7 @@
 package com.palantir.ls.groovy;
 
 import com.google.common.collect.Maps;
+import com.palantir.ls.groovy.api.CompilerWrapper;
 import io.typefox.lsapi.Diagnostic;
 import io.typefox.lsapi.MessageParams;
 import io.typefox.lsapi.PublishDiagnosticsParams;
@@ -29,13 +30,24 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 
-public final class GroovyLanguageServerConfig implements LanguageServerConfig {
+public final class GroovyLanguageServerState implements LanguageServerState {
 
+    private CompilerWrapper compilerWrapper = null;
     private Consumer<MessageParams> showMessage = m -> { };
     private Consumer<ShowMessageRequestParams> showMessageRequest = m -> { };
     private Consumer<MessageParams> logMessage = m -> { };
     private Consumer<Object> telemetryEvent = e -> { };
     private Consumer<PublishDiagnosticsParams> publishDiagnostics = p -> { };
+
+    @Override
+    public CompilerWrapper getCompilerWrapper() {
+        return compilerWrapper;
+    }
+
+    @Override
+    public void setCompilerWrapper(CompilerWrapper compilerWrapper) {
+        this.compilerWrapper = compilerWrapper;
+    }
 
     @Override
     public Consumer<MessageParams> getShowMessage() {

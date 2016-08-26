@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-package com.palantir.ls.groovy;
+package com.palantir.ls.groovy.services;
 
+import com.palantir.ls.groovy.LanguageServerState;
 import io.typefox.lsapi.MessageParams;
 import io.typefox.lsapi.ShowMessageRequestParams;
 import io.typefox.lsapi.services.WindowService;
@@ -23,25 +24,25 @@ import java.util.function.Consumer;
 
 public final class GroovyWindowService implements WindowService {
 
-    private final LanguageServerConfig config;
+    private final LanguageServerState state;
 
-    public GroovyWindowService(LanguageServerConfig config) {
-        this.config = config;
+    public GroovyWindowService(LanguageServerState state) {
+        this.state = state;
     }
 
     @Override
     public void onShowMessage(Consumer<MessageParams> callback) {
-        config.setShowMessage(callback);
+        state.setShowMessage(callback);
     }
 
     @Override
     public void onShowMessageRequest(Consumer<ShowMessageRequestParams> callback) {
-        config.setShowMessageRequest(callback);
+        state.setShowMessageRequest(callback);
     }
 
     @Override
     public void onLogMessage(Consumer<MessageParams> callback) {
-        config.setLogMessage(callback);
+        state.setLogMessage(callback);
     }
 
 }

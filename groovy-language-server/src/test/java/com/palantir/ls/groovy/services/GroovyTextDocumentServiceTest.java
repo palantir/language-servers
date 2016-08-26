@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.palantir.ls.groovy;
+package com.palantir.ls.groovy.services;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
@@ -24,8 +24,11 @@ import static org.mockito.Mockito.when;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import com.palantir.ls.util.DefaultDiagnosticBuilder;
-import com.palantir.ls.util.Ranges;
+import com.palantir.ls.groovy.GroovyLanguageServerState;
+import com.palantir.ls.groovy.LanguageServerState;
+import com.palantir.ls.groovy.api.CompilerWrapper;
+import com.palantir.ls.groovy.util.DefaultDiagnosticBuilder;
+import com.palantir.ls.groovy.util.Ranges;
 import io.typefox.lsapi.CompletionItemKind;
 import io.typefox.lsapi.CompletionList;
 import io.typefox.lsapi.Diagnostic;
@@ -89,8 +92,6 @@ public final class GroovyTextDocumentServiceTest {
 
     @Mock
     private CompilerWrapper compilerWrapper;
-    @Mock
-    private CompilerWrapperProvider provider;
 
     @Before
     public void setup() throws IOException {
@@ -142,9 +143,10 @@ public final class GroovyTextDocumentServiceTest {
         when(compilerWrapper.getFileSymbols()).thenReturn(symbolsMap);
         when(compilerWrapper.findReferences(Mockito.any())).thenReturn(allReferencesReturned);
 
-        when(provider.get()).thenReturn(compilerWrapper);
+        LanguageServerState state = new GroovyLanguageServerState();
+        state.setCompilerWrapper(compilerWrapper);
 
-        service = new GroovyTextDocumentService(provider, new GroovyLanguageServerConfig());
+        service = new GroovyTextDocumentService(state);
 
         Consumer<PublishDiagnosticsParams> callback = p -> {
             publishDiagnostics(p);

@@ -14,15 +14,12 @@
  * limitations under the License.
  */
 
-package com.palantir.ls.util;
+package com.palantir.ls.groovy.util;
 
-public final class GroovyConstants {
+import java.net.URI;
 
-    private GroovyConstants() {
-        // constant class
-    }
+public interface UriSupplier {
 
-    public static final String GROOVY_LANGUAGE_NAME = "groovy";
-    public static final String GROOVY_LANGUAGE_EXTENSION = "groovy";
+    URI get(URI uri);
 
 }
