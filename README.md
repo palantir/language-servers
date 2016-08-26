@@ -1,6 +1,6 @@
 # groovy-language-server
 
-[![CircleCI](https://circleci.com/gh/palantir/groovy-language-server.svg?style=svg)](https://circleci.com/gh/palantir/groovy-language-server)
+[![CircleCI](https://circleci.com/gh/palantir/groovy-language-server.svg?style=svg)](https://circleci.com/gh/palantir/groovy-language-server) [ ![Download](https://api.bintray.com/packages/palantir/releases/groovy-language-server/images/download.svg) ](https://bintray.com/palantir/releases/groovy-language-server/_latestVersion)
 
 A groovy implementation of the [Microsoft Language Server Protocol](https://github.com/Microsoft/language-server-protocol/blob/master/protocol.md)
 
