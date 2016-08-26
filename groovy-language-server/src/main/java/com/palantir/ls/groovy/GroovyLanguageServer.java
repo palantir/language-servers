@@ -68,7 +68,9 @@ public final class GroovyLanguageServer implements LanguageServer {
 
     @Override
     public CompletableFuture<InitializeResult> initialize(InitializeParams params) {
+        logger.debug("Initializing Groovy Language Server");
         workspaceRoot = Uris.getAbsolutePath(params.getRootPath());
+        logger.debug("Resolve workspace root from '{}' to '{}'", params.getRootPath(), workspaceRoot);
 
         ServerCapabilities capabilities = new ServerCapabilitiesBuilder()
                 .textDocumentSync(TextDocumentSyncKind.Incremental)
