@@ -29,8 +29,12 @@ import java.nio.file.Paths;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class GroovyLanguageServerState implements LanguageServerState {
+
+    private static final Logger logger = LoggerFactory.getLogger(GroovyLanguageServerState.class);
 
     private CompilerWrapper compilerWrapper = null;
     private Consumer<MessageParams> showMessage = m -> { };
@@ -99,6 +103,7 @@ public final class GroovyLanguageServerState implements LanguageServerState {
         if (diagnostics.isEmpty()) {
             return;
         }
+        logger.debug("Publishing diagnostics:\n{}", diagnostics);
         Map<URI, PublishDiagnosticsParamsBuilder> diagnosticsByFile = Maps.newHashMap();
 
         diagnostics.forEach(diagnostic -> {
