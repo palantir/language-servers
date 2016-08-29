@@ -16,6 +16,10 @@
 
 package com.palantir.ls.groovy.util;
 
+import com.google.common.collect.Sets;
+import java.util.Collections;
+import java.util.Set;
+
 public final class GroovyConstants {
 
     private GroovyConstants() {
@@ -25,5 +29,7 @@ public final class GroovyConstants {
     public static final String GROOVY_LANGUAGE_NAME = "groovy";
     public static final String GROOVY_LANGUAGE_EXTENSION = "groovy";
     public static final String JAVA_LANGUAGE_EXTENSION = "java";
+    public static final Set<String> GROOVY_ALLOWED_EXTENSIONS =
+            Collections.unmodifiableSet(Sets.newHashSet(GROOVY_LANGUAGE_EXTENSION, JAVA_LANGUAGE_EXTENSION));
 
 }

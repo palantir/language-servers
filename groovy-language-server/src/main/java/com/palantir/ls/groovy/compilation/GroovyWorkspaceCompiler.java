@@ -201,13 +201,11 @@ public final class GroovyWorkspaceCompiler implements WorkspaceCompiler, Supplie
     }
 
     private void addAllSourcesToCompilationUnit() {
-        Set<String> allowedExtensions =
-                Sets.newHashSet(GroovyConstants.GROOVY_LANGUAGE_EXTENSION, GroovyConstants.JAVA_LANGUAGE_EXTENSION);
         // We don't include the files that have a corresponding SourceWriter since that means they will be replaced.
         for (File file : Files.fileTreeTraverser().preOrderTraversal(workspaceRoot.toFile())) {
             String fileExtension = Files.getFileExtension(file.getAbsolutePath());
             if (!originalSourceToChangedSource.containsKey(file.toURI()) && file.isFile()
-                    && allowedExtensions.contains(fileExtension)) {
+                    && GroovyConstants.GROOVY_ALLOWED_EXTENSIONS.contains(fileExtension)) {
                 unit.addSource(file);
             }
         }
