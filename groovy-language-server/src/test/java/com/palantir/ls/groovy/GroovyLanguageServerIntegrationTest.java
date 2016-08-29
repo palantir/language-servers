@@ -30,6 +30,7 @@ import com.palantir.ls.groovy.util.Ranges;
 import io.typefox.lsapi.Diagnostic;
 import io.typefox.lsapi.DiagnosticSeverity;
 import io.typefox.lsapi.InitializeResult;
+import io.typefox.lsapi.LanguageDescription;
 import io.typefox.lsapi.Message;
 import io.typefox.lsapi.ServerCapabilities;
 import io.typefox.lsapi.SymbolInformation;
@@ -346,14 +347,13 @@ public final class GroovyLanguageServerIntegrationTest {
                         .triggerCharacter(".")
                         .build())
                 .build();
-        assertEquals(Sets.newHashSet(
+        assertEquals(expectedCapabilities, result.getCapabilities());
+        Set<LanguageDescription> expectedSupportedLanguages = Sets.newHashSet(
                 new LanguageDescriptionBuilder()
-                        .languageId(GroovyConstants.GROOVY_LANGUAGE_NAME)
-                        .fileExtension(GroovyConstants.GROOVY_LANGUAGE_EXTENSION)
-                        .build()),
-                Sets.newHashSet(result.getSupportedLanguages()));
-        ServerCapabilities capabilities = result.getCapabilities();
-        assertEquals(expectedCapabilities, capabilities);
+                .languageId(GroovyConstants.GROOVY_LANGUAGE_NAME)
+                .fileExtension(GroovyConstants.GROOVY_LANGUAGE_EXTENSION)
+                .build());
+        assertEquals(expectedSupportedLanguages, Sets.newHashSet(result.getSupportedLanguages()));
     }
 
     private static File addFileToFolder(File parent, String filename, String contents) throws IOException {
