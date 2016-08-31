@@ -28,7 +28,9 @@ import com.palantir.ls.groovy.util.Ranges;
 import io.typefox.lsapi.Diagnostic;
 import io.typefox.lsapi.DiagnosticSeverity;
 import io.typefox.lsapi.FileChangeType;
+import io.typefox.lsapi.PublishDiagnosticsParams;
 import io.typefox.lsapi.builders.FileEventBuilder;
+import io.typefox.lsapi.builders.PublishDiagnosticsParamsBuilder;
 import io.typefox.lsapi.builders.TextDocumentContentChangeEventBuilder;
 import java.io.File;
 import java.io.IOException;
@@ -171,13 +173,16 @@ public final class GroovyWorkspaceCompilerTest {
                 + "}");
 
         GroovyWorkspaceCompiler compiler = createGroovyWorkspaceCompiler();
-        Set<Diagnostic> diagnostics = compiler.compile();
+        Set<PublishDiagnosticsParams> diagnostics = compiler.compile();
 
-        assertEquals(Sets.newHashSet(new DefaultDiagnosticBuilder(
-                "unable to resolve class Foo \n @ line 1, column 20.", DiagnosticSeverity.Error)
-                        .range(Ranges.createRange(0, 19, 0, 26))
-                        .source(test.getAbsolutePath())
-                        .build()),
+        assertEquals(Sets.newHashSet(new PublishDiagnosticsParamsBuilder()
+                .uri(test.toPath().toUri().toString())
+                .diagnostic(new DefaultDiagnosticBuilder(
+                        "unable to resolve class Foo \n @ line 1, column 20.", DiagnosticSeverity.Error)
+                                .range(Ranges.createRange(0, 19, 0, 26))
+                                .source(test.getAbsolutePath())
+                                .build())
+                .build()),
                 diagnostics);
     }
 
@@ -239,19 +244,29 @@ public final class GroovyWorkspaceCompilerTest {
         addFileToFolder(root.getRoot(), "test4.groovy", "class ExceptionNew {}\n");
 
         GroovyWorkspaceCompiler compiler = createGroovyWorkspaceCompiler();
-        Set<Diagnostic> diagnostics = compiler.compile();
+        Set<PublishDiagnosticsParams> diagnostics = compiler.compile();
 
-        Set<Diagnostic> expectedDiagnostics = Sets.newHashSet(
-                new DefaultDiagnosticBuilder("unable to resolve class ExceptionNew1 \n @ line 7, column 18.",
-                        DiagnosticSeverity.Error)
-                                .range(Ranges.createRange(6, 17, 6, 72))
-                                .source(test1.getAbsolutePath())
-                                .build(),
-                new DefaultDiagnosticBuilder("unable to resolve class ExceptionNew222 \n @ line 7, column 18.",
-                        DiagnosticSeverity.Error)
-                                .range(Ranges.createRange(6, 17, 6, 74))
-                                .source(test2.getAbsolutePath())
-                                .build());
+        Set<PublishDiagnosticsParams> expectedDiagnostics = Sets.newHashSet(
+                new PublishDiagnosticsParamsBuilder()
+                        .uri(test1.toPath().toUri().toString())
+                        .diagnostic(
+                                new DefaultDiagnosticBuilder(
+                                        "unable to resolve class ExceptionNew1 \n @ line 7, column 18.",
+                                        DiagnosticSeverity.Error)
+                                                .range(Ranges.createRange(6, 17, 6, 72))
+                                                .source(test1.getAbsolutePath())
+                                                .build())
+                        .build(),
+                new PublishDiagnosticsParamsBuilder()
+                        .uri(test2.toPath().toUri().toString())
+                        .diagnostic(
+                                new DefaultDiagnosticBuilder(
+                                        "unable to resolve class ExceptionNew222 \n @ line 7, column 18.",
+                                        DiagnosticSeverity.Error)
+                                                .range(Ranges.createRange(6, 17, 6, 74))
+                                                .source(test2.getAbsolutePath())
+                                                .build())
+                        .build());
         assertEquals(expectedDiagnostics, diagnostics);
     }
 

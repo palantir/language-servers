@@ -161,8 +161,7 @@ public final class GroovyTextDocumentService implements TextDocumentService {
     public void didOpen(DidOpenTextDocumentParams params) {
         URI uri = Uris.resolveToRoot(state.getCompilerWrapper().getWorkspaceRoot(), params.getTextDocument().getUri());
         assertFileExists(uri);
-        state.publishDiagnostics(state.getCompilerWrapper().getWorkspaceRoot(),
-                state.getCompilerWrapper().compile());
+        state.publishDiagnostics(state.getCompilerWrapper().compile());
     }
 
     @Override
@@ -174,8 +173,7 @@ public final class GroovyTextDocumentService implements TextDocumentService {
                     String.format("Calling didChange with no changes on uri '%s'", uri.toString()));
         }
         state.getCompilerWrapper().handleFileChanged(uri, Lists.newArrayList(params.getContentChanges()));
-        state.publishDiagnostics(state.getCompilerWrapper().getWorkspaceRoot(),
-                state.getCompilerWrapper().compile());
+        state.publishDiagnostics(state.getCompilerWrapper().compile());
     }
 
     @Override
@@ -183,8 +181,7 @@ public final class GroovyTextDocumentService implements TextDocumentService {
         URI uri = Uris.resolveToRoot(state.getCompilerWrapper().getWorkspaceRoot(), params.getTextDocument().getUri());
         assertFileExists(uri);
         state.getCompilerWrapper().handleFileClosed(uri);
-        state.publishDiagnostics(state.getCompilerWrapper().getWorkspaceRoot(),
-                state.getCompilerWrapper().compile());
+        state.publishDiagnostics(state.getCompilerWrapper().compile());
     }
 
     @Override
@@ -192,8 +189,7 @@ public final class GroovyTextDocumentService implements TextDocumentService {
         URI uri = Uris.resolveToRoot(state.getCompilerWrapper().getWorkspaceRoot(), params.getTextDocument().getUri());
         assertFileExists(uri);
         state.getCompilerWrapper().handleFileSaved(uri);
-        state.publishDiagnostics(state.getCompilerWrapper().getWorkspaceRoot(),
-                state.getCompilerWrapper().compile());
+        state.publishDiagnostics(state.getCompilerWrapper().compile());
     }
 
     @Override

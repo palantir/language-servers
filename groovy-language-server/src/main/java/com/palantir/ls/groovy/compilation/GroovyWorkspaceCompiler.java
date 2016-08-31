@@ -33,8 +33,10 @@ import com.palantir.ls.groovy.util.Uris;
 import io.typefox.lsapi.Diagnostic;
 import io.typefox.lsapi.DiagnosticSeverity;
 import io.typefox.lsapi.FileEvent;
+import io.typefox.lsapi.PublishDiagnosticsParams;
 import io.typefox.lsapi.Range;
 import io.typefox.lsapi.TextDocumentContentChangeEvent;
+import io.typefox.lsapi.builders.PublishDiagnosticsParamsBuilder;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -45,6 +47,7 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.commons.io.FileUtils;
 import org.codehaus.groovy.control.CompilationUnit;
 import org.codehaus.groovy.control.CompilerConfiguration;
@@ -114,7 +117,7 @@ public final class GroovyWorkspaceCompiler implements WorkspaceCompiler, Supplie
 
     @Override
 
-    public Set<Diagnostic> compile() {
+    public Set<PublishDiagnosticsParams> compile() {
         try {
             unit.compile();
         } catch (MultipleCompilationErrorsException e) {
@@ -230,15 +233,18 @@ public final class GroovyWorkspaceCompiler implements WorkspaceCompiler, Supplie
         }
     }
 
-    private Set<Diagnostic> parseErrors(ErrorCollector collector) {
-        Set<Diagnostic> diagnostics = Sets.newHashSet();
+    private Set<PublishDiagnosticsParams> parseErrors(ErrorCollector collector) {
+        Map<URI, PublishDiagnosticsParamsBuilder> diagnosticsByFile = Maps.newHashMap();
+
         for (int i = 0; i < collector.getWarningCount(); i++) {
             WarningMessage message = collector.getWarning(i);
-
-            diagnostics.add(new DefaultDiagnosticBuilder(message.getMessage(), DiagnosticSeverity.Warning).build());
+            diagnosticsByFile.computeIfAbsent(workspaceRoot.toUri(),
+                    (value) -> new PublishDiagnosticsParamsBuilder().uri(workspaceRoot.toUri().toString()))
+                    .diagnostic(new DefaultDiagnosticBuilder(message.getMessage(), DiagnosticSeverity.Warning).build());
         }
         for (int i = 0; i < collector.getErrorCount(); i++) {
             Message message = collector.getError(i);
+            URI uri;
             Diagnostic diagnostic;
             if (message instanceof SyntaxErrorMessage) {
                 SyntaxErrorMessage syntaxErrorMessage = (SyntaxErrorMessage) message;
@@ -247,7 +253,7 @@ public final class GroovyWorkspaceCompiler implements WorkspaceCompiler, Supplie
                 Range range =
                         Ranges.createZeroBasedRange(cause.getStartLine(), cause.getStartColumn(), cause.getEndLine(),
                                 cause.getEndColumn());
-
+                uri = Paths.get(cause.getSourceLocator()).toUri();
                 diagnostic = new DefaultDiagnosticBuilder(cause.getMessage(), DiagnosticSeverity.Error)
                         .range(range)
                         .source(cause.getSourceLocator())
@@ -256,11 +262,13 @@ public final class GroovyWorkspaceCompiler implements WorkspaceCompiler, Supplie
                 StringWriter data = new StringWriter();
                 PrintWriter writer = new PrintWriter(data);
                 message.write(writer);
+                uri = workspaceRoot.toUri();
                 diagnostic = new DefaultDiagnosticBuilder(data.toString(), DiagnosticSeverity.Error).build();
             }
-            diagnostics.add(diagnostic);
+            diagnosticsByFile.computeIfAbsent(uri, (value) -> new PublishDiagnosticsParamsBuilder().uri(uri.toString()))
+                    .diagnostic(diagnostic);
         }
-        return diagnostics;
+        return diagnosticsByFile.values().stream().map(builder -> builder.build()).collect(Collectors.toSet());
     }
 
 }

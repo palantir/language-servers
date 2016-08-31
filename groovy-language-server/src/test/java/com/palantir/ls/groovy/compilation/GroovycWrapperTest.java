@@ -23,6 +23,7 @@ import com.palantir.ls.groovy.api.TreeParser;
 import com.palantir.ls.groovy.api.WorkspaceCompiler;
 import com.palantir.ls.groovy.util.DefaultDiagnosticBuilder;
 import io.typefox.lsapi.DiagnosticSeverity;
+import io.typefox.lsapi.builders.PublishDiagnosticsParamsBuilder;
 import java.io.IOException;
 import org.junit.Before;
 import org.junit.Test;
@@ -55,8 +56,11 @@ public final class GroovycWrapperTest {
 
     @Test
     public void testCompile_withDiagnostics() throws IOException {
-        when(compiler.compile())
-                .thenReturn(Sets.newHashSet(new DefaultDiagnosticBuilder("name", DiagnosticSeverity.Error).build()));
+        when(compiler.compile()).thenReturn(Sets.newHashSet(
+                new PublishDiagnosticsParamsBuilder()
+                        .uri("uri")
+                        .diagnostic(new DefaultDiagnosticBuilder("name", DiagnosticSeverity.Error).build())
+                        .build()));
         wrapper.compile();
         // assert parser wasn't called
         Mockito.verify(parser, Mockito.never()).parseAllSymbols();
