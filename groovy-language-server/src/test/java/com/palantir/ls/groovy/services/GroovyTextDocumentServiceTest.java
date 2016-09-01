@@ -40,7 +40,6 @@ import io.typefox.lsapi.SymbolKind;
 import io.typefox.lsapi.TextDocumentIdentifier;
 import io.typefox.lsapi.TextDocumentItem;
 import io.typefox.lsapi.TextDocumentPositionParams;
-import io.typefox.lsapi.VersionedTextDocumentIdentifier;
 import io.typefox.lsapi.builders.CompletionItemBuilder;
 import io.typefox.lsapi.builders.CompletionListBuilder;
 import io.typefox.lsapi.builders.DidChangeTextDocumentParamsBuilder;
@@ -139,7 +138,7 @@ public final class GroovyTextDocumentServiceTest {
                         .range(Ranges.UNDEFINED_RANGE)
                         .build())
                 .build());
-        when(compilerWrapper.getWorkspaceRoot()).thenReturn(workspace.getRoot().toPath());
+        when(compilerWrapper.getWorkspaceRoot()).thenReturn(workspace.getRoot().toPath().toUri());
         when(compilerWrapper.compile()).thenReturn(expectedDiagnostics);
         when(compilerWrapper.getFileSymbols()).thenReturn(symbolsMap);
         when(compilerWrapper.findReferences(Mockito.any())).thenReturn(allReferencesReturned);
@@ -178,7 +177,7 @@ public final class GroovyTextDocumentServiceTest {
     public void testDidChange() {
         service.didChange(new DidChangeTextDocumentParamsBuilder()
                 .contentChange(Ranges.createRange(0, 0, 1, 1), 3, "Hello")
-                .textDocument((VersionedTextDocumentIdentifier) new VersionedTextDocumentIdentifierBuilder()
+                .textDocument(new VersionedTextDocumentIdentifierBuilder()
                         .version(0)
                         .uri(filePath.toAbsolutePath().toString())
                         .build())
@@ -194,7 +193,7 @@ public final class GroovyTextDocumentServiceTest {
         expectedException.expectMessage(
                 String.format("Calling didChange with no changes on uri '%s'", filePath.toUri()));
         service.didChange(new DidChangeTextDocumentParamsBuilder()
-                .textDocument((VersionedTextDocumentIdentifier) new VersionedTextDocumentIdentifierBuilder()
+                .textDocument(new VersionedTextDocumentIdentifierBuilder()
                         .version(0)
                         .uri(filePath.toAbsolutePath().toString())
                         .build())
@@ -207,7 +206,7 @@ public final class GroovyTextDocumentServiceTest {
         expectedException
                 .expectMessage(String.format("Uri '%s' does not exist", filePath.toUri() + "boo"));
         service.didChange(new DidChangeTextDocumentParamsBuilder()
-                .textDocument((VersionedTextDocumentIdentifier) new VersionedTextDocumentIdentifierBuilder()
+                .textDocument(new VersionedTextDocumentIdentifierBuilder()
                         .version(0)
                         .uri(filePath.toAbsolutePath().toString() + "boo")
                         .build())
@@ -291,8 +290,7 @@ public final class GroovyTextDocumentServiceTest {
 
     @Test
     public void testReferences() throws InterruptedException, ExecutionException {
-        // HACK, blocked on https://github.com/TypeFox/ls-api/issues/39
-        ReferenceParams params = (ReferenceParams) new ReferenceParamsBuilder()
+        ReferenceParams params = new ReferenceParamsBuilder()
                 .context(false)
                 .position(5, 5)
                 .textDocument("uri")

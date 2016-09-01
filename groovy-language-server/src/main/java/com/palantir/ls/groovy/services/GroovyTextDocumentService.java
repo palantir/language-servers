@@ -56,6 +56,8 @@ import io.typefox.lsapi.impl.CompletionListImpl;
 import io.typefox.lsapi.services.TextDocumentService;
 import java.io.File;
 import java.net.URI;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -70,11 +72,15 @@ public final class GroovyTextDocumentService implements TextDocumentService {
         this.state = state;
     }
 
+    private Path getWorkspacePath() {
+        return Paths.get(state.getCompilerWrapper().getWorkspaceRoot());
+    }
+
     @Override
     public CompletableFuture<CompletionList> completion(TextDocumentPositionParams position) {
         return CompletableFuture.completedFuture(
-                createCompletionListFromSymbols(state.getCompilerWrapper().getFileSymbols().get(Uris.resolveToRoot(
-                        state.getCompilerWrapper().getWorkspaceRoot(), position.getTextDocument().getUri()))));
+                createCompletionListFromSymbols(state.getCompilerWrapper().getFileSymbols()
+                        .get(Uris.resolveToRoot(getWorkspacePath(), position.getTextDocument().getUri()))));
     }
 
     @Override
@@ -113,7 +119,7 @@ public final class GroovyTextDocumentService implements TextDocumentService {
 
     @Override
     public CompletableFuture<List<? extends SymbolInformation>> documentSymbol(DocumentSymbolParams params) {
-        URI uri = Uris.resolveToRoot(state.getCompilerWrapper().getWorkspaceRoot(), params.getTextDocument().getUri());
+        URI uri = Uris.resolveToRoot(getWorkspacePath(), params.getTextDocument().getUri());
         assertFileExists(uri);
         List<SymbolInformation> symbols =
                 Optional.fromNullable(
@@ -159,14 +165,14 @@ public final class GroovyTextDocumentService implements TextDocumentService {
 
     @Override
     public void didOpen(DidOpenTextDocumentParams params) {
-        URI uri = Uris.resolveToRoot(state.getCompilerWrapper().getWorkspaceRoot(), params.getTextDocument().getUri());
+        URI uri = Uris.resolveToRoot(getWorkspacePath(), params.getTextDocument().getUri());
         assertFileExists(uri);
         state.publishDiagnostics(state.getCompilerWrapper().compile());
     }
 
     @Override
     public void didChange(DidChangeTextDocumentParams params) {
-        URI uri = Uris.resolveToRoot(state.getCompilerWrapper().getWorkspaceRoot(), params.getTextDocument().getUri());
+        URI uri = Uris.resolveToRoot(getWorkspacePath(), params.getTextDocument().getUri());
         assertFileExists(uri);
         if (params.getContentChanges() == null || params.getContentChanges().isEmpty()) {
             throw new IllegalArgumentException(
@@ -178,7 +184,7 @@ public final class GroovyTextDocumentService implements TextDocumentService {
 
     @Override
     public void didClose(DidCloseTextDocumentParams params) {
-        URI uri = Uris.resolveToRoot(state.getCompilerWrapper().getWorkspaceRoot(), params.getTextDocument().getUri());
+        URI uri = Uris.resolveToRoot(getWorkspacePath(), params.getTextDocument().getUri());
         assertFileExists(uri);
         state.getCompilerWrapper().handleFileClosed(uri);
         state.publishDiagnostics(state.getCompilerWrapper().compile());
@@ -186,7 +192,7 @@ public final class GroovyTextDocumentService implements TextDocumentService {
 
     @Override
     public void didSave(DidSaveTextDocumentParams params) {
-        URI uri = Uris.resolveToRoot(state.getCompilerWrapper().getWorkspaceRoot(), params.getTextDocument().getUri());
+        URI uri = Uris.resolveToRoot(getWorkspacePath(), params.getTextDocument().getUri());
         assertFileExists(uri);
         state.getCompilerWrapper().handleFileSaved(uri);
         state.publishDiagnostics(state.getCompilerWrapper().compile());

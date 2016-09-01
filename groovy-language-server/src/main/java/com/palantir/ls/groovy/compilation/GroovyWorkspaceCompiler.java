@@ -114,8 +114,8 @@ public final class GroovyWorkspaceCompiler implements WorkspaceCompiler, Supplie
     }
 
     @Override
-    public Path getWorkspaceRoot() {
-        return workspaceRoot;
+    public URI getWorkspaceRoot() {
+        return workspaceRoot.toUri();
     }
 
     @Override

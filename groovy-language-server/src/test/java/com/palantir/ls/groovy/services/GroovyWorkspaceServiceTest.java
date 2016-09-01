@@ -104,7 +104,7 @@ public final class GroovyWorkspaceServiceTest {
                             .build())
                 .build());
 
-        when(compilerWrapper.getWorkspaceRoot()).thenReturn(workspace.getRoot().toPath());
+        when(compilerWrapper.getWorkspaceRoot()).thenReturn(workspace.getRoot().toPath().toUri());
         when(compilerWrapper.compile()).thenReturn(expectedDiagnostics);
         when(compilerWrapper.getFilteredSymbols(Mockito.any())).thenReturn(allReferencesReturned);
 
