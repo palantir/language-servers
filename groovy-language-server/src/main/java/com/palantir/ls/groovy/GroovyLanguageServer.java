@@ -18,9 +18,9 @@ package com.palantir.ls.groovy;
 
 import com.google.common.io.Files;
 import com.palantir.ls.groovy.api.TreeParser;
+import com.palantir.ls.groovy.compilation.DefaultCompilerWrapper;
 import com.palantir.ls.groovy.compilation.GroovyTreeParser;
 import com.palantir.ls.groovy.compilation.GroovyWorkspaceCompiler;
-import com.palantir.ls.groovy.compilation.GroovycWrapper;
 import com.palantir.ls.groovy.server.StreamLanguageServerLauncher;
 import com.palantir.ls.groovy.services.GroovyTextDocumentService;
 import com.palantir.ls.groovy.services.GroovyWindowService;
@@ -98,7 +98,7 @@ public final class GroovyLanguageServer implements LanguageServer {
         TreeParser parser =
                 GroovyTreeParser.of(compiler, workspaceRoot,
                         new WorkspaceUriSupplier(workspaceRoot, changedFilesDirectory));
-        GroovycWrapper groovycWrapper = new GroovycWrapper(compiler, parser);
+        DefaultCompilerWrapper groovycWrapper = new DefaultCompilerWrapper(compiler, parser);
         state.setCompilerWrapper(groovycWrapper);
 
         return CompletableFuture.completedFuture(result);
@@ -135,7 +135,7 @@ public final class GroovyLanguageServer implements LanguageServer {
     }
 
     public static void main(String[] args) {
-        LanguageServerState state = new GroovyLanguageServerState();
+        LanguageServerState state = new DefaultLanguageServerState();
         LanguageServer server =
                 new GroovyLanguageServer(state, new GroovyTextDocumentService(state),
                         new GroovyWorkspaceService(state), new GroovyWindowService(state));

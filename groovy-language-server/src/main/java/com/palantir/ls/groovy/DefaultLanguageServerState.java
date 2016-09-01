@@ -25,9 +25,9 @@ import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class GroovyLanguageServerState implements LanguageServerState {
+public final class DefaultLanguageServerState implements LanguageServerState {
 
-    private static final Logger logger = LoggerFactory.getLogger(GroovyLanguageServerState.class);
+    private static final Logger logger = LoggerFactory.getLogger(DefaultLanguageServerState.class);
 
     private CompilerWrapper compilerWrapper = null;
     private Consumer<MessageParams> showMessage = m -> { };

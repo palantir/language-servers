@@ -24,7 +24,7 @@ import static org.mockito.Mockito.when;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import com.palantir.ls.groovy.GroovyLanguageServerState;
+import com.palantir.ls.groovy.DefaultLanguageServerState;
 import com.palantir.ls.groovy.LanguageServerState;
 import com.palantir.ls.groovy.api.CompilerWrapper;
 import com.palantir.ls.groovy.util.DefaultDiagnosticBuilder;
@@ -144,7 +144,7 @@ public final class GroovyTextDocumentServiceTest {
         when(compilerWrapper.getFileSymbols()).thenReturn(symbolsMap);
         when(compilerWrapper.findReferences(Mockito.any())).thenReturn(allReferencesReturned);
 
-        LanguageServerState state = new GroovyLanguageServerState();
+        LanguageServerState state = new DefaultLanguageServerState();
         state.setCompilerWrapper(compilerWrapper);
 
         service = new GroovyTextDocumentService(state);

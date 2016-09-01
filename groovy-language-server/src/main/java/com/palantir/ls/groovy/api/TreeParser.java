@@ -22,10 +22,13 @@ import java.net.URI;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * Provides functionality to fulfill all symbol related Language Server requests.
+ */
 public interface TreeParser {
 
     /**
-     * Parses all symbols in a compilation unit.
+     * Parses all symbols.
      */
     void parseAllSymbols();
 

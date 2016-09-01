@@ -31,19 +31,19 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
-public final class GroovycWrapperTest {
+public final class DefaultCompilerWrapperTest {
 
     @Mock
     private WorkspaceCompiler compiler;
     @Mock
     private TreeParser parser;
 
-    private GroovycWrapper wrapper;
+    private DefaultCompilerWrapper wrapper;
 
     @Before
     public void setup() {
         MockitoAnnotations.initMocks(this);
-        wrapper = new GroovycWrapper(compiler, parser);
+        wrapper = new DefaultCompilerWrapper(compiler, parser);
     }
 
     @Test
