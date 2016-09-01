@@ -773,8 +773,7 @@ public final class GroovyTreeParserTest {
     }
 
     private static ReferenceParams createReferenceParams(URI uri, int line, int col, boolean includeDeclaration) {
-        // HACK, blocked on https://github.com/TypeFox/ls-api/issues/39
-        return (ReferenceParams) new ReferenceParamsBuilder()
+        return new ReferenceParamsBuilder()
                 .context(includeDeclaration)
                 .textDocument(uri.toString())
                 .position(line, col).build();

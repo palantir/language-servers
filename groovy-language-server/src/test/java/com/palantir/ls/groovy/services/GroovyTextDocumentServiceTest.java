@@ -290,7 +290,6 @@ public final class GroovyTextDocumentServiceTest {
 
     @Test
     public void testReferences() throws InterruptedException, ExecutionException {
-        // HACK, blocked on https://github.com/TypeFox/ls-api/issues/39
         ReferenceParams params = new ReferenceParamsBuilder()
                 .context(false)
                 .position(5, 5)
