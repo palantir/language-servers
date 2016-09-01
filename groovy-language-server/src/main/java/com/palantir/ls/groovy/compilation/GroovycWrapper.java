@@ -19,8 +19,8 @@ package com.palantir.ls.groovy.compilation;
 import com.palantir.ls.groovy.api.CompilerWrapper;
 import com.palantir.ls.groovy.api.TreeParser;
 import com.palantir.ls.groovy.api.WorkspaceCompiler;
-import io.typefox.lsapi.Diagnostic;
 import io.typefox.lsapi.FileEvent;
+import io.typefox.lsapi.PublishDiagnosticsParams;
 import io.typefox.lsapi.ReferenceParams;
 import io.typefox.lsapi.SymbolInformation;
 import io.typefox.lsapi.TextDocumentContentChangeEvent;
@@ -74,8 +74,8 @@ public final class GroovycWrapper implements CompilerWrapper {
     }
 
     @Override
-    public Set<Diagnostic> compile() {
-        Set<Diagnostic> diagnostics = compiler.compile();
+    public Set<PublishDiagnosticsParams> compile() {
+        Set<PublishDiagnosticsParams> diagnostics = compiler.compile();
         if (diagnostics.isEmpty()) {
             parser.parseAllSymbols();
         }

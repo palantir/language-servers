@@ -16,8 +16,8 @@
 
 package com.palantir.ls.groovy.api;
 
-import io.typefox.lsapi.Diagnostic;
 import io.typefox.lsapi.FileEvent;
+import io.typefox.lsapi.PublishDiagnosticsParams;
 import io.typefox.lsapi.TextDocumentContentChangeEvent;
 import java.net.URI;
 import java.nio.file.Path;
@@ -33,9 +33,9 @@ public interface WorkspaceCompiler {
 
     /**
      * Compiles all relevant files in the workspace.
-     * @return the compilation warnings and errors
+     * @return the compilation warnings and errors by file
      */
-    Set<Diagnostic> compile();
+    Set<PublishDiagnosticsParams>  compile();
 
     /**
      * Handle adding incremental changes to open files to be included in compilation.

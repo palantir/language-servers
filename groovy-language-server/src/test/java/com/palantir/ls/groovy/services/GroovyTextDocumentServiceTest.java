@@ -31,7 +31,6 @@ import com.palantir.ls.groovy.util.DefaultDiagnosticBuilder;
 import com.palantir.ls.groovy.util.Ranges;
 import io.typefox.lsapi.CompletionItemKind;
 import io.typefox.lsapi.CompletionList;
-import io.typefox.lsapi.Diagnostic;
 import io.typefox.lsapi.DiagnosticSeverity;
 import io.typefox.lsapi.Location;
 import io.typefox.lsapi.PublishDiagnosticsParams;
@@ -50,6 +49,7 @@ import io.typefox.lsapi.builders.DidOpenTextDocumentParamsBuilder;
 import io.typefox.lsapi.builders.DidSaveTextDocumentParamsBuilder;
 import io.typefox.lsapi.builders.DocumentSymbolParamsBuilder;
 import io.typefox.lsapi.builders.LocationBuilder;
+import io.typefox.lsapi.builders.PublishDiagnosticsParamsBuilder;
 import io.typefox.lsapi.builders.ReferenceParamsBuilder;
 import io.typefox.lsapi.builders.SymbolInformationBuilder;
 import io.typefox.lsapi.builders.TextDocumentIdentifierBuilder;
@@ -86,7 +86,7 @@ public final class GroovyTextDocumentServiceTest {
     private GroovyTextDocumentService service;
     private Path filePath;
     private List<PublishDiagnosticsParams> publishedDiagnostics = Lists.newArrayList();
-    private Set<Diagnostic> expectedDiagnostics = Sets.newHashSet();
+    private Set<PublishDiagnosticsParams> expectedDiagnostics;
     private Map<URI, Set<SymbolInformation>> symbolsMap = Maps.newHashMap();
     private Set<SymbolInformation> expectedReferences = Sets.newHashSet();
 
@@ -98,12 +98,13 @@ public final class GroovyTextDocumentServiceTest {
         MockitoAnnotations.initMocks(this);
 
         filePath = workspace.newFile("something.groovy").toPath();
-
-        expectedDiagnostics.add(new DefaultDiagnosticBuilder("Some message", DiagnosticSeverity.Error)
-                .source(filePath.toString()).build());
-        expectedDiagnostics.add(new DefaultDiagnosticBuilder("Some other message", DiagnosticSeverity.Warning)
-                .source(filePath.toString()).build());
-        Set<Diagnostic> diagnostics = Sets.newHashSet(expectedDiagnostics);
+        expectedDiagnostics =
+                Sets.newHashSet(new PublishDiagnosticsParamsBuilder().uri("foo")
+                        .diagnostic(new DefaultDiagnosticBuilder("Some message", DiagnosticSeverity.Error)
+                                .source(filePath.toString()).build())
+                        .diagnostic(new DefaultDiagnosticBuilder("Some other message", DiagnosticSeverity.Warning)
+                                .source(filePath.toString()).build())
+                        .build());
 
         SymbolInformation symbol1 = new SymbolInformationBuilder().name("ThisIsASymbol").kind(SymbolKind.Field).build();
         SymbolInformation symbol2 = new SymbolInformationBuilder().name("methodA").kind(SymbolKind.Method).build();
@@ -139,7 +140,7 @@ public final class GroovyTextDocumentServiceTest {
                         .build())
                 .build());
         when(compilerWrapper.getWorkspaceRoot()).thenReturn(workspace.getRoot().toPath());
-        when(compilerWrapper.compile()).thenReturn(diagnostics);
+        when(compilerWrapper.compile()).thenReturn(expectedDiagnostics);
         when(compilerWrapper.getFileSymbols()).thenReturn(symbolsMap);
         when(compilerWrapper.findReferences(Mockito.any())).thenReturn(allReferencesReturned);
 
@@ -170,8 +171,7 @@ public final class GroovyTextDocumentServiceTest {
         service.didOpen(new DidOpenTextDocumentParamsBuilder().textDocument(textDocument).build());
         // assert diagnostics were published
         assertEquals(1, publishedDiagnostics.size());
-        assertEquals(expectedDiagnostics, Sets.newHashSet(publishedDiagnostics.get(0).getDiagnostics()));
-        assertEquals(filePath.toUri().toString(), publishedDiagnostics.get(0).getUri());
+        assertEquals(expectedDiagnostics, Sets.newHashSet(publishedDiagnostics.get(0)));
     }
 
     @Test
@@ -185,8 +185,7 @@ public final class GroovyTextDocumentServiceTest {
                 .build());
         // assert diagnostics were published
         assertEquals(1, publishedDiagnostics.size());
-        assertEquals(expectedDiagnostics, Sets.newHashSet(publishedDiagnostics.get(0).getDiagnostics()));
-        assertEquals(filePath.toUri().toString(), publishedDiagnostics.get(0).getUri());
+        assertEquals(expectedDiagnostics, Sets.newHashSet(publishedDiagnostics.get(0)));
     }
 
     @Test
@@ -223,8 +222,7 @@ public final class GroovyTextDocumentServiceTest {
         service.didClose(new DidCloseTextDocumentParamsBuilder().textDocument(textDocument).build());
         // assert diagnostics were published
         assertEquals(1, publishedDiagnostics.size());
-        assertEquals(expectedDiagnostics, Sets.newHashSet(publishedDiagnostics.get(0).getDiagnostics()));
-        assertEquals(filePath.toUri().toString(), publishedDiagnostics.get(0).getUri());
+        assertEquals(expectedDiagnostics, Sets.newHashSet(publishedDiagnostics.get(0)));
     }
 
     @Test
@@ -246,8 +244,7 @@ public final class GroovyTextDocumentServiceTest {
         service.didSave(new DidSaveTextDocumentParamsBuilder().textDocument(textDocument).build());
         // assert diagnostics were published
         assertEquals(1, publishedDiagnostics.size());
-        assertEquals(expectedDiagnostics, Sets.newHashSet(publishedDiagnostics.get(0).getDiagnostics()));
-        assertEquals(filePath.toUri().toString(), publishedDiagnostics.get(0).getUri());
+        assertEquals(expectedDiagnostics, Sets.newHashSet(publishedDiagnostics.get(0)));
     }
 
     @Test

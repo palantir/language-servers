@@ -25,13 +25,14 @@ import com.palantir.ls.groovy.LanguageServerState;
 import com.palantir.ls.groovy.api.CompilerWrapper;
 import com.palantir.ls.groovy.util.DefaultDiagnosticBuilder;
 import com.palantir.ls.groovy.util.Ranges;
-import io.typefox.lsapi.Diagnostic;
 import io.typefox.lsapi.DiagnosticSeverity;
 import io.typefox.lsapi.FileChangeType;
+import io.typefox.lsapi.PublishDiagnosticsParams;
 import io.typefox.lsapi.SymbolInformation;
 import io.typefox.lsapi.SymbolKind;
 import io.typefox.lsapi.builders.DidChangeWatchedFilesParamsBuilder;
 import io.typefox.lsapi.builders.LocationBuilder;
+import io.typefox.lsapi.builders.PublishDiagnosticsParamsBuilder;
 import io.typefox.lsapi.builders.SymbolInformationBuilder;
 import io.typefox.lsapi.builders.WorkspaceSymbolParamsBuilder;
 import java.io.IOException;
@@ -54,7 +55,7 @@ public final class GroovyWorkspaceServiceTest {
     public TemporaryFolder workspace = new TemporaryFolder();
 
     private GroovyWorkspaceService service;
-    private Set<Diagnostic> expectedDiagnostics = Sets.newHashSet();
+    private Set<PublishDiagnosticsParams> expectedDiagnostics = Sets.newHashSet();
     private Set<SymbolInformation> expectedReferences = Sets.newHashSet();
 
     @Mock
@@ -66,9 +67,12 @@ public final class GroovyWorkspaceServiceTest {
     public void setup() throws IOException {
         MockitoAnnotations.initMocks(this);
 
-        expectedDiagnostics.add(new DefaultDiagnosticBuilder("Some message", DiagnosticSeverity.Error).build());
-        expectedDiagnostics.add(new DefaultDiagnosticBuilder("Some other message", DiagnosticSeverity.Warning).build());
-        Set<Diagnostic> diagnostics = Sets.newHashSet(expectedDiagnostics);
+        expectedDiagnostics =
+                Sets.newHashSet(new PublishDiagnosticsParamsBuilder().uri("foo")
+                        .diagnostic(new DefaultDiagnosticBuilder("Some message", DiagnosticSeverity.Error).build())
+                        .diagnostic(
+                                new DefaultDiagnosticBuilder("Some other message", DiagnosticSeverity.Warning).build())
+                        .build());
 
         expectedReferences.add(new SymbolInformationBuilder()
                 .containerName("Something")
@@ -101,7 +105,7 @@ public final class GroovyWorkspaceServiceTest {
                 .build());
 
         when(compilerWrapper.getWorkspaceRoot()).thenReturn(workspace.getRoot().toPath());
-        when(compilerWrapper.compile()).thenReturn(diagnostics);
+        when(compilerWrapper.compile()).thenReturn(expectedDiagnostics);
         when(compilerWrapper.getFilteredSymbols(Mockito.any())).thenReturn(allReferencesReturned);
 
         when(state.getCompilerWrapper()).thenReturn(compilerWrapper);
@@ -121,7 +125,7 @@ public final class GroovyWorkspaceServiceTest {
         service.didChangeWatchedFiles(new DidChangeWatchedFilesParamsBuilder().change("uri", FileChangeType.Deleted)
                 .change("uri", FileChangeType.Created).change("uri", FileChangeType.Changed).build());
         // assert diagnostics were published
-        Mockito.verify(state, Mockito.times(1)).publishDiagnostics(workspace.getRoot().toPath(), expectedDiagnostics);
+        Mockito.verify(state, Mockito.times(1)).publishDiagnostics(expectedDiagnostics);
     }
 
 }
