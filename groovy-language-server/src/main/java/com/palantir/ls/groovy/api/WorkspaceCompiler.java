@@ -20,7 +20,6 @@ import io.typefox.lsapi.FileEvent;
 import io.typefox.lsapi.PublishDiagnosticsParams;
 import io.typefox.lsapi.TextDocumentContentChangeEvent;
 import java.net.URI;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
 
@@ -33,7 +32,7 @@ public interface WorkspaceCompiler {
     /**
      * Returns the root of the compiled workspace.
      */
-    Path getWorkspaceRoot();
+    URI getWorkspaceRoot();
 
     /**
      * Compiles all relevant files in the workspace.

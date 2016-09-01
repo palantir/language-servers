@@ -25,7 +25,6 @@ import io.typefox.lsapi.ReferenceParams;
 import io.typefox.lsapi.SymbolInformation;
 import io.typefox.lsapi.TextDocumentContentChangeEvent;
 import java.net.URI;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -69,7 +68,7 @@ public final class DefaultCompilerWrapper implements CompilerWrapper {
     }
 
     @Override
-    public Path getWorkspaceRoot() {
+    public URI getWorkspaceRoot() {
         return compiler.getWorkspaceRoot();
     }
 
