@@ -135,7 +135,7 @@ public final class GroovyLanguageServer implements LanguageServer {
     }
 
     public static void main(String[] args) {
-        LanguageServerState state = new GroovyLanguageServerState();
+        LanguageServerState state = new DefaultLanguageServerState();
         LanguageServer server =
                 new GroovyLanguageServer(state, new GroovyTextDocumentService(state),
                         new GroovyWorkspaceService(state), new GroovyWindowService(state));
