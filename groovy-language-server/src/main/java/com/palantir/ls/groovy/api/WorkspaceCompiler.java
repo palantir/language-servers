@@ -24,6 +24,10 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * Provides wrapper methods for compiling a workspace, handles incremental changes, and returns Language Server Protocol
+ * diagnostics.
+ */
 public interface WorkspaceCompiler {
 
     /**

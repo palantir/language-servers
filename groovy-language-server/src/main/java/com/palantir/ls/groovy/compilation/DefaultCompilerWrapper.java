@@ -31,14 +31,14 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Wraps the Groovy compiler and provides Language Server Protocol diagnostics on compile.
+ * Wraps a WorkspaceCompiler and TreeParser. Ensures the tree is updated when the compiler is compiled.
  */
-public final class GroovycWrapper implements CompilerWrapper {
+public final class DefaultCompilerWrapper implements CompilerWrapper {
 
     private final WorkspaceCompiler compiler;
     private final TreeParser parser;
 
-    public GroovycWrapper(WorkspaceCompiler compiler, TreeParser parser) {
+    public DefaultCompilerWrapper(WorkspaceCompiler compiler, TreeParser parser) {
         this.compiler = compiler;
         this.parser = parser;
     }

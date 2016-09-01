@@ -60,6 +60,9 @@ import org.codehaus.groovy.syntax.SyntaxException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Groovy workspace compiler which supplies a Groovy CompilationUnit.
+ */
 public final class GroovyWorkspaceCompiler implements WorkspaceCompiler, Supplier<CompilationUnit> {
 
     private static final Logger logger = LoggerFactory.getLogger(GroovyWorkspaceCompiler.class);
