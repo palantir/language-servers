@@ -268,7 +268,8 @@ public final class GroovyWorkspaceCompiler implements WorkspaceCompiler, Supplie
             diagnosticsByFile.computeIfAbsent(uri, (value) -> new PublishDiagnosticsParamsBuilder().uri(uri.toString()))
                     .diagnostic(diagnostic);
         }
-        return diagnosticsByFile.values().stream().map(builder -> builder.build()).collect(Collectors.toSet());
+        return diagnosticsByFile.values().stream().map(PublishDiagnosticsParamsBuilder::build)
+                .collect(Collectors.toSet());
     }
 
 }
