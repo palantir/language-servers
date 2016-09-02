@@ -69,6 +69,19 @@ public final class SourceWriter {
      * Applies the given changes to the destination file. Does not handle intersecting ranges in the changes.
      */
     public synchronized void applyChanges(List<TextDocumentContentChangeEvent> contentChanges) throws IOException {
+        // Check if any of the ranges are null
+        for (TextDocumentContentChangeEvent change : contentChanges) {
+            if (change.getRange() == null) {
+                checkArgument(contentChanges.size() == 1,
+                        String.format(
+                                "Cannot have many changes when a change contains a null range which means it replaces "
+                                        + "the whole contents of the file: %s",
+                                change.toString()));
+                handleFullReplacement(change);
+                return;
+            }
+        }
+
         // From earliest start of range to latest
         List<TextDocumentContentChangeEvent> sortedChanges =
                 contentChanges.stream().sorted((c1, c2) -> Ranges.POSITION_COMPARATOR.compare(c1.getRange().getStart(),
@@ -82,6 +95,11 @@ public final class SourceWriter {
                         contentChanges.toString()));
 
         handleChanges(sortedChanges);
+    }
+
+    private synchronized void handleFullReplacement(TextDocumentContentChangeEvent change) throws IOException {
+        File file = new File(destination.toAbsolutePath().toString());
+        FileUtils.writeStringToFile(file, change.getText());
     }
 
     private synchronized void handleChanges(List<TextDocumentContentChangeEvent> sortedChanges) throws IOException {

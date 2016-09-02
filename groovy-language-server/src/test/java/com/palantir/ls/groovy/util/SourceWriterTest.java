@@ -75,6 +75,40 @@ public final class SourceWriterTest {
     }
 
     @Test
+    public void testDidChanges_nullRangeChange() throws IOException {
+        Path source = addFileToFolder(sourceFolder.getRoot(), "myfile.txt", "first line\nsecond line\n");
+        Path destination = destinationFolder.getRoot().toPath().resolve("myfile.txt");
+        SourceWriter writer = SourceWriter.of(source, destination);
+        List<TextDocumentContentChangeEvent> changes = Lists.newArrayList();
+        changes.add(new TextDocumentContentChangeEventBuilder()
+                .text("foo")
+                .build());
+        writer.applyChanges(changes);
+        assertEquals("foo", FileUtils.readFileToString(destination.toFile()));
+    }
+
+
+    @Test
+    public void testDidChanges_nullRangeWithMultipleChanges() throws IOException {
+        Path source = addFileToFolder(sourceFolder.getRoot(), "myfile.txt", "first line\nsecond line\n");
+        Path destination = destinationFolder.getRoot().toPath().resolve("myfile.txt");
+        SourceWriter writer = SourceWriter.of(source, destination);
+        List<TextDocumentContentChangeEvent> changes = Lists.newArrayList();
+        changes.add(new TextDocumentContentChangeEventBuilder()
+                .text("foo")
+                .build());
+        changes.add(new TextDocumentContentChangeEventBuilder()
+                .range(Ranges.createRange(1, 0, 1, 0))
+                .rangeLength(1)
+                .text("notfoo")
+                .build());
+        expectedException.expect(IllegalArgumentException.class);
+        expectedException.expectMessage(String.format("Cannot have many changes when a change contains a null range "
+                + "which means it replaces the whole contents of the file: %s", changes.get(0).toString()));
+        writer.applyChanges(changes);
+    }
+
+    @Test
     public void testDidChanges_insertionBeginningOfLine() throws IOException {
         Path source = addFileToFolder(sourceFolder.getRoot(), "myfile.txt", "first line\necond line\n");
         Path destination = destinationFolder.getRoot().toPath().resolve("myfile.txt");
