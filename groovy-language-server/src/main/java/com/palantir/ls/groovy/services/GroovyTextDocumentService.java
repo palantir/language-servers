@@ -167,6 +167,7 @@ public final class GroovyTextDocumentService implements TextDocumentService {
     public void didOpen(DidOpenTextDocumentParams params) {
         URI uri = Uris.resolveToRoot(getWorkspacePath(), params.getTextDocument().getUri());
         assertFileExists(uri);
+        state.getCompilerWrapper().handleFileOpened(uri);
         state.publishDiagnostics(state.getCompilerWrapper().compile());
     }
 
