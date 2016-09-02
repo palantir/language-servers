@@ -1,5 +1,5 @@
 ext.applicationName = 'groovy-language-server'
-ext.mainClass = 'com.palantir.ls.groovy.GroovyLanguageServer'
+ext.mainClass = 'com.palantir.ls.server.groovy.GroovyLanguageServer'
 
 apply from: "${rootDir}/gradle/java.gradle"
 apply from: "${rootDir}/gradle/immutables-processors.gradle"
