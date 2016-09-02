@@ -54,8 +54,10 @@ public final class UrisTest {
     public void testGetAbsolutePath() {
         String uri = "file:" + root.getRoot().getAbsolutePath();
         String absolutePath = root.getRoot().getAbsolutePath() + "/something/somethingelse/../somethingelse/./../..";
+        String relativePath = "foo/something/somethingelse/../somethingelse/./../..";
         assertEquals(root.getRoot().getAbsolutePath(), Uris.getAbsolutePath(uri).toString());
         assertEquals(root.getRoot().getAbsolutePath(), Uris.getAbsolutePath(absolutePath).toString());
+        assertEquals(Paths.get("foo").toAbsolutePath().toString(), Uris.getAbsolutePath(relativePath).toString());
     }
 
     @Test
