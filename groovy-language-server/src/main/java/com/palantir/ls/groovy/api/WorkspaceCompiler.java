@@ -41,6 +41,11 @@ public interface WorkspaceCompiler {
     Set<PublishDiagnosticsParams>  compile();
 
     /**
+     * Handle opening a file.
+     */
+    void handleFileOpened(URI file);
+
+    /**
      * Handle adding incremental changes to open files to be included in compilation.
      */
     void handleFileChanged(URI originalFile, List<TextDocumentContentChangeEvent> contentChanges);

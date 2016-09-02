@@ -119,7 +119,6 @@ public final class GroovyWorkspaceCompiler implements WorkspaceCompiler, Supplie
     }
 
     @Override
-
     public Set<PublishDiagnosticsParams> compile() {
         try {
             unit.compile();
@@ -127,6 +126,11 @@ public final class GroovyWorkspaceCompiler implements WorkspaceCompiler, Supplie
             return parseErrors(e.getErrorCollector());
         }
         return Sets.newHashSet();
+    }
+
+    @Override
+    public void handleFileOpened(URI file) {
+
     }
 
     @Override

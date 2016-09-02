@@ -82,6 +82,11 @@ public final class DefaultCompilerWrapper implements CompilerWrapper {
     }
 
     @Override
+    public void handleFileOpened(URI file) {
+        compiler.handleFileOpened(file);
+    }
+
+    @Override
     public void handleFileChanged(URI originalFile, List<TextDocumentContentChangeEvent> contentChanges) {
         compiler.handleFileChanged(originalFile, contentChanges);
     }
