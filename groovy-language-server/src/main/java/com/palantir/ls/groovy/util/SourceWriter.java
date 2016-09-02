@@ -73,9 +73,7 @@ public final class SourceWriter {
         for (TextDocumentContentChangeEvent change : contentChanges) {
             if (change.getRange() == null) {
                 checkArgument(contentChanges.size() == 1,
-                        String.format(
-                                "Cannot have many changes when a change contains a null range which means it replaces "
-                                        + "the whole contents of the file: %s",
+                        String.format("Cannot handle more than one change when a null range exists: %s",
                                 change.toString()));
                 handleFullReplacement(change);
                 return;

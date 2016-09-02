@@ -103,8 +103,8 @@ public final class SourceWriterTest {
                 .text("notfoo")
                 .build());
         expectedException.expect(IllegalArgumentException.class);
-        expectedException.expectMessage(String.format("Cannot have many changes when a change contains a null range "
-                + "which means it replaces the whole contents of the file: %s", changes.get(0).toString()));
+        expectedException.expectMessage(String.format("Cannot handle more than one change when a null range exists: %s",
+                changes.get(0).toString()));
         writer.applyChanges(changes);
     }
 
