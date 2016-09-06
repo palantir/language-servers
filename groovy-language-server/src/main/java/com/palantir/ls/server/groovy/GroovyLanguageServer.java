@@ -38,9 +38,12 @@ import io.typefox.lsapi.services.LanguageServer;
 import io.typefox.lsapi.services.TextDocumentService;
 import io.typefox.lsapi.services.WindowService;
 import io.typefox.lsapi.services.WorkspaceService;
+import java.io.File;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
+import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,6 +57,8 @@ public final class GroovyLanguageServer implements LanguageServer {
     private final WindowService windowService;
 
     private Path workspaceRoot;
+    private Path targetDirectory;
+    private Path changedFilesDirectory;
 
     public GroovyLanguageServer(LanguageServerState state, TextDocumentService textDocumentService,
             WorkspaceService workspaceService, WindowService windowService) {
@@ -83,10 +88,11 @@ public final class GroovyLanguageServer implements LanguageServer {
                 .capabilities(capabilities)
                 .build();
 
-        Path changedFilesDirectory = Files.createTempDir().toPath();
+        targetDirectory = Files.createTempDir().toPath();
+        changedFilesDirectory = Files.createTempDir().toPath();
 
         GroovyWorkspaceCompiler compiler =
-                GroovyWorkspaceCompiler.of(Files.createTempDir().toPath(), workspaceRoot, changedFilesDirectory);
+                GroovyWorkspaceCompiler.of(targetDirectory, workspaceRoot, changedFilesDirectory);
         TreeParser parser =
                 GroovyTreeParser.of(compiler, workspaceRoot,
                         new WorkspaceUriSupplier(workspaceRoot, changedFilesDirectory));
@@ -97,7 +103,18 @@ public final class GroovyLanguageServer implements LanguageServer {
     }
 
     @Override
-    public void shutdown() {}
+    public void shutdown() {
+        deleteDirectory(targetDirectory.toFile());
+        deleteDirectory(changedFilesDirectory.toFile());
+    }
+
+    private static void deleteDirectory(File directory) {
+        try {
+            FileUtils.deleteDirectory(directory);
+        } catch (IOException e) {
+            logger.error("Could not delete directory '" + directory.toString() + "'", e);
+        }
+    }
 
     @Override
     public void exit() {}
