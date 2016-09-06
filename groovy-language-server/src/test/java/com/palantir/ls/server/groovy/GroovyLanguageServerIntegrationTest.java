@@ -24,7 +24,6 @@ import com.palantir.ls.server.DefaultLanguageServerState;
 import com.palantir.ls.server.StreamLanguageServerLauncher;
 import com.palantir.ls.server.api.LanguageServerState;
 import com.palantir.ls.server.groovy.util.DefaultDiagnosticBuilder;
-import com.palantir.ls.server.groovy.util.GroovyConstants;
 import com.palantir.ls.server.services.DefaultTextDocumentService;
 import com.palantir.ls.server.services.DefaultWindowService;
 import com.palantir.ls.server.services.DefaultWorkspaceService;
@@ -32,7 +31,6 @@ import com.palantir.ls.server.util.Ranges;
 import io.typefox.lsapi.Diagnostic;
 import io.typefox.lsapi.DiagnosticSeverity;
 import io.typefox.lsapi.InitializeResult;
-import io.typefox.lsapi.LanguageDescription;
 import io.typefox.lsapi.Message;
 import io.typefox.lsapi.ServerCapabilities;
 import io.typefox.lsapi.SymbolInformation;
@@ -42,7 +40,6 @@ import io.typefox.lsapi.builders.CompletionOptionsBuilder;
 import io.typefox.lsapi.builders.DidOpenTextDocumentParamsBuilder;
 import io.typefox.lsapi.builders.DocumentSymbolParamsBuilder;
 import io.typefox.lsapi.builders.InitializeParamsBuilder;
-import io.typefox.lsapi.builders.LanguageDescriptionBuilder;
 import io.typefox.lsapi.builders.ServerCapabilitiesBuilder;
 import io.typefox.lsapi.builders.SymbolInformationBuilder;
 import io.typefox.lsapi.builders.TextDocumentItemBuilder;
@@ -350,12 +347,6 @@ public final class GroovyLanguageServerIntegrationTest {
                         .build())
                 .build();
         assertEquals(expectedCapabilities, result.getCapabilities());
-        Set<LanguageDescription> expectedSupportedLanguages = Sets.newHashSet(
-                new LanguageDescriptionBuilder()
-                .languageId(GroovyConstants.GROOVY_LANGUAGE_NAME)
-                .fileExtension(GroovyConstants.GROOVY_LANGUAGE_EXTENSION)
-                .build());
-        assertEquals(expectedSupportedLanguages, Sets.newHashSet(result.getSupportedLanguages()));
     }
 
     private static File addFileToFolder(File parent, String filename, String contents) throws IOException {
