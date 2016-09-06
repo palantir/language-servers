@@ -104,18 +104,15 @@ public final class GroovyLanguageServer implements LanguageServer {
 
     @Override
     public void shutdown() {
-        if (!deleteDirectory(targetDirectory.toFile()) || !deleteDirectory(changedFilesDirectory.toFile())) {
-            throw new RuntimeException("Could not cleanup before shutdown of language server");
-        }
+        deleteDirectory(targetDirectory.toFile());
+        deleteDirectory(changedFilesDirectory.toFile());
     }
 
-    private static boolean deleteDirectory(File directory) {
+    private static void deleteDirectory(File directory) {
         try {
             FileUtils.deleteDirectory(directory);
-            return true;
         } catch (IOException e) {
             logger.error("Could not delete directory '" + directory.toString() + "'", e);
-            return false;
         }
     }
 
