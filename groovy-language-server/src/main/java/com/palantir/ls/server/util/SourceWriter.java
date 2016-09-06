@@ -215,7 +215,8 @@ public final class SourceWriter {
         if (!destination.toFile().exists() && destination.toFile().isDirectory()) {
             if (!destination.toFile().mkdirs()) {
                 logger.error("Could not recreate destination file '{}'", destination.toString());
-                throw new RuntimeException("Could not recreate destination directories");
+                throw new RuntimeException("Could not recreate destination directories. "
+                        + "User may not have permission to modify directory.");
             }
         }
         FileUtils.copyFile(source.toFile(), destination.toFile());

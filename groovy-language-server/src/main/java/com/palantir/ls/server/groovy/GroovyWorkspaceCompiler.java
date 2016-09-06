@@ -237,7 +237,7 @@ public final class GroovyWorkspaceCompiler implements WorkspaceCompiler, Supplie
             logger.error("Could not recreate target directory: '{}'",
                     config.getTargetDirectory().getAbsolutePath());
             throw new RuntimeException("Could not reset compiled files after changes. "
-                    + "Make sure you have permission to modify your target directory.");
+                    + "User may not have permission to modify target directory.");
         }
         unit = new CompilationUnit(config);
         addAllSourcesToCompilationUnit();
