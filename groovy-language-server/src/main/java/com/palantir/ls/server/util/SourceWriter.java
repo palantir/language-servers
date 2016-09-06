@@ -34,11 +34,15 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.commons.io.FileUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Writes incremental changes to files.
  */
 public final class SourceWriter {
+
+    private static final Logger logger = LoggerFactory.getLogger(SourceWriter.class);
 
     private final Path source;
     private final Path destination;
@@ -210,8 +214,8 @@ public final class SourceWriter {
     private synchronized void initialize() throws IOException {
         if (!destination.toFile().exists() && destination.toFile().isDirectory()) {
             if (!destination.toFile().mkdirs()) {
-                throw new RuntimeException(
-                        String.format("Could not recreate destination directories: %s", destination.toString()));
+                logger.error("Could not recreate destination file '{}'", destination.toString());
+                throw new RuntimeException("Could not recreate destination directories");
             }
         }
         FileUtils.copyFile(source.toFile(), destination.toFile());

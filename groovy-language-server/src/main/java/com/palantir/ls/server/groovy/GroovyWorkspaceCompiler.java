@@ -20,7 +20,6 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.base.Supplier;
-import com.google.common.base.Throwables;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.io.Files;
@@ -150,7 +149,8 @@ public final class GroovyWorkspaceCompiler implements WorkspaceCompiler, Supplie
             sourceWriter.applyChanges(contentChanges);
             resetCompilationUnit();
         } catch (IOException e) {
-            Throwables.propagate(e);
+            logger.error("Error occurred while handling file changes", e);
+            throw new RuntimeException("Error occurred while handling file changes");
         }
     }
 
@@ -182,7 +182,8 @@ public final class GroovyWorkspaceCompiler implements WorkspaceCompiler, Supplie
                 resetCompilationUnit();
             }
         } catch (IOException e) {
-            Throwables.propagate(e);
+            logger.error("Error occurred while handling file saved", e);
+            throw new RuntimeException("Error occurred while handling file saved");
         }
     }
 
@@ -227,17 +228,19 @@ public final class GroovyWorkspaceCompiler implements WorkspaceCompiler, Supplie
     private void resetCompilationUnit() {
         try {
             FileUtils.deleteDirectory(config.getTargetDirectory());
-            if (!config.getTargetDirectory().mkdir()) {
-                logger.error("Could not recreate target directory: '{}'",
-                        config.getTargetDirectory().getAbsolutePath());
-                throw new RuntimeException("Could not reset compiled files after changes. "
-                        + "Make sure you have permission to modify your target directory.");
-            }
-            unit = new CompilationUnit(config);
-            addAllSourcesToCompilationUnit();
         } catch (IOException e) {
-            Throwables.propagate(e);
+            logger.error("Could not delete directory '" + config.getTargetDirectory().toString() + "'", e);
+            throw new RuntimeException("Could not reset compiled files after changes. "
+                    + "Make sure you have permission to modify your target directory.");
         }
+        if (!config.getTargetDirectory().mkdir()) {
+            logger.error("Could not recreate target directory: '{}'",
+                    config.getTargetDirectory().getAbsolutePath());
+            throw new RuntimeException("Could not reset compiled files after changes. "
+                    + "Make sure you have permission to modify your target directory.");
+        }
+        unit = new CompilationUnit(config);
+        addAllSourcesToCompilationUnit();
     }
 
     private Set<PublishDiagnosticsParams> parseErrors(ErrorCollector collector) {
