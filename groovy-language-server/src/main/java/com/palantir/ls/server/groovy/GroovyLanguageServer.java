@@ -22,7 +22,6 @@ import com.palantir.ls.server.DefaultLanguageServerState;
 import com.palantir.ls.server.StreamLanguageServerLauncher;
 import com.palantir.ls.server.api.LanguageServerState;
 import com.palantir.ls.server.api.TreeParser;
-import com.palantir.ls.server.groovy.util.GroovyConstants;
 import com.palantir.ls.server.services.DefaultTextDocumentService;
 import com.palantir.ls.server.services.DefaultWindowService;
 import com.palantir.ls.server.services.DefaultWorkspaceService;
@@ -30,12 +29,10 @@ import com.palantir.ls.server.util.Uris;
 import com.palantir.ls.server.util.WorkspaceUriSupplier;
 import io.typefox.lsapi.InitializeParams;
 import io.typefox.lsapi.InitializeResult;
-import io.typefox.lsapi.LanguageDescription;
 import io.typefox.lsapi.ServerCapabilities;
 import io.typefox.lsapi.TextDocumentSyncKind;
 import io.typefox.lsapi.builders.CompletionOptionsBuilder;
 import io.typefox.lsapi.builders.InitializeResultBuilder;
-import io.typefox.lsapi.builders.LanguageDescriptionBuilder;
 import io.typefox.lsapi.builders.ServerCapabilitiesBuilder;
 import io.typefox.lsapi.services.LanguageServer;
 import io.typefox.lsapi.services.TextDocumentService;
@@ -82,13 +79,8 @@ public final class GroovyLanguageServer implements LanguageServer {
                         .triggerCharacter(".")
                         .build())
                 .build();
-        LanguageDescription languageDescription = new LanguageDescriptionBuilder()
-                .languageId(GroovyConstants.GROOVY_LANGUAGE_NAME)
-                .fileExtension(GroovyConstants.GROOVY_LANGUAGE_EXTENSION)
-                .build();
         InitializeResult result = new InitializeResultBuilder()
                 .capabilities(capabilities)
-                .supportedLanguage(languageDescription)
                 .build();
 
         Path changedFilesDirectory = Files.createTempDir().toPath();
