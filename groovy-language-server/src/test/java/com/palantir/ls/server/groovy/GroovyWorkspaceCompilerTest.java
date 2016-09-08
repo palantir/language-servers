@@ -180,7 +180,6 @@ public final class GroovyWorkspaceCompilerTest {
                 .diagnostic(new DefaultDiagnosticBuilder(
                         "unable to resolve class Foo \n @ line 1, column 20.", DiagnosticSeverity.Error)
                                 .range(Ranges.createRange(0, 19, 0, 26))
-                                .source(test.getAbsolutePath())
                                 .build())
                 .build()),
                 diagnostics);
@@ -254,7 +253,6 @@ public final class GroovyWorkspaceCompilerTest {
                                         "unable to resolve class ExceptionNew1 \n @ line 7, column 18.",
                                         DiagnosticSeverity.Error)
                                                 .range(Ranges.createRange(6, 17, 6, 72))
-                                                .source(test1.getAbsolutePath())
                                                 .build())
                         .build(),
                 new PublishDiagnosticsParamsBuilder()
@@ -264,7 +262,6 @@ public final class GroovyWorkspaceCompilerTest {
                                         "unable to resolve class ExceptionNew222 \n @ line 7, column 18.",
                                         DiagnosticSeverity.Error)
                                                 .range(Ranges.createRange(6, 17, 6, 74))
-                                                .source(test2.getAbsolutePath())
                                                 .build())
                         .build());
         assertEquals(expectedDiagnostics, diagnostics);

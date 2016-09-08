@@ -309,14 +309,12 @@ public final class GroovyLanguageServerIntegrationTest {
                                         "unable to resolve class ExceptionNew1 \n @ line 7, column 18.",
                                         DiagnosticSeverity.Error)
                                                 .range(Ranges.createRange(6, 17, 6, 72))
-                                                .source(test1.getAbsolutePath())
                                                 .build())),
                         new MyPublishDiagnosticParams(test2.toPath().toUri().toString(),
                                 Sets.newHashSet(new DefaultDiagnosticBuilder(
                                         "unable to resolve class ExceptionNew222 \n @ line 7, column 18.",
                                         DiagnosticSeverity.Error)
                                                 .range(Ranges.createRange(6, 17, 6, 74))
-                                                .source(test2.getAbsolutePath())
                                                 .build())));
         assertEquals(expectedDiagnosticsResult, publishedDiagnostics.stream().collect(Collectors.toSet()));
         assertEquals(2, publishedDiagnostics.size());

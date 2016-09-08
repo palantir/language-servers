@@ -29,7 +29,7 @@ public final class DefaultDiagnosticBuilder extends DiagnosticBuilder {
         this.message(message);
         this.severity(severity);
         this.range(Ranges.UNDEFINED_RANGE);
-        this.source("groovyc");
+        this.source(GroovyConstants.GROOVY_COMPILER);
     }
 
 }
