@@ -266,7 +266,6 @@ public final class GroovyWorkspaceCompiler implements WorkspaceCompiler, Supplie
                 uri = Paths.get(cause.getSourceLocator()).toUri();
                 diagnostic = new DefaultDiagnosticBuilder(cause.getMessage(), DiagnosticSeverity.Error)
                         .range(range)
-                        .source(cause.getSourceLocator())
                         .build();
             } else {
                 StringWriter data = new StringWriter();
