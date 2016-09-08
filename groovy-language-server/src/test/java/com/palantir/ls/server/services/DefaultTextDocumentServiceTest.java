@@ -19,8 +19,11 @@ package com.palantir.ls.server.services;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.when;
 
+import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -55,6 +58,7 @@ import io.typefox.lsapi.builders.TextDocumentIdentifierBuilder;
 import io.typefox.lsapi.builders.TextDocumentItemBuilder;
 import io.typefox.lsapi.builders.TextDocumentPositionParamsBuilder;
 import io.typefox.lsapi.builders.VersionedTextDocumentIdentifierBuilder;
+import io.typefox.lsapi.impl.PositionImpl;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
@@ -71,7 +75,6 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
 public final class DefaultTextDocumentServiceTest {
@@ -88,6 +91,7 @@ public final class DefaultTextDocumentServiceTest {
     private Set<PublishDiagnosticsParams> expectedDiagnostics;
     private Map<URI, Set<SymbolInformation>> symbolsMap = Maps.newHashMap();
     private Set<Location> expectedReferences = Sets.newHashSet();
+    private Optional<Location> expectedDefinitionLocation;
 
     @Mock
     private CompilerWrapper compilerWrapper;
@@ -110,23 +114,27 @@ public final class DefaultTextDocumentServiceTest {
         symbolsMap.put(filePath.toUri(), Sets.newHashSet(symbol1, symbol2));
 
         expectedReferences.add(new LocationBuilder()
-                        .uri("uri")
-                        .range(Ranges.createRange(1, 1, 9, 9))
-                        .build());
+                .uri("uri")
+                .range(Ranges.createRange(1, 1, 9, 9))
+                .build());
         expectedReferences.add(new LocationBuilder()
-                        .uri("uri")
-                        .range(Ranges.createRange(1, 1, 9, 9))
-                        .build());
+                .uri("uri")
+                .range(Ranges.createRange(1, 1, 9, 9))
+                .build());
         Set<Location> allReferencesReturned = Sets.newHashSet(expectedReferences);
         // The reference that will be filtered out
         allReferencesReturned.add(new LocationBuilder()
-                        .uri("uri")
-                        .range(Ranges.UNDEFINED_RANGE)
-                        .build());
+                .uri("uri")
+                .range(Ranges.UNDEFINED_RANGE)
+                .build());
+        expectedDefinitionLocation =
+                Optional.of(new LocationBuilder().uri("foo").range(Ranges.createRange(0, 1, 0, 1)).build());
         when(compilerWrapper.getWorkspaceRoot()).thenReturn(workspace.getRoot().toPath().toUri());
         when(compilerWrapper.compile()).thenReturn(expectedDiagnostics);
         when(compilerWrapper.getFileSymbols()).thenReturn(symbolsMap);
-        when(compilerWrapper.findReferences(Mockito.any())).thenReturn(allReferencesReturned);
+        when(compilerWrapper.findReferences(any())).thenReturn(allReferencesReturned);
+        when(compilerWrapper.gotoDefinition(any(), eq(new PositionImpl(5, 5)))).thenReturn(expectedDefinitionLocation);
+        when(compilerWrapper.gotoDefinition(any(), eq(new PositionImpl(4, 4)))).thenReturn(Optional.absent());
 
         LanguageServerState state = new DefaultLanguageServerState();
         state.setCompilerWrapper(compilerWrapper);
@@ -319,6 +327,30 @@ public final class DefaultTextDocumentServiceTest {
         CompletableFuture<CompletionList> response = service.completion(params);
         assertThat(response.get().isIncomplete(), is(false));
         assertThat(response.get().getItems(), is(Lists.newArrayList()));
+    }
+
+    @Test
+    public void testDefinition() throws InterruptedException, ExecutionException {
+        String uri = filePath.toAbsolutePath().toString();
+        TextDocumentPositionParams params = new TextDocumentPositionParamsBuilder()
+                .position(5, 5)
+                .textDocument(uri)
+                .uri(uri)
+                .build();
+        CompletableFuture<List<? extends Location>> response = service.definition(params);
+        assertThat(response.get(), is(Lists.newArrayList(expectedDefinitionLocation.get())));
+    }
+
+    @Test
+    public void testDefinition_NoDefinition() throws InterruptedException, ExecutionException {
+        String uri = filePath.toAbsolutePath().toString();
+        TextDocumentPositionParams params = new TextDocumentPositionParamsBuilder()
+                .position(4, 4)
+                .textDocument(uri)
+                .uri(uri)
+                .build();
+        CompletableFuture<List<? extends Location>> response = service.definition(params);
+        assertThat(response.get(), is(Lists.newArrayList()));
     }
 
 }
