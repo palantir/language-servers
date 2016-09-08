@@ -24,6 +24,8 @@ import com.google.common.base.Supplier;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.palantir.ls.server.api.TreeParser;
+import com.palantir.ls.server.groovy.util.GroovyConstants;
+import com.palantir.ls.server.groovy.util.GroovyLocations;
 import com.palantir.ls.server.util.Ranges;
 import com.palantir.ls.server.util.UriSupplier;
 import com.palantir.ls.server.util.Uris;
@@ -32,7 +34,6 @@ import io.typefox.lsapi.Position;
 import io.typefox.lsapi.ReferenceParams;
 import io.typefox.lsapi.SymbolInformation;
 import io.typefox.lsapi.SymbolKind;
-import io.typefox.lsapi.builders.LocationBuilder;
 import io.typefox.lsapi.builders.SymbolInformationBuilder;
 import java.net.URI;
 import java.nio.file.Path;
@@ -44,7 +45,6 @@ import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.codehaus.groovy.ast.ASTNode;
 import org.codehaus.groovy.ast.ClassNode;
 import org.codehaus.groovy.ast.DynamicVariable;
 import org.codehaus.groovy.ast.FieldNode;
@@ -66,7 +66,6 @@ public final class GroovyTreeParser implements TreeParser {
     private static final Logger logger = LoggerFactory.getLogger(GroovyTreeParser.class);
 
     private static final String GROOVY_DEFAULT_INTERFACE = "groovy.lang.GroovyObject";
-    private static final String JAVA_DEFAULT_OBJECT = "java.lang.Object";
 
     // Maps from source file path -> set of symbols in that file
     private Indexer indexer = new Indexer();
@@ -111,7 +110,8 @@ public final class GroovyTreeParser implements TreeParser {
         Map<String, Location> classes = Maps.newHashMap();
         unit.iterator().forEachRemaining(sourceUnit -> {
             sourceUnit.getAST().getClasses().forEach(clazz -> {
-                classes.put(clazz.getName(), createClassDefinitionLocation(sourceUnit.getSource().getURI(), clazz));
+                classes.put(clazz.getName(), GroovyLocations.createClassDefinitionLocation(
+                        workspaceUriSupplier.get(sourceUnit.getSource().getURI()), clazz));
             });
         });
 
@@ -123,7 +123,7 @@ public final class GroovyTreeParser implements TreeParser {
                     // Add class symbol
                     SymbolInformation classSymbol =
                             createSymbolInformation(clazz.getName(), getKind(clazz),
-                                    createClassDefinitionLocation(sourceUri, clazz),
+                                    GroovyLocations.createClassDefinitionLocation(sourceUri, clazz),
                                     Optional.fromNullable(clazz.getOuterClass()).transform(ClassNode::getName));
                     newIndexer.addSymbol(sourceUri, classSymbol);
 
@@ -132,9 +132,10 @@ public final class GroovyTreeParser implements TreeParser {
                             .filter(node -> !node.getName().equals(GROOVY_DEFAULT_INTERFACE)
                                     && classes.containsKey(node.getName()))
                             .forEach(node -> newIndexer.addReference(classes.get(node.getName()),
-                                    createLocation(sourceUri, node)));
+                                    GroovyLocations.createLocation(sourceUri, node)));
                     // Add extended class reference
-                    if (clazz.getSuperClass() != null && !clazz.getSuperClass().getName().equals(JAVA_DEFAULT_OBJECT)
+                    if (clazz.getSuperClass() != null
+                            && !clazz.getSuperClass().getName().equals(GroovyConstants.JAVA_DEFAULT_OBJECT)
                             && classes.containsKey(clazz.getSuperClass().getName())) {
                         newIndexer.addReference(classes.get(clazz.getSuperClass().getName()),
                                 classSymbol.getLocation());
@@ -148,7 +149,7 @@ public final class GroovyTreeParser implements TreeParser {
                     newIndexer.addSymbol(sourceUri, symbol);
                     if (classes.containsKey(field.getType().getName())) {
                         newIndexer.addReference(classes.get(field.getType().getName()),
-                                createLocation(sourceUri, field.getType()));
+                                GroovyLocations.createLocation(sourceUri, field.getType()));
                         classFields.put(field.getName(), field);
                     }
                 });
@@ -171,7 +172,7 @@ public final class GroovyTreeParser implements TreeParser {
                             newIndexer.addSymbol(sourceUnit.getSource().getURI(), symbol);
                             if (classes.containsKey(variable.getType().getName())) {
                                 newIndexer.addReference(classes.get(variable.getType().getName()),
-                                        createLocation(sourceUri, variable.getType()));
+                                        GroovyLocations.createLocation(sourceUri, variable.getType()));
                             }
                         });
                 sourceUnit.getAST().getStatementBlock()
@@ -208,7 +209,7 @@ public final class GroovyTreeParser implements TreeParser {
                 .collect(Collectors.toList());
 
         // It might be a location on top of a reference instead of a definition.
-        // Ex: Test test; // clicking on Test
+        // Ex: Test test; - clicking on Test
         Set<ReferenceLocation> locations =
                 indexer.getGotoReferenced().keySet().stream()
                         .filter(l -> paramsUri.toString().equals(l.getUri())
@@ -298,35 +299,37 @@ public final class GroovyTreeParser implements TreeParser {
         return SymbolKind.Class;
     }
 
+    // sourceUri should already have been converted to a workspace URI
     private SymbolInformation getVariableSymbolInformation(String parentName, URI sourceUri, Variable variable) {
         SymbolInformationBuilder builder =
                 new SymbolInformationBuilder().name(variable.getName()).containerName(parentName);
         if (variable instanceof DynamicVariable) {
             builder.kind(SymbolKind.Field);
-            builder.location(createLocation(sourceUri));
+            builder.location(GroovyLocations.createLocation(sourceUri));
         } else if (variable instanceof FieldNode) {
             builder.kind(SymbolKind.Field);
-            builder.location(createLocation(sourceUri, (FieldNode) variable));
+            builder.location(GroovyLocations.createLocation(sourceUri, (FieldNode) variable));
         } else if (variable instanceof Parameter) {
             builder.kind(SymbolKind.Variable);
-            builder.location(createLocation(sourceUri, (Parameter) variable));
+            builder.location(GroovyLocations.createLocation(sourceUri, (Parameter) variable));
         } else if (variable instanceof PropertyNode) {
             builder.kind(SymbolKind.Field);
-            builder.location(createLocation(sourceUri, (PropertyNode) variable));
+            builder.location(GroovyLocations.createLocation(sourceUri, (PropertyNode) variable));
         } else if (variable instanceof VariableExpression) {
             builder.kind(SymbolKind.Variable);
-            builder.location(createLocation(sourceUri, (VariableExpression) variable));
+            builder.location(GroovyLocations.createLocation(sourceUri, (VariableExpression) variable));
         } else {
             throw new IllegalArgumentException(String.format("Unknown type of variable: %s", variable));
         }
         return builder.build();
     }
 
+    // sourceUri should already have been converted to a workspace URI
     private void parseMethod(Indexer newIndexer, URI sourceUri, ClassNode parent, Map<String, Location> classes,
             Map<String, FieldNode> classFields, MethodNode method) {
         SymbolInformation methodSymbol =
-                createSymbolInformation(method.getName(), SymbolKind.Method, createLocation(sourceUri, method),
-                        Optional.of(parent.getName()));
+                createSymbolInformation(method.getName(), SymbolKind.Method,
+                        GroovyLocations.createLocation(sourceUri, method), Optional.of(parent.getName()));
         newIndexer.addSymbol(sourceUri, methodSymbol);
 
         // Method parameters
@@ -341,10 +344,11 @@ public final class GroovyTreeParser implements TreeParser {
         // Return type
         if (classes.containsKey(method.getReturnType().getName())) {
             newIndexer.addReference(classes.get(method.getReturnType().getName()),
-                    createLocation(sourceUri, method.getReturnType()));
+                    GroovyLocations.createLocation(sourceUri, method.getReturnType()));
         }
 
-        if (Ranges.isValid(createLocation(sourceUri, method).getRange())) {
+        // We only want to visit the method if its not generated
+        if (Ranges.isValid(methodSymbol.getLocation().getRange())) {
             // Visit the method
             if (method.getCode() instanceof BlockStatement) {
                 BlockStatement blockStatement = (BlockStatement) method.getCode();
@@ -352,30 +356,6 @@ public final class GroovyTreeParser implements TreeParser {
                         Optional.of(method), workspaceUriSupplier));
             }
         }
-    }
-
-    private Location createLocation(URI uri) {
-        return new LocationBuilder()
-                .uri(workspaceUriSupplier.get(uri).toString())
-                .range(Ranges.UNDEFINED_RANGE)
-                .build();
-    }
-
-    private Location createLocation(URI uri, ASTNode node) {
-        return new LocationBuilder()
-                .uri(workspaceUriSupplier.get(uri).toString())
-                .range(Ranges.createZeroBasedRange(node.getLineNumber(), node.getColumnNumber(),
-                        node.getLastLineNumber(), node.getLastColumnNumber()))
-                .build();
-    }
-
-
-    private Location createClassDefinitionLocation(URI uri, ClassNode node) {
-        return new LocationBuilder()
-                .uri(workspaceUriSupplier.get(uri).toString())
-                .range(Ranges.createZeroBasedRange(node.getLineNumber(), node.getColumnNumber(),
-                        node.getLineNumber() + 1, 1))
-                .build();
     }
 
     private static SymbolInformation createSymbolInformation(String name, SymbolKind kind, Location location,

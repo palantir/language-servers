@@ -17,12 +17,13 @@
 package com.palantir.ls.server.groovy;
 
 import com.google.common.base.Optional;
+import com.palantir.ls.server.groovy.util.GroovyConstants;
+import com.palantir.ls.server.groovy.util.GroovyLocations;
 import com.palantir.ls.server.util.Ranges;
 import com.palantir.ls.server.util.UriSupplier;
 import io.typefox.lsapi.Location;
 import io.typefox.lsapi.SymbolInformation;
 import io.typefox.lsapi.SymbolKind;
-import io.typefox.lsapi.builders.LocationBuilder;
 import io.typefox.lsapi.builders.SymbolInformationBuilder;
 import java.net.URI;
 import java.util.List;
@@ -47,8 +48,6 @@ import org.codehaus.groovy.ast.expr.VariableExpression;
 import org.codehaus.groovy.ast.stmt.CatchStatement;
 
 public final class MethodVisitor extends CodeVisitorSupport {
-
-    private static final String JAVA_DEFAULT_OBJECT = "java.lang.Object";
 
     private final Indexer indexer;
     private final URI uri;
@@ -101,9 +100,9 @@ public final class MethodVisitor extends CodeVisitorSupport {
             VariableExpression var = (VariableExpression) call.getObjectExpression();
             if (var.getOriginType() != null) {
                 potentialParentClass = var.getOriginType();
-                if (var.getOriginType().getText().equals(JAVA_DEFAULT_OBJECT)) {
+                if (var.getOriginType().getText().equals(GroovyConstants.JAVA_DEFAULT_OBJECT)) {
                     // This means it might actually be referring to a global field but not getting the right type
-                    // because the this is the default value. >_>
+                    // because this is the default value and not necessarily set even if it has a real type. >_>
                     if (classFields.containsKey(var.getText())) {
                         possibleMethods =
                                 classFields.get(var.getText()).getType().getMethods(call.getMethod().getText());
@@ -240,29 +239,6 @@ public final class MethodVisitor extends CodeVisitorSupport {
         return builder.build();
     }
 
-    private Location createLocation(ASTNode node) {
-        return new LocationBuilder()
-                .uri(workspaceUriSupplier.get(uri).toString())
-                .range(Ranges.createZeroBasedRange(node.getLineNumber(), node.getColumnNumber(),
-                        node.getLastLineNumber(), node.getLastColumnNumber()))
-                .build();
-    }
-
-    private Location createLocation(URI locationUri) {
-        return new LocationBuilder()
-                .uri(workspaceUriSupplier.get(locationUri).toString())
-                .range(Ranges.UNDEFINED_RANGE)
-                .build();
-    }
-
-    private Location createLocation(URI locationUri, ASTNode node) {
-        return new LocationBuilder()
-                .uri(workspaceUriSupplier.get(locationUri).toString())
-                .range(Ranges.createZeroBasedRange(node.getLineNumber(), node.getColumnNumber(),
-                        node.getLastLineNumber(), node.getLastColumnNumber()))
-                .build();
-    }
-
     @Override
     public void visitDeclarationExpression(DeclarationExpression expression) {
         if (expression.getLeftExpression() instanceof Variable) {
@@ -274,6 +250,18 @@ public final class MethodVisitor extends CodeVisitorSupport {
             }
         }
         super.visitDeclarationExpression(expression);
+    }
+
+    private Location createLocation(ASTNode node) {
+        return GroovyLocations.createLocation(workspaceUriSupplier.get(uri), node);
+    }
+
+    private Location createLocation(URI locationUri) {
+        return GroovyLocations.createLocation(workspaceUriSupplier.get(locationUri));
+    }
+
+    private Location createLocation(URI locationUri, ASTNode node) {
+        return GroovyLocations.createLocation(workspaceUriSupplier.get(locationUri), node);
     }
 
 }

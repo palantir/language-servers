@@ -33,7 +33,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Wraps a WorkspaceCompiler and TreeParser. Ensures the tree is updated when the compiler is compiled sucessfully.
+ * Wraps a WorkspaceCompiler and TreeParser. Ensures the tree is updated when the compiler is compiled successfully.
  */
 public final class DefaultCompilerWrapper implements CompilerWrapper {
 

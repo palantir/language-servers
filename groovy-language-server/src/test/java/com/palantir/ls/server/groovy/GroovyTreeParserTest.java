@@ -697,7 +697,6 @@ public final class GroovyTreeParserTest {
                         + "   println e1\n"
                         + "}\n");
         parser.parseAllSymbols();
-
         // Class Foo
         Set<Location> expectedReferences =
                 Sets.newHashSet(createLocation(file.toPath(), Ranges.createRange(3, 8, 3, 11)));
