@@ -32,6 +32,7 @@ import io.typefox.lsapi.SymbolKind;
 import io.typefox.lsapi.builders.LocationBuilder;
 import io.typefox.lsapi.builders.ReferenceParamsBuilder;
 import io.typefox.lsapi.builders.SymbolInformationBuilder;
+import io.typefox.lsapi.impl.PositionImpl;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -39,7 +40,6 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
@@ -59,33 +59,32 @@ public final class GroovyTreeParserTest {
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
     @Rule
-    public TemporaryFolder changedOutput = new TemporaryFolder();
-    @Rule
-    public TemporaryFolder root = new TemporaryFolder();
-    @Rule
-    public TemporaryFolder output = new TemporaryFolder();
+    public TemporaryFolder tempFolder = new TemporaryFolder();
 
     private UriSupplier uriSupplier;
 
     private GroovyTreeParser parser;
+    private File workspaceRoot;
 
     @Before
-    public void setup() {
-        uriSupplier = new WorkspaceUriSupplier(root.getRoot().toPath(), changedOutput.getRoot().toPath());
+    public void setup() throws IOException {
+        workspaceRoot = tempFolder.newFolder();
+        Path changedOutput = tempFolder.newFolder().toPath();
+        Path target = tempFolder.newFolder().toPath();
+        uriSupplier = new WorkspaceUriSupplier(workspaceRoot.toPath(), changedOutput);
         parser = GroovyTreeParser.of(() -> {
             GroovyWorkspaceCompiler compiler =
-                    GroovyWorkspaceCompiler.of(output.getRoot().toPath(), root.getRoot().toPath(),
-                            changedOutput.getRoot().toPath());
-            compiler.compile();
+                    GroovyWorkspaceCompiler.of(target, workspaceRoot.toPath(), changedOutput);
+            assertEquals(Sets.newHashSet(), compiler.compile());
             return compiler.get();
-        }, root.getRoot().toPath(), uriSupplier);
+        }, workspaceRoot.toPath(), uriSupplier);
     }
 
     @Test
     public void testWorkspaceRootNotFolder() throws IOException {
         expectedException.expect(IllegalArgumentException.class);
         expectedException.expectMessage("workspaceRoot must be a directory");
-        GroovyTreeParser.of(() -> null, root.newFile().toPath(), uriSupplier);
+        GroovyTreeParser.of(() -> null, tempFolder.newFile().toPath(), uriSupplier);
     }
 
     @Test
@@ -96,8 +95,7 @@ public final class GroovyTreeParserTest {
 
     @Test
     public void testComputeAllSymbols_class() throws InterruptedException, ExecutionException, IOException {
-        File newFolder1 = root.newFolder();
-        addFileToFolder(newFolder1, "Coordinates.groovy",
+        File file = addFileToFolder(workspaceRoot, "someFolder", "Coordinates.groovy",
                 "class Coordinates {\n"
                         + "   double latitude\n"
                         + "   double longitude\n"
@@ -115,8 +113,7 @@ public final class GroovyTreeParserTest {
         Map<URI, Set<SymbolInformation>> symbols = parser.getFileSymbols();
 
         // Assert that the format of the URI doesn't change the result (i.e whether it starts with file:/ or file:///)
-        assertEquals(parser.getFileSymbols().get(newFolder1.toURI()),
-                parser.getFileSymbols().get(newFolder1.toPath().toUri()));
+        assertEquals(parser.getFileSymbols().get(file.toURI()), parser.getFileSymbols().get(file.toPath().toUri()));
 
         // The symbols will contain a lot of inherited fields and methods, so we just check to make sure it contains our
         // custom fields and methods.
@@ -132,8 +129,7 @@ public final class GroovyTreeParserTest {
 
     @Test
     public void testComputeAllSymbols_interface() throws InterruptedException, ExecutionException, IOException {
-        File newFolder1 = root.newFolder();
-        addFileToFolder(newFolder1, "ICoordinates.groovy",
+        addFileToFolder(workspaceRoot, "my/folder", "ICoordinates.groovy",
                 "interface ICoordinates {\n"
                         + "   abstract double getAt(int idx);\n"
                         + "}\n");
@@ -149,7 +145,7 @@ public final class GroovyTreeParserTest {
 
     @Test
     public void testComputeAllSymbols_enum() throws InterruptedException, ExecutionException, IOException {
-        addFileToFolder(root.getRoot(), "Type.groovy",
+        addFileToFolder(workspaceRoot, "Type.groovy",
                 "enum Type {\n"
                         + "   ONE, TWO, THREE\n"
                         + "}\n");
@@ -167,8 +163,7 @@ public final class GroovyTreeParserTest {
     @Test
     public void testComputeAllSymbols_innerClassInterfaceEnum()
             throws InterruptedException, ExecutionException, IOException {
-        File newFolder1 = root.newFolder();
-        addFileToFolder(newFolder1, "Coordinates.groovy",
+        addFileToFolder(workspaceRoot, "foo", "Coordinates.groovy",
                 "class Coordinates {\n"
                         + "   double latitude\n"
                         + "   double longitude\n"
@@ -208,7 +203,7 @@ public final class GroovyTreeParserTest {
     @Test
     public void testComputeAllSymbols_script()
             throws InterruptedException, ExecutionException, IOException {
-        addFileToFolder(root.getRoot(), "test.groovy",
+        addFileToFolder(workspaceRoot, "test.groovy",
                 "def name = \"Natacha\"\n"
                         + "def myMethod() {\n"
                         + "   def someString = \"Also in symbols\"\n"
@@ -226,8 +221,7 @@ public final class GroovyTreeParserTest {
 
     @Test
     public void testGetFilteredSymbols() throws InterruptedException, ExecutionException, IOException {
-        File newFolder1 = root.newFolder();
-        File coordinatesFiles = addFileToFolder(newFolder1, "Coordinates.groovy",
+        File coordinatesFiles = addFileToFolder(workspaceRoot, "Coordinates.groovy",
                 "class Coordinates implements ICoordinates {\n"
                         + "   double latitude\n"
                         + "   double longitude\n"
@@ -240,7 +234,7 @@ public final class GroovyTreeParserTest {
                         + "      else throw new Exception(\"Wrong coordinate index, use 0 or 1 \")\n"
                         + "   }\n"
                         + "}\n");
-        File icoordinatesFiles = addFileToFolder(newFolder1, "ICoordinates.groovy",
+        File icoordinatesFiles = addFileToFolder(workspaceRoot, "foo/folder", "ICoordinates.groovy",
                 "interface ICoordinates {\n"
                         + "   abstract double getAt(int idx);\n"
                         + "}\n");
@@ -310,9 +304,8 @@ public final class GroovyTreeParserTest {
 
     @Test
     public void testReferences_typeInnerClass() throws IOException {
-        File newFolder1 = root.newFolder();
         // edge cases, intersecting ranges
-        File file = addFileToFolder(newFolder1, "Dog.groovy",
+        File file = addFileToFolder(workspaceRoot, "foo", "Dog.groovy",
                 "class Dog {\n"
                         + "   Cat friend1;\n"
                         + "   Cat2 friend2;\n"
@@ -338,19 +331,17 @@ public final class GroovyTreeParserTest {
 
         // InnerCat2 references - testing finding more specific symbols that are contained inside another symbol's
         // range.
-        Set<Location> innerCat2ExpectedResult = Sets.newHashSet(
-                createLocation(file.toPath(), Ranges.createRange(12, 3, 12, 12)));
-        assertEquals(innerCat2ExpectedResult,
-                parser.findReferences(createReferenceParams(file.toURI(), 13, 9, false)));
+        Set<Location> expectedResult =
+                Sets.newHashSet(createLocation(file.toPath(), Ranges.createRange(12, 3, 12, 12)));
+        assertEquals(expectedResult, parser.findReferences(createReferenceParams(file.toURI(), 13, 9, false)));
     }
 
     @Test
     public void testReferences_typeEnumOneLine() throws IOException {
-        File newFolder1 = root.newFolder();
         // edge case on one line
-        File enumFile = addFileToFolder(newFolder1, "MyEnum.groovy",
+        File enumFile = addFileToFolder(workspaceRoot, "MyEnum.groovy",
                 "enum MyEnum {ONE,TWO}\n");
-        File scriptFile = addFileToFolder(newFolder1, "MyScript.groovy",
+        File scriptFile = addFileToFolder(workspaceRoot, "MyScript.groovy",
                 "MyEnum a\n\n");
         parser.parseAllSymbols();
 
@@ -363,9 +354,8 @@ public final class GroovyTreeParserTest {
 
     @Test
     public void testReferences_typeInnerClassOneLine() throws IOException {
-        File newFolder1 = root.newFolder();
         // edge case on one line
-        File innerClass = addFileToFolder(newFolder1, "AandB.groovy",
+        File innerClass = addFileToFolder(workspaceRoot, "AandB.groovy",
                 "public class A {public static class B {}\n"
                         + "A a\n"
                         + "B b\n"
@@ -386,20 +376,19 @@ public final class GroovyTreeParserTest {
 
     @Test
     public void testReferences_typeClassesAndInterfaces() throws InterruptedException, ExecutionException, IOException {
-        File newFolder1 = root.newFolder();
-        File extendedcoordinatesFile = addFileToFolder(newFolder1, "ExtendedCoordinates.groovy",
+        File extendedcoordinatesFile = addFileToFolder(workspaceRoot, "ExtendedCoordinates.groovy",
                 "class ExtendedCoordinates extends Coordinates{\n"
                         + "   void somethingElse() {\n"
                         + "      println \"Hi again!\"\n"
                         + "   }\n"
                         + "}\n");
-        File extendedCoordinates2File = addFileToFolder(newFolder1, "ExtendedCoordinates2.groovy",
+        File extendedCoordinates2File = addFileToFolder(workspaceRoot, "ExtendedCoordinates2.groovy",
                 "class ExtendedCoordinates2 extends Coordinates{\n"
                         + "   void somethingElse() {\n"
                         + "      println \"Hi again!\"\n"
                         + "   }\n"
                         + "}\n");
-        File coordinatesFile = addFileToFolder(newFolder1, "Coordinates.groovy",
+        File coordinatesFile = addFileToFolder(workspaceRoot, "Coordinates.groovy",
                 "class Coordinates extends AbstractCoordinates implements ICoordinates {\n"
                         + "   double latitude\n"
                         + "   double longitude\n"
@@ -419,15 +408,15 @@ public final class GroovyTreeParserTest {
                         + "      println \"Hi!\"\n"
                         + "   }\n"
                         + "}\n");
-        File icoordinatesFile = addFileToFolder(newFolder1, "ICoordinates.groovy",
+        File icoordinatesFile = addFileToFolder(workspaceRoot, "foo1", "ICoordinates.groovy",
                 "interface ICoordinates extends ICoordinatesSuper{\n"
                         + "   abstract double getAt(int idx);\n"
                         + "}\n");
-        File icoordinatesSuperFile = addFileToFolder(newFolder1, "ICoordinatesSuper.groovy",
+        File icoordinatesSuperFile = addFileToFolder(workspaceRoot, "foo2", "ICoordinatesSuper.groovy",
                 "interface ICoordinatesSuper {\n"
                         + "   abstract void superInterfaceMethod()\n"
                         + "}\n");
-        File abstractcoordinatesFile = addFileToFolder(newFolder1, "AbstractCoordinates.groovy",
+        File abstractcoordinatesFile = addFileToFolder(workspaceRoot, "foo3", "AbstractCoordinates.groovy",
                 "abstract class AbstractCoordinates {\n"
                         + "   abstract void something();\n"
                         + "}\n");
@@ -471,8 +460,7 @@ public final class GroovyTreeParserTest {
 
     @Test
     public void testReferences_typeFields() throws IOException {
-        File newFolder1 = root.newFolder();
-        File dogFile = addFileToFolder(newFolder1, "Dog.groovy",
+        File dogFile = addFileToFolder(workspaceRoot, "Dog.groovy",
                 "class Dog {\n"
                         + "   Cat friend1;\n"
                         + "   Cat friend2;\n"
@@ -483,7 +471,7 @@ public final class GroovyTreeParserTest {
                         + "   }\n"
                         + "}\n");
 
-        File catFile = addFileToFolder(newFolder1, "Cat.groovy",
+        File catFile = addFileToFolder(workspaceRoot, "Cat.groovy",
                 "class Cat {\n"
                         + "   public String name = \"Bobby\"\n"
                         + "}\n");
@@ -496,7 +484,7 @@ public final class GroovyTreeParserTest {
                 createLocation(dogFile.toPath(), Ranges.createRange(1, 3, 1, 6)),
                 createLocation(dogFile.toPath(), Ranges.createRange(2, 3, 2, 6)),
                 createLocation(dogFile.toPath(), Ranges.createRange(3, 3, 3, 6)),
-                createLocation(dogFile.toPath(), Ranges.createRange(3, 12, 3, 21)),
+                createLocation(dogFile.toPath(), Ranges.createRange(3, 12, 3, 15)),
                 createLocation(dogFile.toPath(), Ranges.createRange(4, 6, 4, 9)));
         assertEquals(expectedResult,
                 parser.findReferences(createReferenceParams(catFile.toURI(), 0, 7, false)));
@@ -504,8 +492,7 @@ public final class GroovyTreeParserTest {
 
     @Test
     public void testReferences_typeEnum() throws IOException {
-        File newFolder1 = root.newFolder();
-        File scriptFile = addFileToFolder(newFolder1, "MyScript.groovy",
+        File scriptFile = addFileToFolder(workspaceRoot, "MyScript.groovy",
                 "Animal friend = Animal.CAT;\n"
                         + "pet(friend1)\n"
                         + "Animal pet(Animal animal) {\n"
@@ -514,7 +501,7 @@ public final class GroovyTreeParserTest {
                         + "   return animal\n"
                         + "}\n"
                         + "\n");
-        File animalFile = addFileToFolder(newFolder1, "Animal.groovy",
+        File animalFile = addFileToFolder(workspaceRoot, "Animal.groovy",
                 "enum Animal {\n"
                         + "CAT, DOG, BUNNY\n"
                         + "}\n");
@@ -524,7 +511,7 @@ public final class GroovyTreeParserTest {
                 createLocation(scriptFile.toPath(), Ranges.createRange(0, 0, 0, 6)),
                 createLocation(scriptFile.toPath(), Ranges.createRange(0, 16, 0, 22)),
                 createLocation(scriptFile.toPath(), Ranges.createRange(2, 0, 2, 6)),
-                createLocation(scriptFile.toPath(), Ranges.createRange(2, 11, 2, 24)),
+                createLocation(scriptFile.toPath(), Ranges.createRange(2, 11, 2, 17)),
                 createLocation(scriptFile.toPath(), Ranges.createRange(3, 3, 3, 9)));
 
         assertEquals(expectedResult, parser.findReferences(createReferenceParams(animalFile.toURI(), 0, 5, false)));
@@ -532,8 +519,7 @@ public final class GroovyTreeParserTest {
 
     @Test
     public void testReferences_script() throws IOException {
-        File newFolder1 = root.newFolder();
-        File scriptFile = addFileToFolder(newFolder1, "MyScript.groovy",
+        File scriptFile = addFileToFolder(workspaceRoot, "MyScript.groovy",
                 "Cat friend1;\n"
                         + "bark(friend1)\n"
                         + "Cat bark(Cat enemy) {\n"
@@ -542,7 +528,7 @@ public final class GroovyTreeParserTest {
                         + "   return enemy\n"
                         + "}\n"
                         + "\n");
-        File catFile = addFileToFolder(newFolder1, "Cat.groovy",
+        File catFile = addFileToFolder(workspaceRoot, "Cat.groovy",
                 "class Cat {\n"
                         + "}\n");
         parser.parseAllSymbols();
@@ -550,25 +536,52 @@ public final class GroovyTreeParserTest {
         Set<Location> expectedReferences = Sets.newHashSet(
                 createLocation(scriptFile.toPath(), Ranges.createRange(0, 0, 0, 3)),
                 createLocation(scriptFile.toPath(), Ranges.createRange(2, 0, 2, 3)),
-                createLocation(scriptFile.toPath(), Ranges.createRange(2, 9, 2, 18)),
+                createLocation(scriptFile.toPath(), Ranges.createRange(2, 9, 2, 12)),
                 createLocation(scriptFile.toPath(), Ranges.createRange(3, 3, 3, 6)));
         // Get references to object Cat, when clicking on its definition
         assertEquals(expectedReferences, parser.findReferences(createReferenceParams(catFile.toURI(), 0, 6, false)));
         // Get references to object Cat, when clicking on its usage
         assertEquals(expectedReferences,
                 parser.findReferences(createReferenceParams(scriptFile.toURI(), 0, 2, false)));
+        assertEquals(expectedReferences,
+                parser.findReferences(createReferenceParams(scriptFile.toURI(), 2, 2, false)));
+        //assertEquals(expectedReferences,
+          //      parser.findReferences(createReferenceParams(scriptFile.toURI(), 2, 10, false)));
+        assertEquals(expectedReferences,
+                parser.findReferences(createReferenceParams(scriptFile.toURI(), 3, 4, false)));
 
         expectedReferences = Sets.newHashSet(
                 createLocation(scriptFile.toPath(), Ranges.createRange(1, 5, 1, 12)));
-        // Get references to variable friend1
+        // Get references to friend1, when clicking on its definition
         assertEquals(expectedReferences,
                 parser.findReferences(createReferenceParams(scriptFile.toURI(), 0, 9, false)));
+        // Get references to friend1, when clicking on its usage
+        assertEquals(expectedReferences,
+                parser.findReferences(createReferenceParams(scriptFile.toURI(), 1, 9, false)));
+
+        // Find reference to enemy
+        expectedReferences = Sets.newHashSet(
+                createLocation(scriptFile.toPath(), Ranges.createRange(2, 9, 2, 12)),
+                createLocation(scriptFile.toPath(), Ranges.createRange(2, 0, 2, 3)),
+                createLocation(scriptFile.toPath(), Ranges.createRange(3, 3, 3, 6)),
+                createLocation(scriptFile.toPath(), Ranges.createRange(0, 0, 0, 3)));
+        // Get references to object Cat, when clicking on its definition
+        assertEquals(expectedReferences, parser.findReferences(createReferenceParams(catFile.toURI(), 0, 5, false)));
+        // Get references to object Cat, when clicking on its usage
+        assertEquals(expectedReferences,
+                parser.findReferences(createReferenceParams(scriptFile.toURI(), 2, 2, false)));
+        // This doesn't work because symbol enemy and reference parameter Cat have the exact same range
+        assertEquals(expectedReferences,
+                parser.findReferences(createReferenceParams(scriptFile.toURI(), 2, 10, false)));
+        assertEquals(expectedReferences,
+                parser.findReferences(createReferenceParams(scriptFile.toURI(), 3, 5, false)));
+        assertEquals(expectedReferences,
+                parser.findReferences(createReferenceParams(scriptFile.toURI(), 0, 2, false)));
     }
 
     @Test
     public void testReferences_includeDeclaration() throws IOException {
-        File newFolder1 = root.newFolder();
-        File scriptFile = addFileToFolder(newFolder1, "MyScript.groovy",
+        File scriptFile = addFileToFolder(workspaceRoot, "MyScript.groovy",
                 "Cat friend1;\n"
                         + "bark(friend1)\n"
                         + "Cat bark(Cat enemy) {\n"
@@ -577,15 +590,16 @@ public final class GroovyTreeParserTest {
                         + "   return enemy\n"
                         + "}\n"
                         + "\n");
-        File catFile = addFileToFolder(newFolder1, "Cat.groovy",
-                "class Cat {\n"
+        File catFile = addFileToFolder(workspaceRoot, "Cat.groovy",
+                "public class Cat {\n"
+                + "   public static int foo = 10"
                         + "}\n");
         parser.parseAllSymbols();
 
         Set<Location> expectedReferences = Sets.newHashSet(
                 createLocation(scriptFile.toPath(), Ranges.createRange(0, 0, 0, 3)),
                 createLocation(scriptFile.toPath(), Ranges.createRange(2, 0, 2, 3)),
-                createLocation(scriptFile.toPath(), Ranges.createRange(2, 9, 2, 18)),
+                createLocation(scriptFile.toPath(), Ranges.createRange(2, 9, 2, 12)),
                 createLocation(scriptFile.toPath(), Ranges.createRange(3, 3, 3, 6)),
                 createLocation(catFile.toPath(), Ranges.createRange(0, 0, 1, 0)));
         // Get references to object Cat, when clicking on its definition
@@ -604,10 +618,10 @@ public final class GroovyTreeParserTest {
 
     @Test
     public void testReferences_staticMethod() throws IOException {
-        File file = addFileToFolder(root.getRoot(), "OuterClass.groovy",
+        File file = addFileToFolder(workspaceRoot, "OuterClass.groovy",
                 "class OuterClass {\n"
                         + "   static InnerClass someStaticField\n"
-                        + "   class InnerClass {\n"
+                        + "   static class InnerClass {\n"
                         + "      void myICNonStaticMethod() {}\n"
                         + "      static void myICStaticMethod() {}\n"
                         + "   }\n"
@@ -689,8 +703,8 @@ public final class GroovyTreeParserTest {
 
     @Test
     public void testReferences_catchStatement() throws IOException {
-        File file = addFileToFolder(root.getRoot(), "Coordinates.groovy",
-                "class Foo {}\n"
+        File file = addFileToFolder(workspaceRoot, "Coordinates.groovy",
+                "class Foo extends Throwable{}\n"
                         + "try {\n"
                         + "   println \"Hello\""
                         + "}\n catch (Foo e1) {\n"
@@ -709,7 +723,7 @@ public final class GroovyTreeParserTest {
 
     @Test
     public void testReferences_ifStatementForLoop() throws IOException {
-        File file = addFileToFolder(root.getRoot(), "MyClass.groovy",
+        File file = addFileToFolder(workspaceRoot, "MyClass.groovy",
                 "class MyClass {\n"
                         + "   def fieldName = \"Natacha\"\n"
                         + "   int myMethod(int idx1, int idx2) {\n"
@@ -783,8 +797,7 @@ public final class GroovyTreeParserTest {
 
     @Test
     public void testReferences_overloadedMethods() throws InterruptedException, ExecutionException, IOException {
-        File newFolder1 = root.newFolder();
-        File test = addFileToFolder(newFolder1, "Test.groovy",
+        File test = addFileToFolder(workspaceRoot, "Test.groovy",
                 "class Test {\n"
                         + "    static int myStaticField = 10\n"
                         + "    int myNonStaticField = 10\n"
@@ -807,7 +820,7 @@ public final class GroovyTreeParserTest {
                         + "        return a + b\n"
                         + "    }\n"
                         + "}\n");
-        File script = addFileToFolder(newFolder1, "MyScript.groovy",
+        File script = addFileToFolder(workspaceRoot, "MyScript.groovy",
                 "Test test1\n"
                         + "Test test2 = new Test()\n"
                         + "test1 = new Test()\n"
@@ -906,6 +919,113 @@ public final class GroovyTreeParserTest {
         assertEquals(expectedReferences, parser.findReferences(createReferenceParams(script.toURI(), 7, 15, false)));
     }
 
+    @Test
+    public void testGotoDefinition() throws IOException {
+        File file = addFileToFolder(workspaceRoot, "OuterClass.groovy",
+                "class OuterClass {\n"
+                        + "   static InnerClass someStaticField\n"
+                        + "   static class InnerClass {\n"
+                        + "      void myICNonStaticMethod() {}\n"
+                        + "      static void myICStaticMethod() {}\n"
+                        + "   }\n"
+                        + "   static int test2() {\n"
+                        + "      return 0\n"
+                        + "   }\n"
+                        + "   static int test3() {\n" // Calling methods from a static context
+                        + "      InnerClass localField = new InnerClass()\n"
+                        + "      someStaticField.myICNonStaticMethod()\n"
+                        + "      new InnerClass().myICNonStaticMethod()\n"
+                        + "      localField.myICNonStaticMethod()\n"
+                        + "      InnerClass.myICStaticMethod()\n"
+                        + "      return 1 + test2()\n"
+                        + "   }\n"
+                        + "}\n");
+        parser.parseAllSymbols();
+
+        // InnerClass
+        Location expectedLocation = new LocationBuilder()
+                .uri(file.toPath().toUri().toString())
+                .range(Ranges.createRange(2, 3, 3, 0)).build();
+        assertEquals(expectedLocation, parser.gotoDefinition(file.toURI(), new PositionImpl(1, 15)).get());
+        assertEquals(expectedLocation, parser.gotoDefinition(file.toURI(), new PositionImpl(10, 10)).get());
+        assertEquals(expectedLocation, parser.gotoDefinition(file.toURI(), new PositionImpl(10, 31)).get());
+        assertEquals(expectedLocation, parser.gotoDefinition(file.toURI(), new PositionImpl(12, 12)).get());
+        assertEquals(expectedLocation, parser.gotoDefinition(file.toURI(), new PositionImpl(14, 11)).get());
+
+        // someStaticField
+        expectedLocation = new LocationBuilder()
+                .uri(file.toPath().toUri().toString())
+                // TODO: figure out how to make these more precise
+                .range(Ranges.createRange(1, 3, 1, 36)).build();
+        assertEquals(expectedLocation, parser.gotoDefinition(file.toURI(), new PositionImpl(11, 15)).get());
+
+        // localField
+        expectedLocation = new LocationBuilder()
+                .uri(file.toPath().toUri().toString())
+                .range(Ranges.createRange(10, 17, 10, 27)).build();
+        assertEquals(expectedLocation, parser.gotoDefinition(file.toURI(), new PositionImpl(13, 10)).get());
+
+        // myICNonStaticMethod
+        expectedLocation = new LocationBuilder()
+                .uri(file.toPath().toUri().toString())
+                .range(Ranges.createRange(3, 6, 3, 35)).build();
+        assertEquals(expectedLocation, parser.gotoDefinition(file.toURI(), new PositionImpl(11, 23)).get());
+        assertEquals(expectedLocation, parser.gotoDefinition(file.toURI(), new PositionImpl(12, 23)).get());
+        assertEquals(expectedLocation, parser.gotoDefinition(file.toURI(), new PositionImpl(13, 23)).get());
+
+        // myICStaticMethod
+        expectedLocation = new LocationBuilder()
+                .uri(file.toPath().toUri().toString())
+                // TODO: figure out how to make these more precise
+                .range(Ranges.createRange(4, 6, 4, 39)).build();
+        assertEquals(expectedLocation, parser.gotoDefinition(file.toURI(), new PositionImpl(14, 20)).get());
+
+        // test2
+        expectedLocation = new LocationBuilder()
+                .uri(file.toPath().toUri().toString())
+                // TODO: figure out how to make these more precise
+                .range(Ranges.createRange(6, 3, 8, 4)).build();
+        assertEquals(expectedLocation, parser.gotoDefinition(file.toURI(), new PositionImpl(15, 20)).get());
+    }
+
+    @Test
+    public void testGotoDefinition_multipleFiles() throws IOException {
+        File dog = addFileToFolder(workspaceRoot, "mydogfolder", "Dog.groovy",
+                "public class Dog {}\n");
+        File cat = addFileToFolder(workspaceRoot, "mycatfolder", "Cat.groovy",
+                "public class Cat {\n"
+                        + "   public static Dog dog = new Dog()\n"
+                        + "   public static Dog foo() {\n"
+                        + "       Dog newDog = new Dog()\n"
+                        + "       foo()\n"
+                        + "       return newDog\n"
+                        + "   }\n"
+                        + "}\n");
+        parser.parseAllSymbols();
+
+        // Dog class
+        Location expectedLocation = new LocationBuilder()
+                .uri(dog.toPath().toUri().toString())
+                .range(Ranges.createRange(0, 0, 0, 19)).build();
+        assertEquals(Optional.of(expectedLocation), parser.gotoDefinition(cat.toURI(), new PositionImpl(1, 18)));
+        assertEquals(Optional.of(expectedLocation), parser.gotoDefinition(cat.toURI(), new PositionImpl(2, 18)));
+        assertEquals(Optional.of(expectedLocation), parser.gotoDefinition(cat.toURI(), new PositionImpl(3, 8)));
+        assertEquals(Optional.of(expectedLocation), parser.gotoDefinition(cat.toURI(), new PositionImpl(3, 25)));
+
+        // newDog local variable
+        expectedLocation = new LocationBuilder()
+                .uri(cat.toPath().toUri().toString())
+                .range(Ranges.createRange(3, 11, 3, 17)).build();
+        assertEquals(Optional.of(expectedLocation), parser.gotoDefinition(cat.toURI(), new PositionImpl(5, 18)));
+
+        // foo method
+        expectedLocation = new LocationBuilder()
+                .uri(cat.toPath().toUri().toString())
+                // TODO(#124): make this more accurate
+                .range(Ranges.createRange(2, 3, 6, 4)).build();
+        assertEquals(Optional.of(expectedLocation), parser.gotoDefinition(cat.toURI(), new PositionImpl(4, 10)));
+    }
+
     private boolean mapHasSymbol(Map<URI, Set<SymbolInformation>> map, Optional<String> container, String fieldName,
             SymbolKind kind) {
         return map.values().stream().flatMap(Collection::stream)
@@ -914,12 +1034,18 @@ public final class GroovyTreeParserTest {
                         && symbol.getName().equals(fieldName));
     }
 
-    private static File addFileToFolder(File parent, String filename, String contents) throws IOException {
-        File file = Files.createFile(Paths.get(parent.getAbsolutePath(), filename)).toFile();
+    private static File addFileToFolder(File root, String filename, String contents) throws IOException {
+        File file = Files.createFile(root.toPath().resolve(filename)).toFile();
         PrintWriter writer = new PrintWriter(file, StandardCharsets.UTF_8.toString());
         writer.print(contents);
         writer.close();
         return file;
+    }
+
+    private static File addFileToFolder(File root, String parent, String filename, String contents) throws IOException {
+        Path parentPath = root.toPath().resolve(parent);
+        Files.createDirectories(parentPath);
+        return addFileToFolder(parentPath.toFile(), filename, contents);
     }
 
     private static Location createLocation(Path path, Range range) {

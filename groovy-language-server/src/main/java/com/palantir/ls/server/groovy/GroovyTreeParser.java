@@ -337,7 +337,8 @@ public final class GroovyTreeParser implements TreeParser {
             SymbolInformation variableSymbol = getVariableSymbolInformation(method.getName(), sourceUri, variable);
             newIndexer.addSymbol(sourceUri, variableSymbol);
             if (classes.containsKey(variable.getType().getName())) {
-                newIndexer.addReference(classes.get(variable.getType().getName()), variableSymbol.getLocation());
+                newIndexer.addReference(classes.get(variable.getType().getName()),
+                        GroovyLocations.createLocation(sourceUri, variable.getType()));
             }
         });
 
