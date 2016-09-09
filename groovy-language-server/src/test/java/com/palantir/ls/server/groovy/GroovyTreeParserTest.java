@@ -545,8 +545,8 @@ public final class GroovyTreeParserTest {
                 parser.findReferences(createReferenceParams(scriptFile.toURI(), 0, 2, false)));
         assertEquals(expectedReferences,
                 parser.findReferences(createReferenceParams(scriptFile.toURI(), 2, 2, false)));
-        //assertEquals(expectedReferences,
-          //      parser.findReferences(createReferenceParams(scriptFile.toURI(), 2, 10, false)));
+        assertEquals(expectedReferences,
+                parser.findReferences(createReferenceParams(scriptFile.toURI(), 2, 10, false)));
         assertEquals(expectedReferences,
                 parser.findReferences(createReferenceParams(scriptFile.toURI(), 3, 4, false)));
 
