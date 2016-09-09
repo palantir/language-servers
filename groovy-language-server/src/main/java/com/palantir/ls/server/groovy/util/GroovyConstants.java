@@ -30,6 +30,7 @@ public final class GroovyConstants {
     public static final String GROOVY_LANGUAGE_NAME = "groovy";
     public static final String GROOVY_LANGUAGE_EXTENSION = "groovy";
     public static final String JAVA_LANGUAGE_EXTENSION = "java";
+    public static final String JAVA_DEFAULT_OBJECT = "java.lang.Object";
     public static final Set<String> GROOVY_ALLOWED_EXTENSIONS =
             Collections.unmodifiableSet(Sets.newHashSet(GROOVY_LANGUAGE_EXTENSION, JAVA_LANGUAGE_EXTENSION));
 

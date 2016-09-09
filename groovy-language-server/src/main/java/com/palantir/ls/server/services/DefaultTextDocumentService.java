@@ -100,14 +100,15 @@ public final class DefaultTextDocumentService implements TextDocumentService {
 
     @Override
     public CompletableFuture<List<? extends Location>> definition(TextDocumentPositionParams position) {
-        throw new UnsupportedOperationException();
+        URI uri = Uris.resolveToRoot(getWorkspacePath(), position.getTextDocument().getUri());
+        return CompletableFuture.completedFuture(state.getCompilerWrapper().gotoDefinition(uri, position.getPosition())
+                .transform(loc -> Lists.newArrayList(loc)).or(Lists.newArrayList()));
     }
 
     @Override
     public CompletableFuture<List<? extends Location>> references(ReferenceParams params) {
         return CompletableFuture.completedFuture(
                 state.getCompilerWrapper().findReferences(params).stream()
-                        .map(symbol -> symbol.getLocation())
                         .filter(location -> Ranges.isValid(location.getRange()))
                         .collect(Collectors.toList()));
     }
