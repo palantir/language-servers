@@ -102,7 +102,7 @@ public final class DefaultTextDocumentService implements TextDocumentService {
     public CompletableFuture<List<? extends Location>> definition(TextDocumentPositionParams position) {
         URI uri = Uris.resolveToRoot(getWorkspacePath(), position.getTextDocument().getUri());
         return CompletableFuture.completedFuture(state.getCompilerWrapper().gotoDefinition(uri, position.getPosition())
-                .transform(l -> Lists.newArrayList(l)).or(Lists.newArrayList()));
+                .transform(loc -> Lists.newArrayList(loc)).or(Lists.newArrayList()));
     }
 
     @Override

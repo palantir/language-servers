@@ -33,24 +33,19 @@ public final class Indexer {
     // Maps from source file path -> set of symbols in that file
     private final Map<URI, Set<SymbolInformation>> fileSymbols = Maps.newHashMap();
 
-    void addSymbol(URI uri, SymbolInformation node) {
+    public void addSymbol(URI uri, SymbolInformation node) {
         fileSymbols.computeIfAbsent(uri, k -> Sets.newHashSet()).add(node);
     }
 
-    void addReference(Location referenced, Location node) {
+    public void addReference(Location referenced, Location node) {
         if (Ranges.isValid(referenced.getRange()) && Ranges.isValid(node.getRange())) {
             references.computeIfAbsent(referenced, k -> Sets.newHashSet()).add(node);
             gotoReferenced.put(node, referenced);
         }
     }
 
-    Optional<Set<Location>> findReferences(Location location) {
+    public Optional<Set<Location>> findReferences(Location location) {
         return Optional.fromNullable(references.get(location));
-    }
-
-    Optional<Set<Location>> findReferencedReferences(Location location) {
-        Optional<Location> referencedLocation = gotoReferenced(location);
-        return referencedLocation.transform(l -> references.get(l));
     }
 
     public Optional<Location> gotoReferenced(Location location) {

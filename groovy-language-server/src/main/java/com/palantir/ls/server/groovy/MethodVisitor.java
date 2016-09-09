@@ -56,7 +56,7 @@ public final class MethodVisitor extends CodeVisitorSupport {
     // Don't use this to get the field's types location, it is invalid when obtained through their references.
     private final Map<String, FieldNode> classFields;
     private final Optional<MethodNode> methodNode;
-    private final com.palantir.ls.server.util.UriSupplier workspaceUriSupplier;
+    private final UriSupplier workspaceUriSupplier;
 
     public MethodVisitor(Indexer indexer, URI uri, ClassNode clazz, Map<String, Location> classes,
             Map<String, FieldNode> classFields, Optional<MethodNode> methodNode, UriSupplier workspaceUriSupplier) {
@@ -76,8 +76,8 @@ public final class MethodVisitor extends CodeVisitorSupport {
             indexer.addReference(classes.get(statement.getExceptionType().getName()),
                     createLocation(statement.getExceptionType()));
         }
-        // TODO: add a symbol for the exception variables. Right now statement.getVariable() returns a Parameter with an
-        // invalid location.
+        // TODO(#125): add a symbol for the exception variables. Right now statement.getVariable() returns a Parameter
+        // with an invalid location.
         super.visitCatchStatement(statement);
     }
 
@@ -94,15 +94,16 @@ public final class MethodVisitor extends CodeVisitorSupport {
             ConstructorCallExpression expression = (ConstructorCallExpression) call.getObjectExpression();
             // Local function, no class used (or technically this used).
             potentialParentClass = expression.getType();
-            possibleMethods = expression.getType().getMethods(call.getMethod().getText());
+            // Local function, no class used (or technically this used).
+            possibleMethods = potentialParentClass.getMethods(call.getMethod().getText());
         } else if (call.getObjectExpression() instanceof VariableExpression) {
             // function called on instance of some class
             VariableExpression var = (VariableExpression) call.getObjectExpression();
             if (var.getOriginType() != null) {
                 potentialParentClass = var.getOriginType();
-                if (var.getOriginType().getText().equals(GroovyConstants.JAVA_DEFAULT_OBJECT)) {
+                if (potentialParentClass.getText().equals(GroovyConstants.JAVA_DEFAULT_OBJECT)) {
                     // This means it might actually be referring to a global field but not getting the right type
-                    // because this is the default value and not necessarily set even if it has a real type. >_>
+                    // because this is the default value and not necessarily set even if it has a real type.
                     if (classFields.containsKey(var.getText())) {
                         possibleMethods =
                                 classFields.get(var.getText()).getType().getMethods(call.getMethod().getText());
@@ -129,19 +130,6 @@ public final class MethodVisitor extends CodeVisitorSupport {
                     });
         }
         super.visitMethodCallExpression(call);
-    }
-
-    private boolean areEquals(Parameter[] parameters, ArgumentListExpression arguments) {
-        if (parameters.length != arguments.getExpressions().size()) {
-            return false;
-        }
-        for (int i = 0; i < parameters.length; i++) {
-            // If they aren't the same type return false
-            if (!parameters[i].getType().equals(arguments.getExpression(i).getType())) {
-                return false;
-            }
-        }
-        return true;
     }
 
     @Override
@@ -209,6 +197,27 @@ public final class MethodVisitor extends CodeVisitorSupport {
         super.visitVariableExpression(expression);
     }
 
+    @Override
+    public void visitDeclarationExpression(DeclarationExpression expression) {
+        if (expression.getLeftExpression() instanceof Variable) {
+            Variable var = (Variable) expression.getLeftExpression();
+            SymbolInformation symbol = getVariableSymbolInformation(var);
+            indexer.addSymbol(uri, symbol);
+            if (var.getType() != null && classes.containsKey(var.getType().getName())) {
+                indexer.addReference(classes.get(var.getType().getName()), createLocation(var.getType()));
+            }
+        }
+        super.visitDeclarationExpression(expression);
+    }
+
+    private Location createLocation(ASTNode node) {
+        return GroovyLocations.createLocation(workspaceUriSupplier.get(uri), node);
+    }
+
+    private Location createLocation(URI locationUri, ASTNode node) {
+        return GroovyLocations.createLocation(workspaceUriSupplier.get(locationUri), node);
+    }
+
     private SymbolInformation getVariableSymbolInformation(Variable variable) {
         SymbolInformationBuilder builder =
                 new SymbolInformationBuilder().name(variable.getName());
@@ -220,7 +229,7 @@ public final class MethodVisitor extends CodeVisitorSupport {
 
         if (variable instanceof DynamicVariable) {
             builder.kind(SymbolKind.Field);
-            builder.location(createLocation(uri));
+            builder.location(GroovyLocations.createLocation(workspaceUriSupplier.get(uri)));
         } else if (variable instanceof FieldNode) {
             builder.kind(SymbolKind.Field);
             builder.location(createLocation(uri, (FieldNode) variable));
@@ -239,29 +248,17 @@ public final class MethodVisitor extends CodeVisitorSupport {
         return builder.build();
     }
 
-    @Override
-    public void visitDeclarationExpression(DeclarationExpression expression) {
-        if (expression.getLeftExpression() instanceof Variable) {
-            Variable var = (Variable) expression.getLeftExpression();
-            SymbolInformation symbol = getVariableSymbolInformation(var);
-            indexer.addSymbol(uri, symbol);
-            if (var.getType() != null && classes.containsKey(var.getType().getName())) {
-                indexer.addReference(classes.get(var.getType().getName()), createLocation(var.getType()));
+    private static boolean areEquals(Parameter[] parameters, ArgumentListExpression arguments) {
+        if (parameters.length != arguments.getExpressions().size()) {
+            return false;
+        }
+        for (int i = 0; i < parameters.length; i++) {
+            // If they aren't the same type return false
+            if (!parameters[i].getType().equals(arguments.getExpression(i).getType())) {
+                return false;
             }
         }
-        super.visitDeclarationExpression(expression);
-    }
-
-    private Location createLocation(ASTNode node) {
-        return GroovyLocations.createLocation(workspaceUriSupplier.get(uri), node);
-    }
-
-    private Location createLocation(URI locationUri) {
-        return GroovyLocations.createLocation(workspaceUriSupplier.get(locationUri));
-    }
-
-    private Location createLocation(URI locationUri, ASTNode node) {
-        return GroovyLocations.createLocation(workspaceUriSupplier.get(locationUri), node);
+        return true;
     }
 
 }

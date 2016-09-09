@@ -156,9 +156,7 @@ public final class GroovyTreeParser implements TreeParser {
 
                 // Add all method symbols
                 clazz.getAllDeclaredMethods()
-                        .forEach(method -> {
-                            parseMethod(newIndexer, sourceUri, clazz, classes, classFields, method);
-                        });
+                        .forEach(method -> parseMethod(newIndexer, sourceUri, clazz, classes, classFields, method));
             });
 
             // Add symbols declared within the statement block variable scope which includes script
@@ -203,20 +201,20 @@ public final class GroovyTreeParser implements TreeParser {
         }
         List<ReferenceLocation> foundReferencedLocations = symbols.stream()
                 .map(symbol -> symbol.getLocation())
-                .filter(l -> Ranges.isValid(l.getRange())
-                        && Ranges.contains(l.getRange(), params.getPosition()))
-                .map(l -> new ReferenceLocation(l, false))
+                .filter(loc -> Ranges.isValid(loc.getRange())
+                        && Ranges.contains(loc.getRange(), params.getPosition()))
+                .map(loc -> new ReferenceLocation(loc, false))
                 .collect(Collectors.toList());
 
         // It might be a location on top of a reference instead of a definition.
         // Ex: Test test; - clicking on Test
         Set<ReferenceLocation> locations =
                 indexer.getGotoReferenced().keySet().stream()
-                        .filter(l -> paramsUri.toString().equals(l.getUri())
-                                && Ranges.isValid(l.getRange())
-                                && Ranges.contains(l.getRange(), params.getPosition())
-                                && indexer.gotoReferenced(l).isPresent())
-                        .map(l -> new ReferenceLocation(l, true))
+                        .filter(loc -> paramsUri.toString().equals(loc.getUri())
+                                && Ranges.isValid(loc.getRange())
+                                && Ranges.contains(loc.getRange(), params.getPosition())
+                                && indexer.gotoReferenced(loc).isPresent())
+                        .map(loc -> new ReferenceLocation(loc, true))
                         .collect(Collectors.toSet());
         foundReferencedLocations.addAll(locations);
 
@@ -255,7 +253,7 @@ public final class GroovyTreeParser implements TreeParser {
     @Override
     public Optional<Location> gotoDefinition(URI uri, Position position) {
         List<Location> possibleLocations = indexer.getGotoReferenced().keySet().stream()
-                .filter(l -> uri.equals(URI.create(l.getUri())) && Ranges.contains(l.getRange(), position))
+                .filter(loc -> uri.equals(URI.create(loc.getUri())) && Ranges.contains(loc.getRange(), position))
                 // If there is more than one result, we want the symbol whose range starts the latest, with a secondary
                 // sort of earliest end range.
                 .sorted((l1, l2) -> Ranges.POSITION_COMPARATOR.compare(l1.getRange().getEnd(), l2.getRange().getEnd()))

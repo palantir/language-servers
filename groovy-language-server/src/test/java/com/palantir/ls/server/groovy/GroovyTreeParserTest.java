@@ -671,7 +671,7 @@ public final class GroovyTreeParserTest {
 
         // METHOD (non static) references
         expectedReferences = Sets.newHashSet(
-                // TODO: figure out how to make these more precise
+                // TODO(#124): figure out how to make these more precise
                 createLocation(file.toPath(), Ranges.createRange(11, 6, 11, 43)),
                 createLocation(file.toPath(), Ranges.createRange(12, 6, 12, 44)),
                 createLocation(file.toPath(), Ranges.createRange(13, 6, 13, 38)));
@@ -684,7 +684,7 @@ public final class GroovyTreeParserTest {
 
         // METHOD (static) references
         expectedReferences = Sets.newHashSet(
-                // TODO: figure out how to make these more precise
+                // TODO(#124): figure out how to make these more precise
                 createLocation(file.toPath(), Ranges.createRange(14, 6, 14, 35)));
         // Get references when providing definition position
         assertEquals(expectedReferences, parser.findReferences(createReferenceParams(file.toURI(), 4, 15, false)));
@@ -693,7 +693,7 @@ public final class GroovyTreeParserTest {
 
         // test2 references
         expectedReferences = Sets.newHashSet(
-                // TODO: figure out how to make these more precise
+                // TODO(#124): figure out how to make these more precise
                 createLocation(file.toPath(), Ranges.createRange(15, 17, 15, 24)));
         // Get references when providing definition position
         assertEquals(expectedReferences, parser.findReferences(createReferenceParams(file.toURI(), 6, 15, false)));
@@ -718,7 +718,7 @@ public final class GroovyTreeParserTest {
         assertEquals(expectedReferences, parser.findReferences(createReferenceParams(file.toURI(), 0, 6, false)));
         // Get references when providing position of usage
         assertEquals(expectedReferences,  parser.findReferences(createReferenceParams(file.toURI(), 3, 9, false)));
-        // TODO: add a symbol for the exception variables and test here.
+        // TODO(#125): add a symbol for the exception variables and test here.
     }
 
     @Test
@@ -955,7 +955,7 @@ public final class GroovyTreeParserTest {
         // someStaticField
         expectedLocation = new LocationBuilder()
                 .uri(file.toPath().toUri().toString())
-                // TODO: figure out how to make these more precise
+                // TODO(#124): figure out how to make these more precise
                 .range(Ranges.createRange(1, 3, 1, 36)).build();
         assertEquals(expectedLocation, parser.gotoDefinition(file.toURI(), new PositionImpl(11, 15)).get());
 
@@ -976,14 +976,14 @@ public final class GroovyTreeParserTest {
         // myICStaticMethod
         expectedLocation = new LocationBuilder()
                 .uri(file.toPath().toUri().toString())
-                // TODO: figure out how to make these more precise
+                // TODO(#124): figure out how to make these more precise
                 .range(Ranges.createRange(4, 6, 4, 39)).build();
         assertEquals(expectedLocation, parser.gotoDefinition(file.toURI(), new PositionImpl(14, 20)).get());
 
         // test2
         expectedLocation = new LocationBuilder()
                 .uri(file.toPath().toUri().toString())
-                // TODO: figure out how to make these more precise
+                // TODO(#124): figure out how to make these more precise
                 .range(Ranges.createRange(6, 3, 8, 4)).build();
         assertEquals(expectedLocation, parser.gotoDefinition(file.toURI(), new PositionImpl(15, 20)).get());
     }
