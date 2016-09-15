@@ -21,6 +21,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.base.Optional;
 import com.google.common.base.Supplier;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.palantir.ls.server.api.TreeParser;
@@ -197,7 +198,7 @@ public final class GroovyTreeParser implements TreeParser {
         URI paramsUri = Uris.resolveToRoot(workspaceRoot, params.getTextDocument().getUri());
         Set<SymbolInformation> symbols = indexer.getFileSymbols().get(paramsUri);
         if (symbols == null) {
-            return Sets.newHashSet();
+            return ImmutableSet.of();
         }
         List<ReferenceLocation> foundReferencedLocations = symbols.stream()
                 .map(symbol -> symbol.getLocation())
@@ -219,7 +220,7 @@ public final class GroovyTreeParser implements TreeParser {
         foundReferencedLocations.addAll(locations);
 
         if (foundReferencedLocations.isEmpty()) {
-            return Sets.newHashSet();
+            return ImmutableSet.of();
         }
 
         foundReferencedLocations = foundReferencedLocations.stream()

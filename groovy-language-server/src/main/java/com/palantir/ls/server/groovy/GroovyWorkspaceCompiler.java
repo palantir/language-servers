@@ -20,8 +20,8 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.base.Supplier;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 import com.google.common.io.Files;
 import com.palantir.ls.server.api.WorkspaceCompiler;
 import com.palantir.ls.server.groovy.util.DefaultDiagnosticBuilder;
@@ -124,7 +124,7 @@ public final class GroovyWorkspaceCompiler implements WorkspaceCompiler, Supplie
         } catch (MultipleCompilationErrorsException e) {
             return parseErrors(e.getErrorCollector());
         }
-        return Sets.newHashSet();
+        return ImmutableSet.of();
     }
 
     @Override
