@@ -570,7 +570,6 @@ public final class GroovyTreeParserTest {
         // Get references to object Cat, when clicking on its usage
         assertEquals(expectedReferences,
                 parser.findReferences(createReferenceParams(scriptFile.toURI(), 2, 2, false)));
-        // This doesn't work because symbol enemy and reference parameter Cat have the exact same range
         assertEquals(expectedReferences,
                 parser.findReferences(createReferenceParams(scriptFile.toURI(), 2, 10, false)));
         assertEquals(expectedReferences,

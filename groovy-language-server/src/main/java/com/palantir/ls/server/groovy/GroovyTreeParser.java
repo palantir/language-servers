@@ -68,12 +68,11 @@ public final class GroovyTreeParser implements TreeParser {
 
     private static final String GROOVY_DEFAULT_INTERFACE = "groovy.lang.GroovyObject";
 
-    // Maps from source file path -> set of symbols in that file
-    private Indexer indexer = new Indexer();
-
     private final Supplier<CompilationUnit> unitSupplier;
     private final Path workspaceRoot;
     private final UriSupplier workspaceUriSupplier;
+
+    private Indexer indexer = new Indexer();
 
     private GroovyTreeParser(Supplier<CompilationUnit> unitSupplier, Path workspaceRoot,
             UriSupplier workspaceUriSupplier) {
