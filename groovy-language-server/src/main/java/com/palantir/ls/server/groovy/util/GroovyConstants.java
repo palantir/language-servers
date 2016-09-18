@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.palantir.ls.server.groovy.util;
+package com.palantir.ls.groovy.util;
 
 import com.google.common.collect.Sets;
 import java.util.Collections;

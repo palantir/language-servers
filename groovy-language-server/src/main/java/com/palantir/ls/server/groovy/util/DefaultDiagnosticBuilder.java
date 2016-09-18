@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package com.palantir.ls.server.groovy.util;
+package com.palantir.ls.groovy.util;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import com.palantir.ls.server.util.Ranges;
+import com.palantir.ls.util.Ranges;
 import io.typefox.lsapi.DiagnosticSeverity;
 import io.typefox.lsapi.builders.DiagnosticBuilder;
 

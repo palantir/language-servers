@@ -14,21 +14,22 @@
  * limitations under the License.
  */
 
-package com.palantir.ls.server.groovy;
+package com.palantir.ls.groovy;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.base.Supplier;
+import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.io.Files;
-import com.palantir.ls.server.api.WorkspaceCompiler;
-import com.palantir.ls.server.groovy.util.DefaultDiagnosticBuilder;
-import com.palantir.ls.server.groovy.util.GroovyConstants;
-import com.palantir.ls.server.util.Ranges;
-import com.palantir.ls.server.util.SourceWriter;
-import com.palantir.ls.server.util.Uris;
+import com.palantir.ls.api.WorkspaceCompiler;
+import com.palantir.ls.groovy.util.DefaultDiagnosticBuilder;
+import com.palantir.ls.groovy.util.GroovyConstants;
+import com.palantir.ls.util.Ranges;
+import com.palantir.ls.util.SourceWriter;
+import com.palantir.ls.util.Uris;
 import io.typefox.lsapi.Diagnostic;
 import io.typefox.lsapi.DiagnosticSeverity;
 import io.typefox.lsapi.FileEvent;
@@ -150,7 +151,7 @@ public final class GroovyWorkspaceCompiler implements WorkspaceCompiler, Supplie
             resetCompilationUnit();
         } catch (IOException e) {
             logger.error("Error occurred while handling file changes", e);
-            throw new RuntimeException("Error occurred while handling file changes");
+            throw Throwables.propagate(e);
         }
     }
 
@@ -183,7 +184,7 @@ public final class GroovyWorkspaceCompiler implements WorkspaceCompiler, Supplie
             }
         } catch (IOException e) {
             logger.error("Error occurred while handling file saved", e);
-            throw new RuntimeException("Error occurred while handling file saved");
+            throw Throwables.propagate(e);
         }
     }
 

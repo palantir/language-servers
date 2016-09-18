@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.palantir.ls.server.groovy;
+package com.palantir.ls.groovy;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -24,12 +24,12 @@ import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import com.palantir.ls.server.api.TreeParser;
-import com.palantir.ls.server.groovy.util.GroovyConstants;
-import com.palantir.ls.server.groovy.util.GroovyLocations;
-import com.palantir.ls.server.util.Ranges;
-import com.palantir.ls.server.util.UriSupplier;
-import com.palantir.ls.server.util.Uris;
+import com.palantir.ls.groovy.util.GroovyLocations;
+import com.palantir.ls.api.TreeParser;
+import com.palantir.ls.groovy.util.GroovyConstants;
+import com.palantir.ls.util.Ranges;
+import com.palantir.ls.util.UriSupplier;
+import com.palantir.ls.util.Uris;
 import io.typefox.lsapi.Location;
 import io.typefox.lsapi.Position;
 import io.typefox.lsapi.ReferenceParams;

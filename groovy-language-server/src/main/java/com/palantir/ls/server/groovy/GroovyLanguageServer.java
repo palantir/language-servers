@@ -14,19 +14,19 @@
  * limitations under the License.
  */
 
-package com.palantir.ls.server.groovy;
+package com.palantir.ls.groovy;
 
 import com.google.common.io.Files;
-import com.palantir.ls.server.DefaultCompilerWrapper;
-import com.palantir.ls.server.DefaultLanguageServerState;
-import com.palantir.ls.server.StreamLanguageServerLauncher;
-import com.palantir.ls.server.api.LanguageServerState;
-import com.palantir.ls.server.api.TreeParser;
-import com.palantir.ls.server.services.DefaultTextDocumentService;
-import com.palantir.ls.server.services.DefaultWindowService;
-import com.palantir.ls.server.services.DefaultWorkspaceService;
-import com.palantir.ls.server.util.Uris;
-import com.palantir.ls.server.util.WorkspaceUriSupplier;
+import com.palantir.ls.DefaultCompilerWrapper;
+import com.palantir.ls.DefaultLanguageServerState;
+import com.palantir.ls.StreamLanguageServerLauncher;
+import com.palantir.ls.api.LanguageServerState;
+import com.palantir.ls.api.TreeParser;
+import com.palantir.ls.services.DefaultTextDocumentService;
+import com.palantir.ls.services.DefaultWindowService;
+import com.palantir.ls.services.DefaultWorkspaceService;
+import com.palantir.ls.util.Uris;
+import com.palantir.ls.util.WorkspaceUriSupplier;
 import io.typefox.lsapi.InitializeParams;
 import io.typefox.lsapi.InitializeResult;
 import io.typefox.lsapi.ServerCapabilities;

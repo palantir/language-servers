@@ -14,35 +14,31 @@
  * limitations under the License.
  */
 
-package com.palantir.ls.server.services;
+package com.palantir.ls.services;
 
-import com.palantir.ls.server.api.LanguageServerState;
+import com.palantir.ls.api.LanguageServerState;
 import io.typefox.lsapi.MessageParams;
 import io.typefox.lsapi.ShowMessageRequestParams;
 import io.typefox.lsapi.services.WindowService;
 import java.util.function.Consumer;
 
-public final class DefaultWindowService implements WindowService {
+public abstract class AbstractWindowService implements WindowService {
 
-    private final LanguageServerState state;
-
-    public DefaultWindowService(LanguageServerState state) {
-        this.state = state;
-    }
+    abstract protected LanguageServerState getState();
 
     @Override
     public void onShowMessage(Consumer<MessageParams> callback) {
-        state.setShowMessage(callback);
+        getState().setShowMessage(callback);
     }
 
     @Override
     public void onShowMessageRequest(Consumer<ShowMessageRequestParams> callback) {
-        state.setShowMessageRequest(callback);
+        getState().setShowMessageRequest(callback);
     }
 
     @Override
     public void onLogMessage(Consumer<MessageParams> callback) {
-        state.setLogMessage(callback);
+        getState().setLogMessage(callback);
     }
 
 }

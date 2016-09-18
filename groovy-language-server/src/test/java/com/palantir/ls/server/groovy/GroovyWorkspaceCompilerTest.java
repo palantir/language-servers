@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.palantir.ls.server.groovy;
+package com.palantir.ls.groovy;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -23,8 +23,8 @@ import static org.junit.Assert.assertTrue;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import com.palantir.ls.server.groovy.util.DefaultDiagnosticBuilder;
-import com.palantir.ls.server.util.Ranges;
+import com.palantir.ls.groovy.util.DefaultDiagnosticBuilder;
+import com.palantir.ls.util.Ranges;
 import io.typefox.lsapi.Diagnostic;
 import io.typefox.lsapi.DiagnosticSeverity;
 import io.typefox.lsapi.FileChangeType;

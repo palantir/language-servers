@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package com.palantir.ls.server.groovy;
+package com.palantir.ls.groovy;
 
 import com.google.common.base.Optional;
-import com.palantir.ls.server.groovy.util.GroovyConstants;
-import com.palantir.ls.server.groovy.util.GroovyLocations;
-import com.palantir.ls.server.util.Ranges;
-import com.palantir.ls.server.util.UriSupplier;
+import com.palantir.ls.groovy.util.GroovyConstants;
+import com.palantir.ls.groovy.util.GroovyLocations;
+import com.palantir.ls.util.Ranges;
+import com.palantir.ls.util.UriSupplier;
 import io.typefox.lsapi.Location;
 import io.typefox.lsapi.SymbolInformation;
 import io.typefox.lsapi.SymbolKind;

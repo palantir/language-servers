@@ -14,11 +14,10 @@
  * limitations under the License.
  */
 
-package com.palantir.ls.server.services;
+package com.palantir.ls.services;
 
-import com.palantir.ls.server.api.LanguageServerState;
-import com.palantir.ls.server.util.Ranges;
-import io.typefox.lsapi.DidChangeConfigurationParams;
+import com.palantir.ls.api.LanguageServerState;
+import com.palantir.ls.util.Ranges;
 import io.typefox.lsapi.DidChangeWatchedFilesParams;
 import io.typefox.lsapi.SymbolInformation;
 import io.typefox.lsapi.WorkspaceSymbolParams;
@@ -27,30 +26,21 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
-public final class DefaultWorkspaceService implements WorkspaceService {
+public abstract class AbstractWorkspaceService implements WorkspaceService {
 
-    private final LanguageServerState state;
-
-    public DefaultWorkspaceService(LanguageServerState state) {
-        this.state = state;
-    }
+    abstract protected LanguageServerState getState();
 
     @Override
     public CompletableFuture<List<? extends SymbolInformation>> symbol(WorkspaceSymbolParams params) {
-        return CompletableFuture.completedFuture(state.getCompilerWrapper().getFilteredSymbols(params.getQuery())
+        return CompletableFuture.completedFuture(getState().getCompilerWrapper().getFilteredSymbols(params.getQuery())
                 .stream().filter(symbol -> Ranges.isValid(symbol.getLocation().getRange()))
                 .collect(Collectors.toList()));
     }
 
     @Override
-    public void didChangeConfiguraton(DidChangeConfigurationParams params) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public void didChangeWatchedFiles(DidChangeWatchedFilesParams params) {
-        state.getCompilerWrapper().handleChangeWatchedFiles(params.getChanges());
-        state.publishDiagnostics(state.getCompilerWrapper().compile());
+        getState().getCompilerWrapper().handleChangeWatchedFiles(params.getChanges());
+        getState().publishDiagnostics(getState().getCompilerWrapper().compile());
     }
 
 }

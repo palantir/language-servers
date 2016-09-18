@@ -1,4 +1,3 @@
-ext.applicationName = 'groovy-language-server'
 ext.mainClass = 'com.palantir.ls.server.groovy.GroovyLanguageServer'
 
 apply from: "${rootDir}/gradle/java.gradle"
@@ -8,6 +7,7 @@ apply from: "${rootDir}/gradle/publish-runnable.gradle"
 sourceCompatibility = '1.8'
 
 dependencies {
+    compile project(":language-server-commons")
     compile "com.fasterxml.jackson.core:jackson-databind:${jacksonDatabindVersion}"
     compile "com.google.guava:guava:${guavaVersion}"
     compile "org.apache.commons:commons-io:${apacheCommonsVersion}"

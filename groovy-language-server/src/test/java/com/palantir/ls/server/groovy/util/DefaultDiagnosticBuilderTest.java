@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package com.palantir.ls.server.groovy.util;
+package com.palantir.ls.groovy.util;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
-import com.palantir.ls.server.util.Ranges;
+import com.palantir.ls.util.Ranges;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.typefox.lsapi.Diagnostic;
 import io.typefox.lsapi.DiagnosticSeverity;

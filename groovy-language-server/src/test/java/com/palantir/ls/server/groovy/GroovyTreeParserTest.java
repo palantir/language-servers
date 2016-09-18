@@ -14,16 +14,16 @@
  * limitations under the License.
  */
 
-package com.palantir.ls.server.groovy;
+package com.palantir.ls.groovy;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.Sets;
-import com.palantir.ls.server.util.Ranges;
-import com.palantir.ls.server.util.UriSupplier;
-import com.palantir.ls.server.util.WorkspaceUriSupplier;
+import com.palantir.ls.util.Ranges;
+import com.palantir.ls.util.UriSupplier;
+import com.palantir.ls.util.WorkspaceUriSupplier;
 import io.typefox.lsapi.Location;
 import io.typefox.lsapi.Range;
 import io.typefox.lsapi.ReferenceParams;

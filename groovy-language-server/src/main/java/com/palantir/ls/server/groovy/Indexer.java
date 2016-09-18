@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package com.palantir.ls.server.groovy;
+package com.palantir.ls.groovy;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import com.palantir.ls.server.util.Ranges;
+import com.palantir.ls.util.Ranges;
 import io.typefox.lsapi.Location;
 import io.typefox.lsapi.SymbolInformation;
 import java.net.URI;
