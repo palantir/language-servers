@@ -21,8 +21,9 @@ import static org.mockito.Mockito.when;
 import com.google.common.collect.Sets;
 import com.palantir.ls.server.api.TreeParser;
 import com.palantir.ls.server.api.WorkspaceCompiler;
-import com.palantir.ls.server.groovy.util.DefaultDiagnosticBuilder;
+import com.palantir.ls.server.util.Ranges;
 import io.typefox.lsapi.DiagnosticSeverity;
+import io.typefox.lsapi.builders.DiagnosticBuilder;
 import io.typefox.lsapi.builders.PublishDiagnosticsParamsBuilder;
 import java.io.IOException;
 import org.junit.Before;
@@ -59,7 +60,13 @@ public final class DefaultCompilerWrapperTest {
         when(compiler.compile()).thenReturn(Sets.newHashSet(
                 new PublishDiagnosticsParamsBuilder()
                         .uri("uri")
-                        .diagnostic(new DefaultDiagnosticBuilder("name", DiagnosticSeverity.Error).build())
+                        .diagnostic(
+                                new DiagnosticBuilder()
+                                        .message("name")
+                                        .range(Ranges.UNDEFINED_RANGE)
+                                        .severity(DiagnosticSeverity.Error)
+                                        .source("groovyc")
+                                        .build())
                         .build()));
         wrapper.compile();
         // assert parser wasn't called
