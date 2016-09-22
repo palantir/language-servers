@@ -34,7 +34,7 @@ bintray {
     publish = true
     pkg {
         repo = 'releases'
-        name = 'groovy-language-server'
+        name = project.ext.get("applicationName")
         userOrg = 'palantir'
         licenses = ['Apache-2.0']
         publications = ['source', 'shadow']

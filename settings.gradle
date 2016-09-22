@@ -1,3 +1,4 @@
-rootProject.name = 'groovy-language-server'
+rootProject.name = 'language-servers'
 
+include 'language-server-commons'
 include 'groovy-language-server'
