@@ -19,7 +19,7 @@ package com.palantir.ls.services;
 import com.palantir.ls.api.LanguageServerState;
 import io.typefox.lsapi.DidChangeConfigurationParams;
 
-public class DefaultWorkspaceService extends AbstractWorkspaceService {
+public final class DefaultWorkspaceService extends AbstractWorkspaceService {
     private final LanguageServerState state;
 
     public DefaultWorkspaceService(LanguageServerState state) {

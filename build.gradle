@@ -13,7 +13,6 @@ buildscript {
     dependencies {
         classpath "com.github.jengelman.gradle.plugins:shadow:${shadowJarVersion}"
         classpath "com.jfrog.bintray.gradle:gradle-bintray-plugin:${bintrayVersion}"
-        classpath 'com.netflix.nebula:nebula-publishing-plugin:4.9.1'
         classpath "com.palantir.gradle.javadist:gradle-java-distribution:${javaDistributionVersion}"
         classpath "com.palantir.launchconfig:gradle-launch-config-plugin:${launchConfigVersion}"
         classpath "com.palantir:gradle-baseline-java:${gradleBaselineVersion}"
@@ -42,9 +41,6 @@ allprojects {
 
     repositories {
         jcenter()
-        maven {
-            url "https://oss.sonatype.org/content/repositories/snapshots/"
-        }
         maven {
             url "https://oss.jfrog.org/artifactory/oss-snapshot-local"
         }

@@ -18,7 +18,7 @@ package com.palantir.ls.services;
 
 import com.palantir.ls.api.LanguageServerState;
 
-public class DefaultWindowService extends AbstractWindowService {
+public final class DefaultWindowService extends AbstractWindowService {
     private final LanguageServerState state;
 
     @Override

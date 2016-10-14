@@ -16,8 +16,8 @@
 
 package com.palantir.ls;
 
-import com.palantir.ls.api.LanguageServerState;
 import com.palantir.ls.api.CompilerWrapper;
+import com.palantir.ls.api.LanguageServerState;
 import io.typefox.lsapi.MessageParams;
 import io.typefox.lsapi.PublishDiagnosticsParams;
 import io.typefox.lsapi.ShowMessageRequestParams;

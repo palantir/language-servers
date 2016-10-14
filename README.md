@@ -12,7 +12,7 @@ A groovy implementation of the protocol. Uses the Java API definition in [typefo
 
 ### language-server-commons
 
-A framework that makes writing additional light-weight langauge-servers easier.
+A framework that makes writing additional light-weight language-servers easier.
 
 ## Dev Setup
 

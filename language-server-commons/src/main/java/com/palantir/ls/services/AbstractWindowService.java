@@ -24,20 +24,20 @@ import java.util.function.Consumer;
 
 public abstract class AbstractWindowService implements WindowService {
 
-    abstract protected LanguageServerState getState();
+    protected abstract LanguageServerState getState();
 
     @Override
-    public void onShowMessage(Consumer<MessageParams> callback) {
+    public final void onShowMessage(Consumer<MessageParams> callback) {
         getState().setShowMessage(callback);
     }
 
     @Override
-    public void onShowMessageRequest(Consumer<ShowMessageRequestParams> callback) {
+    public final void onShowMessageRequest(Consumer<ShowMessageRequestParams> callback) {
         getState().setShowMessageRequest(callback);
     }
 
     @Override
-    public void onLogMessage(Consumer<MessageParams> callback) {
+    public final void onLogMessage(Consumer<MessageParams> callback) {
         getState().setLogMessage(callback);
     }
 

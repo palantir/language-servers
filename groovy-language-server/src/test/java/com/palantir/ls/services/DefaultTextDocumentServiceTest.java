@@ -27,10 +27,10 @@ import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import com.palantir.ls.groovy.util.DefaultDiagnosticBuilder;
 import com.palantir.ls.DefaultLanguageServerState;
 import com.palantir.ls.api.CompilerWrapper;
 import com.palantir.ls.api.LanguageServerState;
+import com.palantir.ls.groovy.util.DefaultDiagnosticBuilder;
 import com.palantir.ls.util.Ranges;
 import io.typefox.lsapi.CompletionItemKind;
 import io.typefox.lsapi.CompletionList;
@@ -77,7 +77,7 @@ import org.junit.rules.TemporaryFolder;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-// TODO: split this up and test things independently in the language-server-commons as well
+// TODO (darora): #131 split this up and test things independently in the language-server-commons as well
 public final class DefaultTextDocumentServiceTest {
 
     @Rule

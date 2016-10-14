@@ -28,17 +28,17 @@ import java.util.stream.Collectors;
 
 public abstract class AbstractWorkspaceService implements WorkspaceService {
 
-    abstract protected LanguageServerState getState();
+    protected abstract LanguageServerState getState();
 
     @Override
-    public CompletableFuture<List<? extends SymbolInformation>> symbol(WorkspaceSymbolParams params) {
+    public final CompletableFuture<List<? extends SymbolInformation>> symbol(WorkspaceSymbolParams params) {
         return CompletableFuture.completedFuture(getState().getCompilerWrapper().getFilteredSymbols(params.getQuery())
                 .stream().filter(symbol -> Ranges.isValid(symbol.getLocation().getRange()))
                 .collect(Collectors.toList()));
     }
 
     @Override
-    public void didChangeWatchedFiles(DidChangeWatchedFilesParams params) {
+    public final void didChangeWatchedFiles(DidChangeWatchedFilesParams params) {
         getState().getCompilerWrapper().handleChangeWatchedFiles(params.getChanges());
         getState().publishDiagnostics(getState().getCompilerWrapper().compile());
     }

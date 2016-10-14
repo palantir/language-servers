@@ -51,10 +51,10 @@ import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
 public final class AbstractWorkspaceServiceTest {
-    public static class TestWorkspaceService extends AbstractWorkspaceService {
+    private static final class TestWorkspaceService extends AbstractWorkspaceService {
         private final LanguageServerState state;
 
-        public TestWorkspaceService(LanguageServerState state) {
+        TestWorkspaceService(LanguageServerState state) {
             this.state = state;
         }
 

@@ -35,10 +35,10 @@ import java.util.function.Consumer;
 
 public abstract class AbstractTextDocumentService implements TextDocumentService {
 
-    abstract protected LanguageServerState getState();
+    protected abstract LanguageServerState getState();
 
     @Override
-    public void didOpen(DidOpenTextDocumentParams params) {
+    public final void didOpen(DidOpenTextDocumentParams params) {
         URI uri = Uris.resolveToRoot(getWorkspacePath(), params.getTextDocument().getUri());
         assertFileExists(uri);
         getState().getCompilerWrapper().handleFileOpened(uri);
@@ -46,7 +46,7 @@ public abstract class AbstractTextDocumentService implements TextDocumentService
     }
 
     @Override
-    public void didChange(DidChangeTextDocumentParams params) {
+    public final void didChange(DidChangeTextDocumentParams params) {
         URI uri = Uris.resolveToRoot(getWorkspacePath(), params.getTextDocument().getUri());
         assertFileExists(uri);
         if (params.getContentChanges() == null || params.getContentChanges().isEmpty()) {
@@ -58,7 +58,7 @@ public abstract class AbstractTextDocumentService implements TextDocumentService
     }
 
     @Override
-    public void didClose(DidCloseTextDocumentParams params) {
+    public final void didClose(DidCloseTextDocumentParams params) {
         URI uri = Uris.resolveToRoot(getWorkspacePath(), params.getTextDocument().getUri());
         assertFileExists(uri);
         getState().getCompilerWrapper().handleFileClosed(uri);
@@ -66,7 +66,7 @@ public abstract class AbstractTextDocumentService implements TextDocumentService
     }
 
     @Override
-    public void didSave(DidSaveTextDocumentParams params) {
+    public final void didSave(DidSaveTextDocumentParams params) {
         URI uri = Uris.resolveToRoot(getWorkspacePath(), params.getTextDocument().getUri());
         assertFileExists(uri);
         getState().getCompilerWrapper().handleFileSaved(uri);
@@ -74,15 +74,15 @@ public abstract class AbstractTextDocumentService implements TextDocumentService
     }
 
     @Override
-    public void onPublishDiagnostics(Consumer<PublishDiagnosticsParams> callback) {
+    public final void onPublishDiagnostics(Consumer<PublishDiagnosticsParams> callback) {
         getState().setPublishDiagnostics(callback);
     }
 
-    protected Path getWorkspacePath() {
+    final Path getWorkspacePath() {
         return Paths.get(getState().getCompilerWrapper().getWorkspaceRoot());
     }
 
-    protected void assertFileExists(URI uri) {
+    final void assertFileExists(URI uri) {
         checkArgument(new File(uri).exists(), String.format("Uri '%s' does not exist", uri));
     }
 
