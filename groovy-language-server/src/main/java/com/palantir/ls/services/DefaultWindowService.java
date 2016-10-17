@@ -21,12 +21,12 @@ import com.palantir.ls.api.LanguageServerState;
 public final class DefaultWindowService extends AbstractWindowService {
     private final LanguageServerState state;
 
+    public DefaultWindowService(LanguageServerState state) {
+        this.state = state;
+    }
+
     @Override
     protected LanguageServerState getState() {
         return state;
-    }
-
-    public DefaultWindowService(LanguageServerState state) {
-        this.state = state;
     }
 }
