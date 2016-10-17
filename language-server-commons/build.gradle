@@ -1,23 +1,17 @@
-ext.mainClass = 'com.palantir.ls.server.groovy.GroovyLanguageServer'
-
+apply from: "${rootDir}/gradle/publish-libs.gradle"
 apply from: "${rootDir}/gradle/java.gradle"
 apply from: "${rootDir}/gradle/immutables-processors.gradle"
-apply from: "${rootDir}/gradle/publish-runnable.gradle"
 
 sourceCompatibility = '1.8'
 
 dependencies {
-    compile project(":language-server-commons")
     compile "com.fasterxml.jackson.core:jackson-databind:${jacksonDatabindVersion}"
     compile "com.google.guava:guava:${guavaVersion}"
     compile "org.apache.commons:commons-io:${apacheCommonsVersion}"
     compile "org.slf4j:slf4j-api:${slf4jApiVersion}"
-    compile "org.slf4j:slf4j-log4j12:${log4j12Version}"
     compile "io.typefox.lsapi:io.typefox.lsapi:${typefoxLsApiVersion}"
     compile "io.typefox.lsapi:io.typefox.lsapi.annotations:${typefoxLsApiVersion}"
     compile "io.typefox.lsapi:io.typefox.lsapi.services:${typefoxLsApiVersion}"
-    compile "javax.ws.rs:javax.ws.rs-api:${javaxRsVersion}"
-    compile "org.codehaus.groovy:groovy-all:${groovyAllVersion}"
 
     testCompile "com.google.code.findbugs:annotations:${findbugsAnnotationsVersion}"
     testCompile "junit:junit:${junitVersion}"

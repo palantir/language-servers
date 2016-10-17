@@ -1,0 +1,41 @@
+apply plugin: 'maven-publish'
+apply plugin: 'com.jfrog.bintray'
+
+task sourceJar(type: Jar) {
+    from sourceSets.main.allSource
+    classifier 'sources'
+}
+
+publishing {
+    publications {
+        source(MavenPublication) {
+            from components.java
+            artifact(sourceJar) {
+                classifier 'sources'
+            }
+        }
+        internal(MavenPublication) {
+          from components.java
+        }
+    }
+}
+
+
+bintray {
+    user = System.env.BINTRAY_USERNAME
+    key = System.env.BINTRAY_PASSWORD
+    publish = true
+    pkg {
+        repo = 'releases'
+        name = project.name
+        userOrg = 'palantir'
+        licenses = ['Apache-2.0']
+        publications = ['source', 'internal']
+    }
+}
+
+bintrayUpload.dependsOn { generatePomFileForSourcePublication }
+bintrayUpload.dependsOn { generatePomFileForInternalPublication }
+bintrayUpload.dependsOn { sourceJar }
+bintrayUpload.dependsOn { jar }
+bintrayUpload.dependsOn { build }

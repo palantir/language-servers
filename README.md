@@ -4,22 +4,29 @@
 
 A collection of implementations for the [Microsoft Language Server Protocol](https://github.com/Microsoft/language-server-protocol/blob/master/protocol.md)
 
-## groovy-language-server
+## Included projects
+
+### groovy-language-server
 
 A groovy implementation of the protocol. Uses the Java API definition in [typefox/ls-api](https://github.com/TypeFox/ls-api)
 
-## Dev setup
+### language-server-commons
+
+A framework that makes writing additional light-weight language-servers easier.
+
+## Dev Setup
+
+### Getting started
+
 - `git clone <repo link>`
 - `cd language-servers`
 - `./gradlew eclipse` This generates eclipse projects
 - Import projects into eclipse
 
-## Building and Testing
+### Building and Testing
 - `./gradlew build` Compiles, runs tests, checkstyle and findbugs
 - `./gradlew test` Runs all unit tests
 - `./gradlew publishToMavenLocal` Creates jars in your Maven local repository
 
-## Debug
+### Debug
 - `./gradlew clean cleanEclipse` Deletes gradle generated files
-
-
