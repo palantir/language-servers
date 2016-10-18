@@ -1,6 +1,6 @@
 # language-servers
 
-[![CircleCI](https://circleci.com/gh/palantir/language-servers.svg?style=svg)](https://circleci.com/gh/palantir/language-servers) [ ![Download](https://api.bintray.com/packages/palantir/releases/groovy-language-server/images/download.svg) ](https://bintray.com/palantir/releases/groovy-language-server/_latestVersion)
+[![CircleCI](https://circleci.com/gh/palantir/language-servers.svg?style=svg)](https://circleci.com/gh/palantir/language-servers) [ ![Download](https://api.bintray.com/packages/palantir/releases/language-servers/images/download.svg) ](https://bintray.com/palantir/releases/language-servers/_latestVersion)
 
 A collection of implementations for the [Microsoft Language Server Protocol](https://github.com/Microsoft/language-server-protocol/blob/master/protocol.md)
 
