@@ -23,7 +23,7 @@ bintray {
     publish = true
     pkg {
         repo = 'releases'
-        name = project.name
+        name = 'language-servers'
         userOrg = 'palantir'
         licenses = ['Apache-2.0']
         publications = ['shadow']
