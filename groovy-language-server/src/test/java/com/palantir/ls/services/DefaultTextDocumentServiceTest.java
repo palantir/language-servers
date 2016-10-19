@@ -304,7 +304,7 @@ public final class DefaultTextDocumentServiceTest {
                 .build();
         CompletableFuture<CompletionList> response = service.completion(params);
         CompletionList expectedResult = new CompletionListBuilder()
-                .incomplete(false)
+                .isIncomplete(false)
                 .item(new CompletionItemBuilder()
                         .label("ThisIsASymbol")
                         .kind(CompletionItemKind.Field)

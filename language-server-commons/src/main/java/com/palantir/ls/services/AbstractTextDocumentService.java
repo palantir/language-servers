@@ -113,7 +113,7 @@ public abstract class AbstractTextDocumentService implements TextDocumentService
     }
 
     @Override
-    public CompletableFuture<DocumentHighlight> documentHighlight(TextDocumentPositionParams position) {
+    public CompletableFuture<List<? extends DocumentHighlight>> documentHighlight(TextDocumentPositionParams position) {
         throw new UnsupportedOperationException();
     }
 
