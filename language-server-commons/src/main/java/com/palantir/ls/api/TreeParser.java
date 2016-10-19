@@ -24,6 +24,8 @@ import io.typefox.lsapi.SymbolInformation;
 import java.net.URI;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 /**
  * Provides functionality to fulfill all symbol related Language Server requests.
@@ -67,4 +69,15 @@ public interface TreeParser {
      */
     Set<SymbolInformation> getFilteredSymbols(String query);
 
+    default Pattern getQueryPattern(String query) {
+        String escaped = Pattern.quote(query);
+        String newQuery = escaped.replaceAll("\\*", "\\\\E.*\\\\Q").replaceAll("\\?", "\\\\E.\\\\Q");
+        newQuery = "^" + newQuery;
+        try {
+            return Pattern.compile(newQuery);
+        } catch (PatternSyntaxException e) {
+            // sadness
+        }
+        return Pattern.compile("^" + escaped);
+    }
 }

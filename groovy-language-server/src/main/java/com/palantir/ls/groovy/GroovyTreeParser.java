@@ -43,7 +43,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
-import java.util.regex.PatternSyntaxException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.codehaus.groovy.ast.ClassNode;
@@ -274,18 +273,6 @@ public final class GroovyTreeParser implements TreeParser {
         return indexer.getFileSymbols().values().stream().flatMap(Collection::stream)
                 .filter(symbol -> pattern.matcher(symbol.getName()).matches())
                 .collect(Collectors.toSet());
-    }
-
-    private Pattern getQueryPattern(String query) {
-        String escaped = Pattern.quote(query);
-        String newQuery = escaped.replaceAll("\\*", "\\\\E.*\\\\Q").replaceAll("\\?", "\\\\E.\\\\Q");
-        newQuery = "^" + newQuery;
-        try {
-            return Pattern.compile(newQuery);
-        } catch (PatternSyntaxException e) {
-            logger.warn("Could not create valid pattern from query '{}'", query);
-        }
-        return Pattern.compile("^" + escaped);
     }
 
     private static SymbolKind getKind(ClassNode node) {
