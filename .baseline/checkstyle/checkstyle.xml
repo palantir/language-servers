@@ -14,9 +14,6 @@
     <property name="charset" value="UTF-8"/>
     <property name="severity" value="error"/>
 
-    <module name="FileLength"> <!-- Java Style Guide: File length: 2000 lines -->
-        <property name="fileExtensions" value="java"/>
-    </module>
     <module name="FileTabCharacter"/> <!-- Java Style Guide: Whitespace characters -->
     <module name="NewlineAtEndOfFile"> <!-- Java Style Guide: Line ending: LF -->
         <property name="lineSeparator" value="lf"/>
@@ -71,7 +68,7 @@
         </module>
         <module name="AvoidStarImport"/> <!-- Java Style Guide: No wildcard imports -->
         <module name="AvoidStaticImport"> <!-- Java Style Guide: No static imports -->
-            <property name="excludes" value="org.junit.Assert.*,org.junit.Assume.*,org.hamcrest.Matchers.*,org.hamcrest.CoreMatchers.*,org.mockito.Mockito.*,org.mockito.Matchers.*,org.assertj.core.api.Assertions.*,com.google.common.base.Preconditions.*,org.apache.commons.lang3.Validate.*,com.google.common.truth.Truth.*"/>
+            <property name="excludes" value="org.junit.Assert.*,org.junit.Assume.*,org.hamcrest.Matchers.*,org.mockito.Mockito.*,org.mockito.Matchers.*,org.assertj.core.api.Assertions.*,com.google.common.base.Preconditions.*,org.apache.commons.lang3.Validate.*,com.google.common.truth.Truth.*"/>
         </module>
         <module name="ClassTypeParameterName"> <!-- Java Style Guide: Type variable names -->
             <property name="format" value="(^[A-Z][0-9]?)$|([A-Z][a-zA-Z0-9]*[T]$)"/>
@@ -107,9 +104,21 @@
             <property name="setterCanReturnItsClass" value="true"/>
         </module>
         <module name="HideUtilityClassConstructor"/> <!-- Java Coding Guidelines: Private constructors -->
+        <module name="IllegalImport"> <!-- Java Coding Guidelines: Use JUnit 4-style test classes and assertions -->
+            <property name="illegalPkgs" value="junit.framework"/>
+            <message key="import.illegal" value="Use JUnit 4-style (org.junit.*) test classes and assertions instead of JUnit 3 (junit.framework.*)."/>
+        </module>
         <module name="IllegalImport"> <!-- Java Coding Guidelines: Import the canonical package -->
-            <property name="illegalPkgs" value="sun, org.elasticsearch.common.base, org.elasticsearch.common.joda, jersey.repackaged.com.google.common, com.google.api.client.repackaged, org.apache.hadoop.thirdparty.guava"/>
+            <property name="illegalPkgs" value="sun, org.elasticsearch.common.base, jersey.repackaged.com.google.common, com.google.api.client.repackaged, org.apache.hadoop.thirdparty.guava"/>
             <message key="import.illegal" value="Must not import repackaged classes."/>
+        </module>
+        <module name="IllegalImport">
+            <property name="illegalPkgs" value="org.apache.commons.lang"/>
+            <message key="import.illegal" value="lang is deprecated, use lang3 instead."/>
+        </module>
+        <module name="IllegalImport">
+            <property name="illegalPkgs" value="org.apache.commons.math"/>
+            <message key="import.illegal" value="math is deprecated, use math3 instead."/>
         </module>
         <module name="IllegalImport">
             <property name="illegalPkgs" value="org.apache.log4j, org.apache.logging.log4j, java.util.logging, ch.qos.logback"/>
@@ -238,18 +247,6 @@
             <property name="format" value="CoreMatchers\.notNull"/>
             <property name="message" value="Use better assertion method(s): Assert.assertEquals(), assertNull(), assertSame(), etc."/>
         </module>
-        <module name="RegexpSinglelineJava"> <!-- Java Coding Guidelines: Avoid Generics clutter where possible -->
-            <property name="format" value="ImmutableList\.Builder.*new ImmutableList\.Builder"/>
-            <property name="message" value="Use ImmutableList.builder() for variable assignment."/>
-        </module>
-        <module name="RegexpSinglelineJava"> <!-- Java Coding Guidelines: Avoid Generics clutter where possible -->
-            <property name="format" value="ImmutableMap\.Builder.*new ImmutableMap\.Builder"/>
-            <property name="message" value="Use ImmutableMap.builder() for variable assignment."/>
-        </module>
-        <module name="RegexpSinglelineJava"> <!-- Java Coding Guidelines: Avoid Generics clutter where possible -->
-            <property name="format" value="ImmutableSet\.Builder.*new ImmutableSet\.Builder"/>
-            <property name="message" value="Use ImmutableSet.builder() for variable assignment."/>
-        </module>
         <module name="RegexpSinglelineJava"> <!-- Java Coding Guidelines: Check parameters for validity -->
             <property name="format" value="Preconditions\.checkNotNull\((?!.*,)([^()]*(\(([^()]*|\(([^()]*|\([^()]*\))*\))*\)[^()]*)*)\)"/>
             <property name="message" value="Use Preconditions.checkNotNull(Object, String)."/>
@@ -274,14 +271,6 @@
             <property name="format" value="\? extends Object\W"/>
             <property name="message" value="Use ? rather than ? extends Object."/>
         </module>
-        <module name="RegexpSinglelineJava"> <!-- Java Coding Guidelines: Libraries -->
-            <property name="format" value="^import org\.apache\.commons\.lang\."/>
-            <property name="message" value="lang is deprecated, use lang3 instead."/>
-        </module>
-        <module name="RegexpSinglelineJava"> <!-- Java Coding Guidelines: Libraries -->
-            <property name="format" value="^import org\.apache\.commons\.math\."/>
-            <property name="message" value="math is deprecated, use math3 instead."/>
-        </module>
         <module name="RegexpSinglelineJava">
             <property name="format" value="\bPreconditions\.check.*\{\}"/>
             <property name="message" value="Use printf-style formatting in Preconditions, not '{}' style formatting."/>
@@ -298,7 +287,7 @@
             <property name="ignoreComments" value="true"/>
         </module>
         <module name="RegexpSinglelineJava">
-            <property name="format" value="\bCharset.forName\(|\bCharsets\."/>
+            <property name="format" value="\bCharsets\."/>
             <property name="message" value="Use JDK StandardCharsets instead of alternatives."/>
         </module>
         <module name="RegexpSinglelineJava">
@@ -307,7 +296,7 @@
         </module>
         <module name="RegexpSinglelineJava">
             <property name="format" value="\bIOUtils\.toString\("/>
-            <property name="message" value="Prefer Guava''s {CharStreams,Files,Resources}.toString to avoid charset/stream closing issues."/>
+            <property name="message" value="Prefer Guava''s [CharStreams,Files,Resources].toString to avoid charset/stream closing issues."/>
         </module>
         <module name="RegexpSinglelineJava">
             <property name="format" value="static enum"/>
@@ -363,7 +352,6 @@
             <property name="target" value="CLASS_DEF, INTERFACE_DEF, ENUM_DEF, METHOD_DEF, CTOR_DEF, VARIABLE_DEF"/>
         </module>
         <module name="CyclomaticComplexity"/> <!-- Java Coding Guidelines: Reduce Cyclomatic Complexity -->
-        <module name="DesignForExtension"/> <!-- Java Coding Guidelines: Design for extension -->
         <module name="JavadocMethod"> <!-- Java Style Guide: Where Javadoc is used -->
             <property name="scope" value="public"/>
             <property name="allowMissingParamTags" value="true"/>
