@@ -22,26 +22,12 @@ import com.palantir.ls.api.LanguageServerState;
 import com.palantir.ls.util.CompletionUtils;
 import com.palantir.ls.util.Ranges;
 import com.palantir.ls.util.Uris;
-import io.typefox.lsapi.CodeActionParams;
-import io.typefox.lsapi.CodeLens;
-import io.typefox.lsapi.CodeLensParams;
-import io.typefox.lsapi.Command;
-import io.typefox.lsapi.CompletionItem;
 import io.typefox.lsapi.CompletionList;
-import io.typefox.lsapi.DocumentFormattingParams;
-import io.typefox.lsapi.DocumentHighlight;
-import io.typefox.lsapi.DocumentOnTypeFormattingParams;
-import io.typefox.lsapi.DocumentRangeFormattingParams;
 import io.typefox.lsapi.DocumentSymbolParams;
-import io.typefox.lsapi.Hover;
 import io.typefox.lsapi.Location;
 import io.typefox.lsapi.ReferenceParams;
-import io.typefox.lsapi.RenameParams;
-import io.typefox.lsapi.SignatureHelp;
 import io.typefox.lsapi.SymbolInformation;
 import io.typefox.lsapi.TextDocumentPositionParams;
-import io.typefox.lsapi.TextEdit;
-import io.typefox.lsapi.WorkspaceEdit;
 import java.net.URI;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -90,60 +76,5 @@ public final class DefaultTextDocumentService extends AbstractTextDocumentServic
                         state.getCompilerWrapper().getFileSymbols().get(uri).stream().collect(Collectors.toList()))
                         .or(Lists.newArrayList());
         return CompletableFuture.completedFuture(symbols);
-    }
-
-    @Override
-    public CompletableFuture<DocumentHighlight> documentHighlight(TextDocumentPositionParams position) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public CompletableFuture<CompletionItem> resolveCompletionItem(CompletionItem unresolved) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public CompletableFuture<Hover> hover(TextDocumentPositionParams position) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public CompletableFuture<SignatureHelp> signatureHelp(TextDocumentPositionParams position) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public CompletableFuture<List<? extends Command>> codeAction(CodeActionParams params) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public CompletableFuture<List<? extends CodeLens>> codeLens(CodeLensParams params) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public CompletableFuture<CodeLens> resolveCodeLens(CodeLens unresolved) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public CompletableFuture<List<? extends TextEdit>> formatting(DocumentFormattingParams params) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public CompletableFuture<List<? extends TextEdit>> rangeFormatting(DocumentRangeFormattingParams params) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public CompletableFuture<List<? extends TextEdit>> onTypeFormatting(DocumentOnTypeFormattingParams params) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public CompletableFuture<WorkspaceEdit> rename(RenameParams params) {
-        throw new UnsupportedOperationException();
     }
 }

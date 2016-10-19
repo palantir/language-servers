@@ -21,18 +21,44 @@ import static com.google.common.base.Preconditions.checkArgument;
 import com.google.common.collect.Lists;
 import com.palantir.ls.api.LanguageServerState;
 import com.palantir.ls.util.Uris;
+import io.typefox.lsapi.CodeActionParams;
+import io.typefox.lsapi.CodeLens;
+import io.typefox.lsapi.CodeLensParams;
+import io.typefox.lsapi.Command;
+import io.typefox.lsapi.CompletionItem;
+import io.typefox.lsapi.CompletionList;
 import io.typefox.lsapi.DidChangeTextDocumentParams;
 import io.typefox.lsapi.DidCloseTextDocumentParams;
 import io.typefox.lsapi.DidOpenTextDocumentParams;
 import io.typefox.lsapi.DidSaveTextDocumentParams;
+import io.typefox.lsapi.DocumentFormattingParams;
+import io.typefox.lsapi.DocumentHighlight;
+import io.typefox.lsapi.DocumentOnTypeFormattingParams;
+import io.typefox.lsapi.DocumentRangeFormattingParams;
+import io.typefox.lsapi.DocumentSymbolParams;
+import io.typefox.lsapi.Hover;
+import io.typefox.lsapi.Location;
 import io.typefox.lsapi.PublishDiagnosticsParams;
+import io.typefox.lsapi.ReferenceParams;
+import io.typefox.lsapi.RenameParams;
+import io.typefox.lsapi.SignatureHelp;
+import io.typefox.lsapi.SymbolInformation;
+import io.typefox.lsapi.TextDocumentPositionParams;
+import io.typefox.lsapi.TextEdit;
+import io.typefox.lsapi.WorkspaceEdit;
 import io.typefox.lsapi.services.TextDocumentService;
 import java.io.File;
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
+/**
+ * Provides a default implemented not dissimilar to to antlr generated visitors.
+ * Markedly differs in throwing exceptions rather than more benign logs etc.
+ */
 public abstract class AbstractTextDocumentService implements TextDocumentService {
 
     protected abstract LanguageServerState getState();
@@ -86,4 +112,78 @@ public abstract class AbstractTextDocumentService implements TextDocumentService
         checkArgument(new File(uri).exists(), String.format("Uri '%s' does not exist", uri));
     }
 
+    @Override
+    public CompletableFuture<DocumentHighlight> documentHighlight(TextDocumentPositionParams position) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public CompletableFuture<CompletionItem> resolveCompletionItem(CompletionItem unresolved) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public CompletableFuture<Hover> hover(TextDocumentPositionParams position) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public CompletableFuture<SignatureHelp> signatureHelp(TextDocumentPositionParams position) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public CompletableFuture<List<? extends Command>> codeAction(CodeActionParams params) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public CompletableFuture<List<? extends CodeLens>> codeLens(CodeLensParams params) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public CompletableFuture<CodeLens> resolveCodeLens(CodeLens unresolved) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public CompletableFuture<List<? extends TextEdit>> formatting(DocumentFormattingParams params) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public CompletableFuture<List<? extends TextEdit>> rangeFormatting(DocumentRangeFormattingParams params) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public CompletableFuture<List<? extends TextEdit>> onTypeFormatting(DocumentOnTypeFormattingParams params) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public CompletableFuture<WorkspaceEdit> rename(RenameParams params) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public CompletableFuture<CompletionList> completion(TextDocumentPositionParams position) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public CompletableFuture<List<? extends Location>> definition(TextDocumentPositionParams position) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public CompletableFuture<List<? extends Location>> references(ReferenceParams params) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public CompletableFuture<List<? extends SymbolInformation>> documentSymbol(DocumentSymbolParams params) {
+        throw new UnsupportedOperationException();
+    }
 }

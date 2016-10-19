@@ -26,9 +26,9 @@ import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class DefaultLanguageServerState implements LanguageServerState {
+public abstract class AbstractLanguageServerState implements LanguageServerState {
 
-    private static final Logger logger = LoggerFactory.getLogger(DefaultLanguageServerState.class);
+    private static final Logger logger = LoggerFactory.getLogger(AbstractLanguageServerState.class);
 
     private CompilerWrapper compilerWrapper = null;
     private Consumer<MessageParams> showMessage = m -> { };

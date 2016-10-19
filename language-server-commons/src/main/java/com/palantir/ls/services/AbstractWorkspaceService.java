@@ -18,6 +18,7 @@ package com.palantir.ls.services;
 
 import com.palantir.ls.api.LanguageServerState;
 import com.palantir.ls.util.Ranges;
+import io.typefox.lsapi.DidChangeConfigurationParams;
 import io.typefox.lsapi.DidChangeWatchedFilesParams;
 import io.typefox.lsapi.SymbolInformation;
 import io.typefox.lsapi.WorkspaceSymbolParams;
@@ -43,4 +44,8 @@ public abstract class AbstractWorkspaceService implements WorkspaceService {
         getState().publishDiagnostics(getState().getCompilerWrapper().compile());
     }
 
+    @Override
+    public void didChangeConfiguraton(DidChangeConfigurationParams didChangeConfigurationParams) {
+        throw new UnsupportedOperationException();
+    }
 }
