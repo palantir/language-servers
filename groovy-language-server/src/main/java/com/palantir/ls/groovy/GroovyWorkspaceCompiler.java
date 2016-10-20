@@ -30,6 +30,7 @@ import com.palantir.ls.groovy.util.GroovyConstants;
 import com.palantir.ls.util.Ranges;
 import com.palantir.ls.util.SourceWriter;
 import com.palantir.ls.util.Uris;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.typefox.lsapi.Diagnostic;
 import io.typefox.lsapi.DiagnosticSeverity;
 import io.typefox.lsapi.FileEvent;
@@ -91,6 +92,7 @@ public final class GroovyWorkspaceCompiler implements WorkspaceCompiler, Supplie
      * @param changedFilesRoot the directory in which to temporarily store incrementally changed files
      * @return the newly created GroovyWorkspaceCompiler
      */
+    @SuppressFBWarnings("PT_FINAL_TYPE_RETURN")
     public static GroovyWorkspaceCompiler of(Path targetDirectory, Path workspaceRoot, Path changedFilesRoot) {
         checkNotNull(targetDirectory, "targetDirectory must not be null");
         checkNotNull(workspaceRoot, "workspaceRoot must not be null");

@@ -47,7 +47,7 @@ import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class GroovyLanguageServer implements LanguageServer {
+public class GroovyLanguageServer implements LanguageServer {
 
     private static final Logger logger = LoggerFactory.getLogger(GroovyLanguageServer.class);
 

@@ -27,9 +27,12 @@ import com.google.common.collect.Sets;
 import com.palantir.ls.api.TreeParser;
 import com.palantir.ls.groovy.util.GroovyConstants;
 import com.palantir.ls.groovy.util.GroovyLocations;
+import com.palantir.ls.util.CompletionUtils;
 import com.palantir.ls.util.Ranges;
 import com.palantir.ls.util.UriSupplier;
 import com.palantir.ls.util.Uris;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import io.typefox.lsapi.CompletionList;
 import io.typefox.lsapi.Location;
 import io.typefox.lsapi.Position;
 import io.typefox.lsapi.ReferenceParams;
@@ -91,6 +94,7 @@ public final class GroovyTreeParser implements TreeParser {
      *        the provider use to resolve uris
      * @return the newly created GroovyTreeParser
      */
+    @SuppressFBWarnings("PT_FINAL_TYPE_RETURN")
     public static GroovyTreeParser of(Supplier<CompilationUnit> unitSupplier, Path workspaceRoot,
             UriSupplier workspaceUriSupplier) {
         checkNotNull(unitSupplier, "unitSupplier must not be null");
@@ -184,6 +188,11 @@ public final class GroovyTreeParser implements TreeParser {
     @Override
     public Map<URI, Set<SymbolInformation>> getFileSymbols() {
         return indexer.getFileSymbols();
+    }
+
+    @Override
+    public CompletionList getCompletion(URI uri, Position position) {
+        return CompletionUtils.createCompletionListFromSymbols(getFileSymbols().get(uri));
     }
 
     @Override

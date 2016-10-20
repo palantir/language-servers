@@ -20,6 +20,7 @@ import com.google.common.base.Optional;
 import com.palantir.ls.api.CompilerWrapper;
 import com.palantir.ls.api.TreeParser;
 import com.palantir.ls.api.WorkspaceCompiler;
+import io.typefox.lsapi.CompletionList;
 import io.typefox.lsapi.FileEvent;
 import io.typefox.lsapi.Location;
 import io.typefox.lsapi.Position;
@@ -35,7 +36,7 @@ import java.util.Set;
 /**
  * Wraps a WorkspaceCompiler and TreeParser. Ensures the tree is updated when the compiler is compiled successfully.
  */
-public final class DefaultCompilerWrapper implements CompilerWrapper {
+public class DefaultCompilerWrapper implements CompilerWrapper {
 
     private final WorkspaceCompiler compiler;
     private final TreeParser parser;
@@ -53,6 +54,11 @@ public final class DefaultCompilerWrapper implements CompilerWrapper {
     @Override
     public Map<URI, Set<SymbolInformation>> getFileSymbols() {
         return parser.getFileSymbols();
+    }
+
+    @Override
+    public CompletionList getCompletion(URI uri, Position position) {
+        return parser.getCompletion(uri, position);
     }
 
     @Override

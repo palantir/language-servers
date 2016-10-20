@@ -18,8 +18,10 @@ package com.palantir.ls.services;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
+import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 import com.palantir.ls.api.LanguageServerState;
+import com.palantir.ls.util.Ranges;
 import com.palantir.ls.util.Uris;
 import io.typefox.lsapi.CodeActionParams;
 import io.typefox.lsapi.CodeLens;
@@ -54,6 +56,7 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 /**
  * Provides a default implemented not dissimilar to to antlr generated visitors.
@@ -169,21 +172,31 @@ public abstract class AbstractTextDocumentService implements TextDocumentService
 
     @Override
     public CompletableFuture<CompletionList> completion(TextDocumentPositionParams position) {
-        throw new UnsupportedOperationException();
+        return CompletableFuture.completedFuture(getState().getCompilerWrapper().getCompletion(
+                Uris.resolveToRoot(getWorkspacePath(), position.getTextDocument().getUri()), position.getPosition()));
     }
 
     @Override
     public CompletableFuture<List<? extends Location>> definition(TextDocumentPositionParams position) {
-        throw new UnsupportedOperationException();
+        URI uri = Uris.resolveToRoot(getWorkspacePath(), position.getTextDocument().getUri());
+        return CompletableFuture.completedFuture(getState().getCompilerWrapper()
+                .gotoDefinition(uri, position.getPosition()).transform(Lists::newArrayList).or(Lists.newArrayList()));
     }
 
     @Override
     public CompletableFuture<List<? extends Location>> references(ReferenceParams params) {
-        throw new UnsupportedOperationException();
+        return CompletableFuture.completedFuture(
+                getState().getCompilerWrapper().findReferences(params).stream()
+                        .filter(location -> Ranges.isValid(location.getRange()))
+                        .collect(Collectors.toList()));
     }
 
     @Override
     public CompletableFuture<List<? extends SymbolInformation>> documentSymbol(DocumentSymbolParams params) {
-        throw new UnsupportedOperationException();
+        URI uri = Uris.resolveToRoot(getWorkspacePath(), params.getTextDocument().getUri());
+        assertFileExists(uri);
+        List<SymbolInformation> symbols = Optional.fromNullable(getState().getCompilerWrapper().getFileSymbols()
+                .get(uri).stream().collect(Collectors.toList())).or(Lists.newArrayList());
+        return CompletableFuture.completedFuture(symbols);
     }
 }

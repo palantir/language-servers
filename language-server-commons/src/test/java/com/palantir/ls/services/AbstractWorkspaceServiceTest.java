@@ -50,8 +50,9 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
-public final class AbstractWorkspaceServiceTest {
-    private static final class TestWorkspaceService extends AbstractWorkspaceService {
+public class AbstractWorkspaceServiceTest {
+
+    private static class TestWorkspaceService extends AbstractWorkspaceService {
         private final LanguageServerState state;
 
         TestWorkspaceService(LanguageServerState state) {

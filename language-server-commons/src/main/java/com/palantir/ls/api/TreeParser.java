@@ -17,6 +17,7 @@
 package com.palantir.ls.api;
 
 import com.google.common.base.Optional;
+import io.typefox.lsapi.CompletionList;
 import io.typefox.lsapi.Location;
 import io.typefox.lsapi.Position;
 import io.typefox.lsapi.ReferenceParams;
@@ -41,6 +42,11 @@ public interface TreeParser {
      * Returns a mapping from the URI of source file to symbols located within these source files.
      */
     Map<URI, Set<SymbolInformation>> getFileSymbols();
+
+    /**
+     * Returns a completion list for the given {@code uri} and {@code position}.
+     */
+    CompletionList getCompletion(URI uri, Position position);
 
     /**
      * Returns a mapping from the location of some referred class to a set of locations were they were referred.

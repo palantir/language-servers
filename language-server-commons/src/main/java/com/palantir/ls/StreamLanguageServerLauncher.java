@@ -31,7 +31,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import org.slf4j.Logger;
 
-public final class StreamLanguageServerLauncher {
+public class StreamLanguageServerLauncher {
 
     private final LanguageServerEndpoint languageServerEndpoint;
     private final InputStream inputStream;

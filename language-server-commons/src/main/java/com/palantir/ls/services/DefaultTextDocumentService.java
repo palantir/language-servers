@@ -18,15 +18,16 @@ package com.palantir.ls.services;
 
 import com.palantir.ls.api.LanguageServerState;
 
-public final class DefaultWindowService extends AbstractWindowService {
+public class DefaultTextDocumentService extends AbstractTextDocumentService {
     private final LanguageServerState state;
 
-    public DefaultWindowService(LanguageServerState state) {
+    public DefaultTextDocumentService(LanguageServerState state) {
         this.state = state;
     }
 
     @Override
-    protected LanguageServerState getState() {
+    public LanguageServerState getState() {
         return state;
     }
+
 }
