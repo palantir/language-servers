@@ -30,10 +30,10 @@ import com.google.common.collect.Sets;
 import com.palantir.ls.DefaultLanguageServerState;
 import com.palantir.ls.api.CompilerWrapper;
 import com.palantir.ls.api.LanguageServerState;
-import com.palantir.ls.groovy.util.DefaultDiagnosticBuilder;
 import com.palantir.ls.util.Ranges;
 import io.typefox.lsapi.CompletionItemKind;
 import io.typefox.lsapi.CompletionList;
+import io.typefox.lsapi.Diagnostic;
 import io.typefox.lsapi.DiagnosticSeverity;
 import io.typefox.lsapi.Location;
 import io.typefox.lsapi.PublishDiagnosticsParams;
@@ -45,6 +45,7 @@ import io.typefox.lsapi.TextDocumentItem;
 import io.typefox.lsapi.TextDocumentPositionParams;
 import io.typefox.lsapi.builders.CompletionItemBuilder;
 import io.typefox.lsapi.builders.CompletionListBuilder;
+import io.typefox.lsapi.builders.DiagnosticBuilder;
 import io.typefox.lsapi.builders.DidChangeTextDocumentParamsBuilder;
 import io.typefox.lsapi.builders.DidCloseTextDocumentParamsBuilder;
 import io.typefox.lsapi.builders.DidOpenTextDocumentParamsBuilder;
@@ -77,8 +78,7 @@ import org.junit.rules.TemporaryFolder;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-// TODO (darora): #131 split this up and test things independently in the language-server-commons as well
-public final class DefaultTextDocumentServiceTest {
+public class DefaultTextDocumentServiceTest {
 
     @Rule
     public TemporaryFolder workspace = new TemporaryFolder();
@@ -91,6 +91,8 @@ public final class DefaultTextDocumentServiceTest {
     private List<PublishDiagnosticsParams> publishedDiagnostics = Lists.newArrayList();
     private Set<PublishDiagnosticsParams> expectedDiagnostics;
     private Map<URI, Set<SymbolInformation>> symbolsMap = Maps.newHashMap();
+    private CompletionList emptyCompletionList;
+    private CompletionList expectedCompletionList;
     private Set<Location> expectedReferences = Sets.newHashSet();
     private Optional<Location> expectedDefinitionLocation;
 
@@ -104,15 +106,26 @@ public final class DefaultTextDocumentServiceTest {
         filePath = workspace.newFile("something.groovy").toPath();
         expectedDiagnostics =
                 Sets.newHashSet(new PublishDiagnosticsParamsBuilder().uri("foo")
-                        .diagnostic(new DefaultDiagnosticBuilder("Some message", DiagnosticSeverity.Error)
-                                .source(filePath.toString()).build())
-                        .diagnostic(new DefaultDiagnosticBuilder("Some other message", DiagnosticSeverity.Warning)
-                                .source(filePath.toString()).build())
+                        .diagnostic(createDiagnostic("Some message", DiagnosticSeverity.Error, filePath.toString()))
+                        .diagnostic(createDiagnostic(
+                                "Some other message", DiagnosticSeverity.Warning, filePath.toString()))
                         .build());
 
         SymbolInformation symbol1 = new SymbolInformationBuilder().name("ThisIsASymbol").kind(SymbolKind.Field).build();
         SymbolInformation symbol2 = new SymbolInformationBuilder().name("methodA").kind(SymbolKind.Method).build();
         symbolsMap.put(filePath.toUri(), Sets.newHashSet(symbol1, symbol2));
+
+        emptyCompletionList = new CompletionListBuilder().isIncomplete(false).build();
+        expectedCompletionList = new CompletionListBuilder()
+                .isIncomplete(false)
+                .item(new CompletionItemBuilder()
+                        .label("ThisIsASymbol")
+                        .kind(CompletionItemKind.Field)
+                        .build())
+                .item(new CompletionItemBuilder()
+                        .label("methodA")
+                        .kind(CompletionItemKind.Method).build())
+                .build();
 
         expectedReferences.add(new LocationBuilder()
                 .uri("uri")
@@ -133,6 +146,9 @@ public final class DefaultTextDocumentServiceTest {
         when(compilerWrapper.getWorkspaceRoot()).thenReturn(workspace.getRoot().toPath().toUri());
         when(compilerWrapper.compile()).thenReturn(expectedDiagnostics);
         when(compilerWrapper.getFileSymbols()).thenReturn(symbolsMap);
+        when(compilerWrapper.getCompletion(any(), any())).thenReturn(emptyCompletionList);
+        when(compilerWrapper.getCompletion(filePath.toUri(), new PositionImpl(5, 5)))
+                .thenReturn(expectedCompletionList);
         when(compilerWrapper.findReferences(any())).thenReturn(allReferencesReturned);
         when(compilerWrapper.gotoDefinition(any(), eq(new PositionImpl(5, 5)))).thenReturn(expectedDefinitionLocation);
         when(compilerWrapper.gotoDefinition(any(), eq(new PositionImpl(4, 4)))).thenReturn(Optional.absent());
@@ -303,18 +319,8 @@ public final class DefaultTextDocumentServiceTest {
                 .uri(uri)
                 .build();
         CompletableFuture<CompletionList> response = service.completion(params);
-        CompletionList expectedResult = new CompletionListBuilder()
-                .incomplete(false)
-                .item(new CompletionItemBuilder()
-                        .label("ThisIsASymbol")
-                        .kind(CompletionItemKind.Field)
-                        .build())
-                .item(new CompletionItemBuilder()
-                        .label("methodA")
-                        .kind(CompletionItemKind.Method).build())
-                .build();
-        assertThat(response.get().isIncomplete(), is(expectedResult.isIncomplete()));
-        assertThat(Sets.newHashSet(response.get().getItems()), is(Sets.newHashSet(expectedResult.getItems())));
+        assertThat(response.get().isIncomplete(), is(expectedCompletionList.isIncomplete()));
+        assertThat(Sets.newHashSet(response.get().getItems()), is(Sets.newHashSet(expectedCompletionList.getItems())));
     }
 
     @Test
@@ -352,6 +358,15 @@ public final class DefaultTextDocumentServiceTest {
                 .build();
         CompletableFuture<List<? extends Location>> response = service.definition(params);
         assertThat(response.get(), is(Lists.newArrayList()));
+    }
+
+    private Diagnostic createDiagnostic(String message, DiagnosticSeverity severity, String source) {
+        return new DiagnosticBuilder()
+                .message(message)
+                .severity(severity)
+                .source(source)
+                .range(Ranges.UNDEFINED_RANGE)
+                .build();
     }
 
 }

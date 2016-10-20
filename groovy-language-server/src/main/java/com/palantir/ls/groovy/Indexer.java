@@ -26,7 +26,7 @@ import java.net.URI;
 import java.util.Map;
 import java.util.Set;
 
-public final class Indexer {
+public class Indexer {
 
     private final Map<Location, Set<Location>> references = Maps.newHashMap();
     private final Map<Location, Location> gotoReferenced = Maps.newHashMap();

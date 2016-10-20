@@ -31,7 +31,7 @@ public final class CompletionUtils {
         if (symbols == null) {
             return new CompletionListImpl(false, Lists.newArrayList());
         }
-        CompletionListBuilder builder = new CompletionListBuilder().incomplete(false);
+        CompletionListBuilder builder = new CompletionListBuilder().isIncomplete(false);
         symbols.forEach(symbol -> {
             builder.item(new CompletionItemBuilder()
                     .label(symbol.getName())

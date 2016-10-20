@@ -17,22 +17,17 @@
 package com.palantir.ls.services;
 
 import com.palantir.ls.api.LanguageServerState;
-import io.typefox.lsapi.DidChangeConfigurationParams;
 
-public final class DefaultWorkspaceService extends AbstractWorkspaceService {
+public class DefaultTextDocumentService extends AbstractTextDocumentService {
     private final LanguageServerState state;
 
-    public DefaultWorkspaceService(LanguageServerState state) {
+    public DefaultTextDocumentService(LanguageServerState state) {
         this.state = state;
     }
 
     @Override
-    protected LanguageServerState getState() {
+    public LanguageServerState getState() {
         return state;
     }
 
-    @Override
-    public void didChangeConfiguraton(DidChangeConfigurationParams didChangeConfigurationParams) {
-        throw new UnsupportedOperationException();
-    }
 }

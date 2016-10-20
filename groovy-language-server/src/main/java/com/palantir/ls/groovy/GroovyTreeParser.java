@@ -27,9 +27,12 @@ import com.google.common.collect.Sets;
 import com.palantir.ls.api.TreeParser;
 import com.palantir.ls.groovy.util.GroovyConstants;
 import com.palantir.ls.groovy.util.GroovyLocations;
+import com.palantir.ls.util.CompletionUtils;
 import com.palantir.ls.util.Ranges;
 import com.palantir.ls.util.UriSupplier;
 import com.palantir.ls.util.Uris;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import io.typefox.lsapi.CompletionList;
 import io.typefox.lsapi.Location;
 import io.typefox.lsapi.Position;
 import io.typefox.lsapi.ReferenceParams;
@@ -43,7 +46,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
-import java.util.regex.PatternSyntaxException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.codehaus.groovy.ast.ClassNode;
@@ -92,6 +94,7 @@ public final class GroovyTreeParser implements TreeParser {
      *        the provider use to resolve uris
      * @return the newly created GroovyTreeParser
      */
+    @SuppressFBWarnings("PT_FINAL_TYPE_RETURN")
     public static GroovyTreeParser of(Supplier<CompilationUnit> unitSupplier, Path workspaceRoot,
             UriSupplier workspaceUriSupplier) {
         checkNotNull(unitSupplier, "unitSupplier must not be null");
@@ -188,6 +191,11 @@ public final class GroovyTreeParser implements TreeParser {
     }
 
     @Override
+    public CompletionList getCompletion(URI uri, Position position) {
+        return CompletionUtils.createCompletionListFromSymbols(getFileSymbols().get(uri));
+    }
+
+    @Override
     public Map<Location, Set<Location>> getReferences() {
         return indexer.getReferences();
     }
@@ -274,18 +282,6 @@ public final class GroovyTreeParser implements TreeParser {
         return indexer.getFileSymbols().values().stream().flatMap(Collection::stream)
                 .filter(symbol -> pattern.matcher(symbol.getName()).matches())
                 .collect(Collectors.toSet());
-    }
-
-    private Pattern getQueryPattern(String query) {
-        String escaped = Pattern.quote(query);
-        String newQuery = escaped.replaceAll("\\*", "\\\\E.*\\\\Q").replaceAll("\\?", "\\\\E.\\\\Q");
-        newQuery = "^" + newQuery;
-        try {
-            return Pattern.compile(newQuery);
-        } catch (PatternSyntaxException e) {
-            logger.warn("Could not create valid pattern from query '{}'", query);
-        }
-        return Pattern.compile("^" + escaped);
     }
 
     private static SymbolKind getKind(ClassNode node) {

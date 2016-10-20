@@ -17,6 +17,7 @@
 package com.palantir.ls.api;
 
 import com.google.common.base.Optional;
+import io.typefox.lsapi.CompletionList;
 import io.typefox.lsapi.Location;
 import io.typefox.lsapi.Position;
 import io.typefox.lsapi.ReferenceParams;
@@ -24,6 +25,8 @@ import io.typefox.lsapi.SymbolInformation;
 import java.net.URI;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 /**
  * Provides functionality to fulfill all symbol related Language Server requests.
@@ -39,6 +42,11 @@ public interface TreeParser {
      * Returns a mapping from the URI of source file to symbols located within these source files.
      */
     Map<URI, Set<SymbolInformation>> getFileSymbols();
+
+    /**
+     * Returns a completion list for the given {@code uri} and {@code position}.
+     */
+    CompletionList getCompletion(URI uri, Position position);
 
     /**
      * Returns a mapping from the location of some referred class to a set of locations were they were referred.
@@ -67,4 +75,15 @@ public interface TreeParser {
      */
     Set<SymbolInformation> getFilteredSymbols(String query);
 
+    default Pattern getQueryPattern(String query) {
+        String escaped = Pattern.quote(query);
+        String newQuery = escaped.replaceAll("\\*", "\\\\E.*\\\\Q").replaceAll("\\?", "\\\\E.\\\\Q");
+        newQuery = "^" + newQuery;
+        try {
+            return Pattern.compile(newQuery);
+        } catch (PatternSyntaxException e) {
+            // sadness
+        }
+        return Pattern.compile("^" + escaped);
+    }
 }

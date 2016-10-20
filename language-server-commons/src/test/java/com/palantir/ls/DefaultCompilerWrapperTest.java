@@ -32,7 +32,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
-public final class DefaultCompilerWrapperTest {
+public class DefaultCompilerWrapperTest {
 
     @Mock
     private WorkspaceCompiler compiler;

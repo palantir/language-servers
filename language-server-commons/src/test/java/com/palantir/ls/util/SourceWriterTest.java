@@ -36,7 +36,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 
-public final class SourceWriterTest {
+public class SourceWriterTest {
 
     @Rule
     public ExpectedException expectedException = ExpectedException.none();

@@ -19,10 +19,12 @@ package com.palantir.ls.groovy.util;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.palantir.ls.util.Ranges;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.typefox.lsapi.DiagnosticSeverity;
 import io.typefox.lsapi.builders.DiagnosticBuilder;
 
-public final class DefaultDiagnosticBuilder extends DiagnosticBuilder {
+@SuppressFBWarnings("PT_EXTENDS_CONCRETE_TYPE")
+public class DefaultDiagnosticBuilder extends DiagnosticBuilder {
 
     public DefaultDiagnosticBuilder(String message, DiagnosticSeverity severity) {
         checkNotNull(message, "message cannot be null");

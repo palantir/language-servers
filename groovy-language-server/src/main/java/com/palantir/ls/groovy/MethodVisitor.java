@@ -47,7 +47,7 @@ import org.codehaus.groovy.ast.expr.StaticMethodCallExpression;
 import org.codehaus.groovy.ast.expr.VariableExpression;
 import org.codehaus.groovy.ast.stmt.CatchStatement;
 
-public final class MethodVisitor extends CodeVisitorSupport {
+public class MethodVisitor extends CodeVisitorSupport {
 
     private final Indexer indexer;
     private final URI uri;

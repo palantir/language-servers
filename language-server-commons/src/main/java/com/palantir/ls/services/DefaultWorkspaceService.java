@@ -18,10 +18,10 @@ package com.palantir.ls.services;
 
 import com.palantir.ls.api.LanguageServerState;
 
-public final class DefaultWindowService extends AbstractWindowService {
+public class DefaultWorkspaceService extends AbstractWorkspaceService {
     private final LanguageServerState state;
 
-    public DefaultWindowService(LanguageServerState state) {
+    public DefaultWorkspaceService(LanguageServerState state) {
         this.state = state;
     }
 

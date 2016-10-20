@@ -23,7 +23,7 @@ import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-public final class WorkspaceUriSupplier implements UriSupplier {
+public class WorkspaceUriSupplier implements UriSupplier {
 
     private final Path workspaceRoot;
     private final Path other;
@@ -42,8 +42,10 @@ public final class WorkspaceUriSupplier implements UriSupplier {
         // In the case that it's already relative to the workspace, we still convert it into a Path
         // and then back into a URI to normalize the URI. Otherwise the URI could start with either
         // 'file:///' or 'file:/'. Now it will always start with 'file:///'.
-        return uri.getPath().startsWith(workspaceRoot.toString()) ? Paths.get(uri).toUri()
-                : workspaceRoot.resolve(other.relativize(Paths.get(uri))).toUri();
+        if (uri.getPath().startsWith(workspaceRoot.toString())) {
+            return Paths.get(uri).toUri();
+        }
+        return workspaceRoot.resolve(other.relativize(Paths.get(uri))).toUri();
     }
 
 }

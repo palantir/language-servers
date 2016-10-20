@@ -19,6 +19,7 @@ package com.palantir.ls.util;
 import static com.google.common.base.Preconditions.checkArgument;
 
 import com.google.common.base.Throwables;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.typefox.lsapi.Position;
 import io.typefox.lsapi.TextDocumentContentChangeEvent;
 import java.io.BufferedReader;
@@ -55,6 +56,7 @@ public final class SourceWriter {
     /**
      * Creates a SourceWriter which creates a copy of source at destination.
      */
+    @SuppressFBWarnings("PT_FINAL_TYPE_RETURN")
     public static SourceWriter of(Path source, Path destination) throws IOException {
         SourceWriter writer = new SourceWriter(source, destination);
         writer.initialize();
@@ -183,7 +185,7 @@ public final class SourceWriter {
             throws IOException {
         output.write(currentLine.substring(Math.min(lastColumn, currentLine.length())));
         output.newLine();
-        String line = currentLine;
+        String line;
         while ((line = file.readLine()) != null) {
             output.write(line.substring(0, line.length()));
             output.newLine();

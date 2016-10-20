@@ -6,6 +6,7 @@ sourceCompatibility = '1.8'
 
 dependencies {
     compile "com.fasterxml.jackson.core:jackson-databind:${jacksonDatabindVersion}"
+    compile "com.google.code.findbugs:annotations:${findbugsAnnotationsVersion}"
     compile "com.google.guava:guava:${guavaVersion}"
     compile "org.apache.commons:commons-io:${apacheCommonsVersion}"
     compile "org.slf4j:slf4j-api:${slf4jApiVersion}"
@@ -13,7 +14,6 @@ dependencies {
     compile "io.typefox.lsapi:io.typefox.lsapi.annotations:${typefoxLsApiVersion}"
     compile "io.typefox.lsapi:io.typefox.lsapi.services:${typefoxLsApiVersion}"
 
-    testCompile "com.google.code.findbugs:annotations:${findbugsAnnotationsVersion}"
     testCompile "junit:junit:${junitVersion}"
     testCompile "org.hamcrest:hamcrest-all:${hamcrestVersion}"
     testCompile "org.mockito:mockito-core:${mockitoVersion}"

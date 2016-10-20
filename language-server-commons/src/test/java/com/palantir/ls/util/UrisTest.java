@@ -26,7 +26,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 
-public final class UrisTest {
+public class UrisTest {
 
     @Rule
     public ExpectedException expectedException = ExpectedException.none();

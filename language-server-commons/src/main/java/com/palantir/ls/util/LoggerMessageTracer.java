@@ -25,7 +25,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import org.slf4j.Logger;
 
-public final class LoggerMessageTracer implements MessageTracer {
+public class LoggerMessageTracer implements MessageTracer {
 
     private final Logger logger;
 

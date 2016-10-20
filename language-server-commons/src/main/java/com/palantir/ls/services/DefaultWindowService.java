@@ -2,7 +2,7 @@
  * Copyright 2016 Palantir Technologies, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance ctes the License.
+ * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
@@ -14,7 +14,19 @@
  * limitations under the License.
  */
 
-package com.palantir.ls;
+package com.palantir.ls.services;
 
-public class DefaultLanguageServerState extends AbstractLanguageServerState {
+import com.palantir.ls.api.LanguageServerState;
+
+public class DefaultWindowService extends AbstractWindowService {
+    private final LanguageServerState state;
+
+    public DefaultWindowService(LanguageServerState state) {
+        this.state = state;
+    }
+
+    @Override
+    protected LanguageServerState getState() {
+        return state;
+    }
 }
