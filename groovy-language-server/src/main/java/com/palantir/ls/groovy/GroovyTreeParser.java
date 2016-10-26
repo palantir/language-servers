@@ -58,15 +58,11 @@ import org.codehaus.groovy.ast.Variable;
 import org.codehaus.groovy.ast.expr.VariableExpression;
 import org.codehaus.groovy.ast.stmt.BlockStatement;
 import org.codehaus.groovy.control.CompilationUnit;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Groovy implementation of the TreeParser. Depends on a supplier of a Groovy CompilationUnit.
  */
 public final class GroovyTreeParser implements TreeParser {
-
-    private static final Logger logger = LoggerFactory.getLogger(GroovyTreeParser.class);
 
     private static final String GROOVY_DEFAULT_INTERFACE = "groovy.lang.GroovyObject";
 
