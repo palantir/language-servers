@@ -78,7 +78,7 @@ import org.junit.rules.TemporaryFolder;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-public final class DefaultTextDocumentServiceTest {
+public class DefaultTextDocumentServiceTest {
 
     @Rule
     public TemporaryFolder workspace = new TemporaryFolder();
