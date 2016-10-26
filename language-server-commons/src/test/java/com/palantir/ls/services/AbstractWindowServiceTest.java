@@ -27,9 +27,9 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
-public class AbstractWindowServiceTest {
+public final class AbstractWindowServiceTest {
 
-    public static class TestWindowService extends AbstractWindowService {
+    public static final class TestWindowService extends AbstractWindowService {
 
         private final LanguageServerState state;
 

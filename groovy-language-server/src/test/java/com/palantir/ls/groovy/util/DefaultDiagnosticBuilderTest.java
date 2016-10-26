@@ -28,7 +28,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-public class DefaultDiagnosticBuilderTest {
+public final class DefaultDiagnosticBuilderTest {
 
     @Rule
     public ExpectedException expectedException = ExpectedException.none();

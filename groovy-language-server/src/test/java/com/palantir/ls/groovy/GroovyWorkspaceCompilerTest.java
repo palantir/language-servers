@@ -50,7 +50,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 
-public class GroovyWorkspaceCompilerTest {
+public final class GroovyWorkspaceCompilerTest {
 
     private static final Set<Diagnostic> NO_ERRORS = Sets.newHashSet();
 

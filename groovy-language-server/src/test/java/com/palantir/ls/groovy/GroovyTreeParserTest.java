@@ -51,7 +51,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 
-public class GroovyTreeParserTest {
+public final class GroovyTreeParserTest {
 
     private static final Set<SymbolInformation> NO_SYMBOLS = Sets.newHashSet();
     private static final Set<Location> NO_REFERENCES = Sets.newHashSet();

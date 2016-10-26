@@ -29,7 +29,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-public class RangesTest {
+public final class RangesTest {
 
     @Rule
     public ExpectedException expectedException = ExpectedException.none();

@@ -79,7 +79,7 @@ import org.junit.rules.TemporaryFolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class GroovyLanguageServerIntegrationTest {
+public final class GroovyLanguageServerIntegrationTest {
 
     private static final Logger logger = LoggerFactory.getLogger(GroovyLanguageServerIntegrationTest.class);
 

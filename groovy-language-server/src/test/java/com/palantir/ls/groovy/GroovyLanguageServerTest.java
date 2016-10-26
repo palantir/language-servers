@@ -40,7 +40,7 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.mockito.Mockito;
 
-public class GroovyLanguageServerTest {
+public final class GroovyLanguageServerTest {
 
     @Rule
     public TemporaryFolder folder = new TemporaryFolder();
