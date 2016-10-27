@@ -206,11 +206,8 @@ public final class SourceWriter {
         }
     }
 
-    /**
-     * Handles saving the accumulated changes in destination back into the original source.
-     */
-    public synchronized void saveChanges() throws IOException {
-        FileUtils.copyFile(destination.toFile(), source.toFile());
+    public synchronized void reloadFile() throws IOException {
+        FileUtils.copyFile(source.toFile(), destination.toFile());
     }
 
     private synchronized void initialize() throws IOException {

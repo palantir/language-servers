@@ -385,18 +385,16 @@ public class GroovyWorkspaceCompilerTest {
 
         // Call handleClose
         compiler.handleFileSaved(catFile.toURI());
-        // Assert the new file contents
-        assertEquals("class Dog {\n}\n", FileUtils.readFileToString(catFile));
-        // The changed file should have been deleted
-        assertFalse(changedOutput.getRoot().toPath().resolve(root.getRoot().toPath().relativize(catFile.toPath()))
-                .toFile().exists());
+        // Assert things reloaded
+        assertEquals("class Cat {\n}\n", FileUtils.readFileToString(catFile));
+        assertEquals("class Cat {\n}\n", FileUtils.readFileToString(catChangedFile));
 
         // Re-compile
         assertEquals(NO_ERRORS, compiler.compile());
 
         // Assert new symbols persist
         // Assert the original file is in the compilation unit
-        assertSingleSourceFileUri(catFile, compiler.get().iterator());
+        assertSingleSourceFileUri(catChangedFile, compiler.get().iterator());
     }
 
     @Test
@@ -440,7 +438,7 @@ public class GroovyWorkspaceCompilerTest {
         // Re-compile
         assertEquals(NO_ERRORS, compiler.compile());
 
-        // Assert the original file is in the compilation unit
+        // Assert the new file is still in the compilation unit
         assertSingleSourceFileUri(catFile, compiler.get().iterator());
     }
 
