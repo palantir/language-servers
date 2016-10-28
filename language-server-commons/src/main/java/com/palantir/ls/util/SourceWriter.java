@@ -206,6 +206,10 @@ public final class SourceWriter {
         }
     }
 
+    public synchronized void saveChangesToSource() throws IOException {
+        FileUtils.copyFile(destination.toFile(), source.toFile());
+    }
+
     public synchronized void reloadFile() throws IOException {
         FileUtils.copyFile(source.toFile(), destination.toFile());
     }
