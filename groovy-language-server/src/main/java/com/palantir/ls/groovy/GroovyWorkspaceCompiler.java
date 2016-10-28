@@ -175,13 +175,7 @@ public final class GroovyWorkspaceCompiler implements WorkspaceCompiler, Supplie
     public void handleFileSaved(URI originalFile) {
         try {
             if (originalSourceToChangedSource.containsKey(originalFile)) {
-                Path changedSource = originalSourceToChangedSource.get(originalFile).getDestination();
-                originalSourceToChangedSource.get(originalFile).saveChanges();
-                originalSourceToChangedSource.remove(originalFile);
-                // Deleted the changed file
-                if (!changedSource.toFile().delete()) {
-                    logger.error("Unable to delete file '{}'", changedSource.toAbsolutePath());
-                }
+                originalSourceToChangedSource.get(originalFile).reloadFile();
                 resetCompilationUnit();
             }
         } catch (IOException e) {
