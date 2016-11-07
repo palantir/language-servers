@@ -45,7 +45,7 @@ public abstract class AbstractWorkspaceService implements WorkspaceService {
     }
 
     @Override
-    public void didChangeConfiguraton(DidChangeConfigurationParams didChangeConfigurationParams) {
+    public void didChangeConfiguration(DidChangeConfigurationParams didChangeConfigurationParams) {
         throw new UnsupportedOperationException();
     }
 }
