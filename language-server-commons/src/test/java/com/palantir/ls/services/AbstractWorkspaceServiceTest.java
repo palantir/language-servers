@@ -65,7 +65,7 @@ public class AbstractWorkspaceServiceTest {
         }
 
         @Override
-        public void didChangeConfiguraton(DidChangeConfigurationParams didChangeConfigurationParams) {
+        public void didChangeConfiguration(DidChangeConfigurationParams didChangeConfigurationParams) {
             throw new UnsupportedOperationException();
         }
     }
