@@ -192,9 +192,8 @@ public class DefaultTextDocumentServiceTest {
                         .uri(filePath.toAbsolutePath().toString())
                         .build())
                 .build());
-        // assert diagnostics were published
-        assertEquals(1, publishedDiagnostics.size());
-        assertEquals(expectedDiagnostics, Sets.newHashSet(publishedDiagnostics.get(0)));
+        // assert diagnostics were not published
+        assertEquals(0, publishedDiagnostics.size());
     }
 
     @Test
