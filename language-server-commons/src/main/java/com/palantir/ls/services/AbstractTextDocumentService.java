@@ -83,6 +83,7 @@ public abstract class AbstractTextDocumentService implements TextDocumentService
                     String.format("Calling didChange with no changes on uri '%s'", uri.toString()));
         }
         getState().getCompilerWrapper().handleFileChanged(uri, Lists.newArrayList(params.getContentChanges()));
+        getState().publishDiagnostics(getState().getCompilerWrapper().compile());
     }
 
     @Override
