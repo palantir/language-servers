@@ -18,6 +18,7 @@ package com.palantir.ls.services;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.Sets;
@@ -129,8 +130,8 @@ public class AbstractWorkspaceServiceTest {
                 .build());
 
         when(compilerWrapper.getWorkspaceRoot()).thenReturn(workspace.getRoot().toPath().toUri());
-        when(compilerWrapper.compile()).thenReturn(expectedDiagnostics);
-        when(compilerWrapper.getFilteredSymbols(Mockito.any())).thenReturn(allReferencesReturned);
+        when(compilerWrapper.compile(any())).thenReturn(expectedDiagnostics);
+        when(compilerWrapper.getFilteredSymbols(any())).thenReturn(allReferencesReturned);
 
         when(state.getCompilerWrapper()).thenReturn(compilerWrapper);
 

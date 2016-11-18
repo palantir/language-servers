@@ -23,7 +23,9 @@ import io.typefox.lsapi.DidChangeWatchedFilesParams;
 import io.typefox.lsapi.SymbolInformation;
 import io.typefox.lsapi.WorkspaceSymbolParams;
 import io.typefox.lsapi.services.WorkspaceService;
+import java.net.URI;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
@@ -41,7 +43,11 @@ public abstract class AbstractWorkspaceService implements WorkspaceService {
     @Override
     public final void didChangeWatchedFiles(DidChangeWatchedFilesParams params) {
         getState().getCompilerWrapper().handleChangeWatchedFiles(params.getChanges());
-        getState().publishDiagnostics(getState().getCompilerWrapper().compile());
+        Set<URI> relevantFiles = params.getChanges()
+                .stream()
+                .map(fileEvent -> URI.create(fileEvent.getUri()))
+                .collect(Collectors.toSet());
+        getState().publishDiagnostics(getState().getCompilerWrapper().compile(relevantFiles));
     }
 
     @Override

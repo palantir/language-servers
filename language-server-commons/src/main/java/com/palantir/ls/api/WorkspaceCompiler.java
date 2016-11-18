@@ -38,7 +38,7 @@ public interface WorkspaceCompiler {
      * Compiles all relevant files in the workspace.
      * @return the compilation warnings and errors by file
      */
-    Set<PublishDiagnosticsParams>  compile();
+    Set<PublishDiagnosticsParams> compile(Set<URI> file);
 
     /**
      * Handle opening a file.

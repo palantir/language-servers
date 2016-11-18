@@ -121,7 +121,7 @@ public final class GroovyWorkspaceCompiler implements WorkspaceCompiler, Supplie
     }
 
     @Override
-    public Set<PublishDiagnosticsParams> compile() {
+    public Set<PublishDiagnosticsParams> compile(Set<URI> files) {
         try {
             unit.compile();
         } catch (MultipleCompilationErrorsException e) {

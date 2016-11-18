@@ -19,6 +19,7 @@ package com.palantir.ls.services;
 import static com.google.common.base.Preconditions.checkArgument;
 
 import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.palantir.ls.api.LanguageServerState;
 import com.palantir.ls.util.Ranges;
@@ -71,7 +72,7 @@ public abstract class AbstractTextDocumentService implements TextDocumentService
         URI uri = Uris.resolveToRoot(getWorkspacePath(), params.getTextDocument().getUri());
         assertFileExists(uri);
         getState().getCompilerWrapper().handleFileOpened(uri);
-        getState().publishDiagnostics(getState().getCompilerWrapper().compile());
+        getState().publishDiagnostics(getState().getCompilerWrapper().compile(ImmutableSet.of(uri)));
     }
 
     @Override
@@ -83,7 +84,7 @@ public abstract class AbstractTextDocumentService implements TextDocumentService
                     String.format("Calling didChange with no changes on uri '%s'", uri.toString()));
         }
         getState().getCompilerWrapper().handleFileChanged(uri, Lists.newArrayList(params.getContentChanges()));
-        getState().publishDiagnostics(getState().getCompilerWrapper().compile());
+        getState().publishDiagnostics(getState().getCompilerWrapper().compile(ImmutableSet.of(uri)));
     }
 
     @Override
@@ -91,7 +92,7 @@ public abstract class AbstractTextDocumentService implements TextDocumentService
         URI uri = Uris.resolveToRoot(getWorkspacePath(), params.getTextDocument().getUri());
         assertFileExists(uri);
         getState().getCompilerWrapper().handleFileClosed(uri);
-        getState().publishDiagnostics(getState().getCompilerWrapper().compile());
+        getState().publishDiagnostics(getState().getCompilerWrapper().compile(ImmutableSet.of(uri)));
     }
 
     @Override
@@ -99,7 +100,7 @@ public abstract class AbstractTextDocumentService implements TextDocumentService
         URI uri = Uris.resolveToRoot(getWorkspacePath(), params.getTextDocument().getUri());
         assertFileExists(uri);
         getState().getCompilerWrapper().handleFileSaved(uri);
-        getState().publishDiagnostics(getState().getCompilerWrapper().compile());
+        getState().publishDiagnostics(getState().getCompilerWrapper().compile(ImmutableSet.of(uri)));
     }
 
     @Override

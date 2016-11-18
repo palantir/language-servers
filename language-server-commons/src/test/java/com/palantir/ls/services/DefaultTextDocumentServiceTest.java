@@ -144,7 +144,7 @@ public class DefaultTextDocumentServiceTest {
         expectedDefinitionLocation =
                 Optional.of(new LocationBuilder().uri("foo").range(Ranges.createRange(0, 1, 0, 1)).build());
         when(compilerWrapper.getWorkspaceRoot()).thenReturn(workspace.getRoot().toPath().toUri());
-        when(compilerWrapper.compile()).thenReturn(expectedDiagnostics);
+        when(compilerWrapper.compile(any())).thenReturn(expectedDiagnostics);
         when(compilerWrapper.getFileSymbols()).thenReturn(symbolsMap);
         when(compilerWrapper.getCompletion(any(), any())).thenReturn(emptyCompletionList);
         when(compilerWrapper.getCompletion(filePath.toUri(), new PositionImpl(5, 5)))
