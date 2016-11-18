@@ -87,8 +87,8 @@ public class DefaultCompilerWrapper implements CompilerWrapper {
     }
 
     @Override
-    public Set<PublishDiagnosticsParams> compile(Set<URI> file) {
-        Set<PublishDiagnosticsParams> diagnostics = compiler.compile(file);
+    public Set<PublishDiagnosticsParams> compile(Set<URI> files) {
+        Set<PublishDiagnosticsParams> diagnostics = compiler.compile(files);
         if (diagnostics.isEmpty()) {
             parser.parseAllSymbols();
         }
