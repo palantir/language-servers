@@ -20,6 +20,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -97,7 +98,7 @@ public class GroovyWorkspaceCompilerTest {
     @Test
     public void testEmptyWorkspace() throws InterruptedException, ExecutionException, IOException {
         GroovyWorkspaceCompiler compiler = createGroovyWorkspaceCompiler();
-        assertEquals(NO_ERRORS, compiler.compile());
+        assertEquals(NO_ERRORS, compiler.compile(ImmutableSet.of()));
     }
 
     @Test
@@ -137,7 +138,7 @@ public class GroovyWorkspaceCompilerTest {
         addFileToFolder(root.getRoot(), "test4.groovy", "class ExceptionNew {}");
 
         GroovyWorkspaceCompiler compiler = createGroovyWorkspaceCompiler();
-        assertEquals(NO_ERRORS, compiler.compile());
+        assertEquals(NO_ERRORS, compiler.compile(ImmutableSet.of()));
     }
 
     @Test
@@ -155,7 +156,7 @@ public class GroovyWorkspaceCompilerTest {
         addFileToFolder(root.getRoot(), "ExceptionNew.java", "public class ExceptionNew {}");
 
         GroovyWorkspaceCompiler compiler = createGroovyWorkspaceCompiler();
-        assertEquals(NO_ERRORS, compiler.compile());
+        assertEquals(NO_ERRORS, compiler.compile(ImmutableSet.of()));
     }
 
     @Test
@@ -163,7 +164,7 @@ public class GroovyWorkspaceCompilerTest {
             throws InterruptedException, ExecutionException, IOException {
         addFileToFolder(root.getRoot(), "ExceptionNewNotSameName.java", "public class ExceptionNew {}");
         GroovyWorkspaceCompiler compiler = createGroovyWorkspaceCompiler();
-        assertEquals(NO_ERRORS, compiler.compile());
+        assertEquals(NO_ERRORS, compiler.compile(ImmutableSet.of()));
     }
 
     @Test
@@ -173,7 +174,7 @@ public class GroovyWorkspaceCompilerTest {
                 + "}");
 
         GroovyWorkspaceCompiler compiler = createGroovyWorkspaceCompiler();
-        Set<PublishDiagnosticsParams> diagnostics = compiler.compile();
+        Set<PublishDiagnosticsParams> diagnostics = compiler.compile(ImmutableSet.of());
 
         assertEquals(Sets.newHashSet(new PublishDiagnosticsParamsBuilder()
                 .uri(test.toPath().toUri().toString())
@@ -203,7 +204,7 @@ public class GroovyWorkspaceCompilerTest {
         addFileToFolder(newFolder2, "Test.foo", "public class Test {}\n");
 
         GroovyWorkspaceCompiler compiler = createGroovyWorkspaceCompiler();
-        assertEquals(NO_ERRORS, compiler.compile());
+        assertEquals(NO_ERRORS, compiler.compile(ImmutableSet.of()));
     }
 
     @Test
@@ -243,7 +244,7 @@ public class GroovyWorkspaceCompilerTest {
         addFileToFolder(root.getRoot(), "test4.groovy", "class ExceptionNew {}\n");
 
         GroovyWorkspaceCompiler compiler = createGroovyWorkspaceCompiler();
-        Set<PublishDiagnosticsParams> diagnostics = compiler.compile();
+        Set<PublishDiagnosticsParams> diagnostics = compiler.compile(ImmutableSet.of());
 
         Set<PublishDiagnosticsParams> expectedDiagnostics = Sets.newHashSet(
                 new PublishDiagnosticsParamsBuilder()
@@ -277,7 +278,7 @@ public class GroovyWorkspaceCompilerTest {
                 changedOutput.getRoot().toPath().resolve(newFolder1.getName()).resolve(catFile.getName()).toFile();
         GroovyWorkspaceCompiler compiler = createGroovyWorkspaceCompiler();
         // Compile
-        assertEquals(NO_ERRORS, compiler.compile());
+        assertEquals(NO_ERRORS, compiler.compile(ImmutableSet.of()));
         // Assert the original file is in the compilation unit
         assertSingleSourceFileUri(catFile, compiler.get().iterator());
 
@@ -286,7 +287,7 @@ public class GroovyWorkspaceCompilerTest {
                 .range(Ranges.createRange(0, 6, 0, 9)).rangeLength(3).text("Dog").build()));
 
         // Re-compile
-        assertEquals(NO_ERRORS, compiler.compile());
+        assertEquals(NO_ERRORS, compiler.compile(ImmutableSet.of()));
 
         // Assert file contents
         assertEquals("class Cat {\n}\n", FileUtils.readFileToString(catFile));
@@ -300,7 +301,7 @@ public class GroovyWorkspaceCompilerTest {
                 .range(Ranges.createRange(0, 6, 0, 9)).rangeLength(6).text("Turtle").build()));
 
         // Re-compile
-        assertEquals(NO_ERRORS, compiler.compile());
+        assertEquals(NO_ERRORS, compiler.compile(ImmutableSet.of()));
 
         // Assert file contents
         assertEquals("class Cat {\n}\n", FileUtils.readFileToString(catFile));
@@ -321,7 +322,7 @@ public class GroovyWorkspaceCompilerTest {
                 changedOutput.getRoot().toPath().resolve(newFolder1.getName()).resolve(catFile.getName()).toFile();
         GroovyWorkspaceCompiler compiler = createGroovyWorkspaceCompiler();
         // Compile
-        assertEquals(NO_ERRORS, compiler.compile());
+        assertEquals(NO_ERRORS, compiler.compile(ImmutableSet.of()));
 
         // Assert the original file is in the compilation unit
         assertSingleSourceFileUri(catFile, compiler.get().iterator());
@@ -331,7 +332,7 @@ public class GroovyWorkspaceCompilerTest {
         compiler.handleFileChanged(catFile.toURI(), Lists.newArrayList(new TextDocumentContentChangeEventBuilder()
                 .range(Ranges.createRange(0, 6, 0, 9)).rangeLength(3).text("Dog").build()));
         // Re-compile
-        assertEquals(NO_ERRORS, compiler.compile());
+        assertEquals(NO_ERRORS, compiler.compile(ImmutableSet.of()));
 
         // Assert file contents
         assertEquals("class Cat {\n}\n", FileUtils.readFileToString(catFile));
@@ -348,7 +349,7 @@ public class GroovyWorkspaceCompilerTest {
         assertFalse(changedOutput.getRoot().toPath().resolve(root.getRoot().toPath().relativize(catFile.toPath()))
                 .toFile().exists());
         // Re-compile
-        assertEquals(NO_ERRORS, compiler.compile());
+        assertEquals(NO_ERRORS, compiler.compile(ImmutableSet.of()));
 
         // Assert the original file is in the compilation unit
         assertSingleSourceFileUri(catFile, compiler.get().iterator());
@@ -365,7 +366,7 @@ public class GroovyWorkspaceCompilerTest {
 
         GroovyWorkspaceCompiler compiler = createGroovyWorkspaceCompiler();
         // Compile
-        assertEquals(NO_ERRORS, compiler.compile());
+        assertEquals(NO_ERRORS, compiler.compile(ImmutableSet.of()));
 
         // Assert the original file is in the compilation unit
         assertSingleSourceFileUri(catFile, compiler.get().iterator());
@@ -378,7 +379,7 @@ public class GroovyWorkspaceCompilerTest {
         assertEquals("class Dog {\n}\n", FileUtils.readFileToString(catChangedFile));
 
         // Re-compile
-        assertEquals(NO_ERRORS, compiler.compile());
+        assertEquals(NO_ERRORS, compiler.compile(ImmutableSet.of()));
 
         // Assert the changed file is in the compilation unit
         assertSingleSourceFileUri(catChangedFile, compiler.get().iterator());
@@ -390,7 +391,7 @@ public class GroovyWorkspaceCompilerTest {
         assertEquals("class Cat {\n}\n", FileUtils.readFileToString(catChangedFile));
 
         // Re-compile
-        assertEquals(NO_ERRORS, compiler.compile());
+        assertEquals(NO_ERRORS, compiler.compile(ImmutableSet.of()));
 
         // Assert new symbols persist
         // Assert the original file is in the compilation unit
@@ -408,7 +409,7 @@ public class GroovyWorkspaceCompilerTest {
 
         GroovyWorkspaceCompiler compiler = createGroovyWorkspaceCompiler();
         // Compile
-        assertEquals(NO_ERRORS, compiler.compile());
+        assertEquals(NO_ERRORS, compiler.compile(ImmutableSet.of()));
         // Assert the original file is in the compilation unit
         assertSingleSourceFileUri(catFile, compiler.get().iterator());
 
@@ -420,7 +421,7 @@ public class GroovyWorkspaceCompilerTest {
         assertEquals("class Dog {\n}\n", FileUtils.readFileToString(catChangedFile));
 
         // Re-compile
-        assertEquals(NO_ERRORS, compiler.compile());
+        assertEquals(NO_ERRORS, compiler.compile(ImmutableSet.of()));
 
         // Assert the changed file is in the compilation unit
         assertSingleSourceFileUri(catChangedFile, compiler.get().iterator());
@@ -436,7 +437,7 @@ public class GroovyWorkspaceCompilerTest {
                 .toFile().exists());
 
         // Re-compile
-        assertEquals(NO_ERRORS, compiler.compile());
+        assertEquals(NO_ERRORS, compiler.compile(ImmutableSet.of()));
 
         // Assert the new file is still in the compilation unit
         assertSingleSourceFileUri(catFile, compiler.get().iterator());
@@ -450,7 +451,7 @@ public class GroovyWorkspaceCompilerTest {
                         + "}\n");
         GroovyWorkspaceCompiler compiler = createGroovyWorkspaceCompiler();
         // Compile
-        assertEquals(NO_ERRORS, compiler.compile());
+        assertEquals(NO_ERRORS, compiler.compile(ImmutableSet.of()));
 
         // Assert the original file is in the compilation unit
         assertSingleSourceFileUri(catFile, compiler.get().iterator());
@@ -464,7 +465,7 @@ public class GroovyWorkspaceCompilerTest {
                         .type(FileChangeType.Changed).build()));
 
         // Re-compile
-        assertEquals(NO_ERRORS, compiler.compile());
+        assertEquals(NO_ERRORS, compiler.compile(ImmutableSet.of()));
 
         // Assert the compiler has no source units
         assertFalse(compiler.get().iterator().hasNext());
@@ -475,7 +476,7 @@ public class GroovyWorkspaceCompilerTest {
         File newFolder1 = root.newFolder();
         GroovyWorkspaceCompiler compiler = createGroovyWorkspaceCompiler();
         // Compile
-        assertEquals(NO_ERRORS, compiler.compile());
+        assertEquals(NO_ERRORS, compiler.compile(ImmutableSet.of()));
 
         // Assert the compiler has no source units
         assertFalse(compiler.get().iterator().hasNext());
@@ -490,7 +491,7 @@ public class GroovyWorkspaceCompilerTest {
                         .type(FileChangeType.Created).build()));
 
         // Re-compile
-        assertEquals(NO_ERRORS, compiler.compile());
+        assertEquals(NO_ERRORS, compiler.compile(ImmutableSet.of()));
 
         // Assert the compilation unit now contains cat file
         assertSingleSourceFileUri(catFile, compiler.get().iterator());

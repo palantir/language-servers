@@ -16,8 +16,10 @@
 
 package com.palantir.ls;
 
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.when;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.palantir.ls.api.TreeParser;
 import com.palantir.ls.api.WorkspaceCompiler;
@@ -49,15 +51,15 @@ public class DefaultCompilerWrapperTest {
 
     @Test
     public void testCompile_noDiagnostics() throws IOException {
-        when(compiler.compile()).thenReturn(Sets.newHashSet());
-        wrapper.compile();
+        when(compiler.compile(any())).thenReturn(Sets.newHashSet());
+        wrapper.compile(ImmutableSet.of());
         // assert parser was called
         Mockito.verify(parser, Mockito.times(1)).parseAllSymbols();
     }
 
     @Test
     public void testCompile_withDiagnostics() throws IOException {
-        when(compiler.compile()).thenReturn(Sets.newHashSet(
+        when(compiler.compile(any())).thenReturn(Sets.newHashSet(
                 new PublishDiagnosticsParamsBuilder()
                         .uri("uri")
                         .diagnostic(
@@ -68,7 +70,7 @@ public class DefaultCompilerWrapperTest {
                                         .source("groovyc")
                                         .build())
                         .build()));
-        wrapper.compile();
+        wrapper.compile(ImmutableSet.of());
         // assert parser wasn't called
         Mockito.verify(parser, Mockito.never()).parseAllSymbols();
     }

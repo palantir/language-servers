@@ -20,6 +20,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.palantir.ls.util.Ranges;
 import com.palantir.ls.util.UriSupplier;
@@ -75,7 +76,7 @@ public class GroovyTreeParserTest {
         parser = GroovyTreeParser.of(() -> {
             GroovyWorkspaceCompiler compiler =
                     GroovyWorkspaceCompiler.of(target, workspaceRoot.toPath(), changedOutput);
-            assertEquals(Sets.newHashSet(), compiler.compile());
+            assertEquals(Sets.newHashSet(), compiler.compile(ImmutableSet.of()));
             return compiler.get();
         }, workspaceRoot.toPath(), uriSupplier);
     }

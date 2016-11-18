@@ -35,10 +35,10 @@ public interface WorkspaceCompiler {
     URI getWorkspaceRoot();
 
     /**
-     * Compiles all relevant files in the workspace.
+     * Compiles all relevant files in the workspace given input file uris.
      * @return the compilation warnings and errors by file
      */
-    Set<PublishDiagnosticsParams>  compile();
+    Set<PublishDiagnosticsParams> compile(Set<URI> files);
 
     /**
      * Handle opening a file.
@@ -46,18 +46,18 @@ public interface WorkspaceCompiler {
     void handleFileOpened(URI file);
 
     /**
-     * Handle adding incremental changes to open files to be included in compilation.
+     * Handle adding incremental changes to open files.
      */
     void handleFileChanged(URI originalFile, List<TextDocumentContentChangeEvent> contentChanges);
 
     /**
-     * Handle removing non-saved changes to open files from compiled source files.
+     * Handle closing {@code originalFile}.
      * @param originalFile the URI of the original file
      */
     void handleFileClosed(URI originalFile);
 
     /**
-     * Handle saving the accumulated changes to the origin source.
+     * Handle changes saved to {@code originalFile}.
      * @param originalFile the URI of the original file
      */
     void handleFileSaved(URI originalFile);
