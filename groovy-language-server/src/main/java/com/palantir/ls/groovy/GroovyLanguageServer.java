@@ -19,6 +19,7 @@ package com.palantir.ls.groovy;
 import com.google.common.io.Files;
 import com.palantir.ls.DefaultCompilerWrapper;
 import com.palantir.ls.DefaultLanguageServerState;
+import com.palantir.ls.PalantirLanguageServer;
 import com.palantir.ls.StreamLanguageServerLauncher;
 import com.palantir.ls.api.LanguageServerState;
 import com.palantir.ls.api.TreeParser;
@@ -47,7 +48,7 @@ import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class GroovyLanguageServer implements LanguageServer {
+public class GroovyLanguageServer extends PalantirLanguageServer {
 
     private static final Logger logger = LoggerFactory.getLogger(GroovyLanguageServer.class);
 
@@ -145,6 +146,7 @@ public class GroovyLanguageServer implements LanguageServer {
     }
 
     public static void main(String[] args) {
+        setSystemProperties();
         LanguageServerState state = new DefaultLanguageServerState();
         LanguageServer server =
                 new GroovyLanguageServer(state, new DefaultTextDocumentService(state),
