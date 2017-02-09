@@ -11,7 +11,7 @@ dependencies {
     compile "com.fasterxml.jackson.core:jackson-databind:${jacksonDatabindVersion}"
     compile "com.google.code.findbugs:annotations:${findbugsAnnotationsVersion}"
     compile "com.google.guava:guava:${guavaVersion}"
-    compile "org.apache.commons:commons-io:${apacheCommonsVersion}"
+    compile "commons-io:commons-io:${commonsIoVersion}"
     compile "org.slf4j:slf4j-api:${slf4jApiVersion}"
     compile "org.slf4j:slf4j-log4j12:${log4j12Version}"
     compile "io.typefox.lsapi:io.typefox.lsapi:${typefoxLsApiVersion}"
