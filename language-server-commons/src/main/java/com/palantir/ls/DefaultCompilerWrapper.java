@@ -28,10 +28,12 @@ import io.typefox.lsapi.PublishDiagnosticsParams;
 import io.typefox.lsapi.ReferenceParams;
 import io.typefox.lsapi.SymbolInformation;
 import io.typefox.lsapi.TextDocumentContentChangeEvent;
+import java.io.File;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.apache.commons.io.FileUtils;
 
 /**
  * Wraps a WorkspaceCompiler and TreeParser. Ensures the tree is updated when the compiler is compiled successfully.
@@ -118,6 +120,11 @@ public class DefaultCompilerWrapper implements CompilerWrapper {
     @Override
     public void handleChangeWatchedFiles(List<? extends FileEvent> changes) {
         compiler.handleChangeWatchedFiles(changes);
+    }
+
+    @Override
+    public void shutdown() {
+        FileUtils.deleteQuietly(new File(compiler.getWorkspaceRoot()));
     }
 
 }
