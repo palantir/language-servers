@@ -18,4 +18,9 @@ package com.palantir.ls.api;
 
 public interface CompilerWrapper extends TreeParser, WorkspaceCompiler {
 
+    /**
+     * Clean up resources used and get ready to be shut down.
+     */
+    void shutdown();
+
 }
