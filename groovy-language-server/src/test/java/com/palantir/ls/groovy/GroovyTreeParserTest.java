@@ -18,7 +18,6 @@ package com.palantir.ls.groovy;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableSet;
@@ -118,14 +117,14 @@ public class GroovyTreeParserTest {
 
         // The symbols will contain a lot of inherited fields and methods, so we just check to make sure it contains our
         // custom fields and methods.
-        assertTrue(mapHasSymbol(symbols, Optional.absent(), "Coordinates", SymbolKind.Class));
-        assertTrue(mapHasSymbol(symbols, Optional.of("Coordinates"), "getAt", SymbolKind.Method));
-        assertTrue(mapHasSymbol(symbols, Optional.of("Coordinates"), "latitude", SymbolKind.Field));
-        assertTrue(mapHasSymbol(symbols, Optional.of("Coordinates"), "longitude", SymbolKind.Field));
-        assertTrue(mapHasSymbol(symbols, Optional.of("Coordinates"), "name", SymbolKind.Field));
-        assertTrue(mapHasSymbol(symbols, Optional.of("getAt"), "idx1", SymbolKind.Variable));
-        assertTrue(mapHasSymbol(symbols, Optional.of("getAt"), "idx2", SymbolKind.Variable));
-        assertTrue(mapHasSymbol(symbols, Optional.of("getAt"), "someString", SymbolKind.Variable));
+        assertThat(mapHasSymbol(symbols, Optional.absent(), "Coordinates", SymbolKind.Class)).isTrue();
+        assertThat(mapHasSymbol(symbols, Optional.of("Coordinates"), "getAt", SymbolKind.Method)).isTrue();
+        assertThat(mapHasSymbol(symbols, Optional.of("Coordinates"), "latitude", SymbolKind.Field)).isTrue();
+        assertThat(mapHasSymbol(symbols, Optional.of("Coordinates"), "longitude", SymbolKind.Field)).isTrue();
+        assertThat(mapHasSymbol(symbols, Optional.of("Coordinates"), "name", SymbolKind.Field)).isTrue();
+        assertThat(mapHasSymbol(symbols, Optional.of("getAt"), "idx1", SymbolKind.Variable)).isTrue();
+        assertThat(mapHasSymbol(symbols, Optional.of("getAt"), "idx2", SymbolKind.Variable)).isTrue();
+        assertThat(mapHasSymbol(symbols, Optional.of("getAt"), "someString", SymbolKind.Variable)).isTrue();
     }
 
     @Test
@@ -139,9 +138,9 @@ public class GroovyTreeParserTest {
         Map<URI, Set<SymbolInformation>> symbols = parser.getFileSymbols();
         // The symbols will contain a lot of inherited and default fields and methods, so we just check to make sure it
         // contains our custom fields and methods.
-        assertTrue(mapHasSymbol(symbols, Optional.absent(), "ICoordinates", SymbolKind.Interface));
-        assertTrue(mapHasSymbol(symbols, Optional.of("ICoordinates"), "getAt", SymbolKind.Method));
-        assertTrue(mapHasSymbol(symbols, Optional.of("getAt"), "idx", SymbolKind.Variable));
+        assertThat(mapHasSymbol(symbols, Optional.absent(), "ICoordinates", SymbolKind.Interface)).isTrue();
+        assertThat(mapHasSymbol(symbols, Optional.of("ICoordinates"), "getAt", SymbolKind.Method)).isTrue();
+        assertThat(mapHasSymbol(symbols, Optional.of("getAt"), "idx", SymbolKind.Variable)).isTrue();
     }
 
     @Test
@@ -155,10 +154,10 @@ public class GroovyTreeParserTest {
         Map<URI, Set<SymbolInformation>> symbols = parser.getFileSymbols();
         // The symbols will contain a lot of inherited and default fields and methods, so we just check to make sure it
         // contains our custom fields and methods.
-        assertTrue(mapHasSymbol(symbols, Optional.absent(), "Type", SymbolKind.Enum));
-        assertTrue(mapHasSymbol(symbols, Optional.of("Type"), "ONE", SymbolKind.Field));
-        assertTrue(mapHasSymbol(symbols, Optional.of("Type"), "TWO", SymbolKind.Field));
-        assertTrue(mapHasSymbol(symbols, Optional.of("Type"), "THREE", SymbolKind.Field));
+        assertThat(mapHasSymbol(symbols, Optional.absent(), "Type", SymbolKind.Enum)).isTrue();
+        assertThat(mapHasSymbol(symbols, Optional.of("Type"), "ONE", SymbolKind.Field)).isTrue();
+        assertThat(mapHasSymbol(symbols, Optional.of("Type"), "TWO", SymbolKind.Field)).isTrue();
+        assertThat(mapHasSymbol(symbols, Optional.of("Type"), "THREE", SymbolKind.Field)).isTrue();
     }
 
     @Test
@@ -186,19 +185,22 @@ public class GroovyTreeParserTest {
         Map<URI, Set<SymbolInformation>> symbols = parser.getFileSymbols();
         // The symbols will contain a lot of inherited fields and methods, so we just check to make sure it contains our
         // custom fields and methods.
-        assertTrue(mapHasSymbol(symbols, Optional.absent(), "Coordinates", SymbolKind.Class));
-        assertTrue(mapHasSymbol(symbols, Optional.of("Coordinates"), "getAt", SymbolKind.Method));
-        assertTrue(mapHasSymbol(symbols, Optional.of("Coordinates"), "latitude", SymbolKind.Field));
-        assertTrue(mapHasSymbol(symbols, Optional.of("Coordinates"), "longitude", SymbolKind.Field));
-        assertTrue(mapHasSymbol(symbols, Optional.of("Coordinates"), "name", SymbolKind.Field));
-        assertTrue(mapHasSymbol(symbols, Optional.of("Coordinates"), "Coordinates$MyInnerClass", SymbolKind.Class));
-        assertTrue(mapHasSymbol(symbols, Optional.of("Coordinates"), "Coordinates$MyInnerInterface",
-                SymbolKind.Interface));
-        assertTrue(mapHasSymbol(symbols, Optional.of("Coordinates"), "Coordinates$MyInnerEnum", SymbolKind.Enum));
-        assertTrue(mapHasSymbol(symbols, Optional.of("Coordinates$MyInnerEnum"), "ONE", SymbolKind.Field));
-        assertTrue(mapHasSymbol(symbols, Optional.of("Coordinates$MyInnerEnum"), "TWO", SymbolKind.Field));
-        assertTrue(mapHasSymbol(symbols, Optional.of("getAt"), "idx", SymbolKind.Variable));
-        assertTrue(mapHasSymbol(symbols, Optional.of("getAt"), "someString", SymbolKind.Variable));
+        assertThat(mapHasSymbol(symbols, Optional.absent(), "Coordinates", SymbolKind.Class)).isTrue();
+        assertThat(mapHasSymbol(symbols, Optional.of("Coordinates"), "getAt", SymbolKind.Method)).isTrue();
+        assertThat(mapHasSymbol(symbols, Optional.of("Coordinates"), "latitude", SymbolKind.Field)).isTrue();
+        assertThat(mapHasSymbol(symbols, Optional.of("Coordinates"), "longitude", SymbolKind.Field)).isTrue();
+        assertThat(mapHasSymbol(symbols, Optional.of("Coordinates"), "name", SymbolKind.Field)).isTrue();
+        assertThat(mapHasSymbol(symbols, Optional.of("Coordinates"), "Coordinates$MyInnerClass", SymbolKind.Class))
+                .isTrue();
+        assertThat(
+                mapHasSymbol(symbols, Optional.of("Coordinates"), "Coordinates$MyInnerInterface", SymbolKind.Interface))
+                .isTrue();
+        assertThat(mapHasSymbol(symbols, Optional.of("Coordinates"), "Coordinates$MyInnerEnum", SymbolKind.Enum))
+                .isTrue();
+        assertThat(mapHasSymbol(symbols, Optional.of("Coordinates$MyInnerEnum"), "ONE", SymbolKind.Field)).isTrue();
+        assertThat(mapHasSymbol(symbols, Optional.of("Coordinates$MyInnerEnum"), "TWO", SymbolKind.Field)).isTrue();
+        assertThat(mapHasSymbol(symbols, Optional.of("getAt"), "idx", SymbolKind.Variable)).isTrue();
+        assertThat(mapHasSymbol(symbols, Optional.of("getAt"), "someString", SymbolKind.Variable)).isTrue();
     }
 
     @Test
@@ -215,9 +217,9 @@ public class GroovyTreeParserTest {
         parser.parseAllSymbols();
 
         Map<URI, Set<SymbolInformation>> symbols = parser.getFileSymbols();
-        assertTrue(mapHasSymbol(symbols, Optional.of("test"), "myMethod", SymbolKind.Method));
-        assertTrue(mapHasSymbol(symbols, Optional.of("test"), "name", SymbolKind.Variable));
-        assertTrue(mapHasSymbol(symbols, Optional.of("myMethod"), "someString", SymbolKind.Variable));
+        assertThat(mapHasSymbol(symbols, Optional.of("test"), "myMethod", SymbolKind.Method)).isTrue();
+        assertThat(mapHasSymbol(symbols, Optional.of("test"), "name", SymbolKind.Variable)).isTrue();
+        assertThat(mapHasSymbol(symbols, Optional.of("myMethod"), "someString", SymbolKind.Variable)).isTrue();
     }
 
     @Test

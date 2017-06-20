@@ -16,9 +16,8 @@
 
 package com.palantir.ls.groovy;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -343,8 +342,11 @@ public class GroovyWorkspaceCompilerTest {
         // Assert file contents
         assertEquals("class Cat {\n}\n", FileUtils.readFileToString(catFile));
         // The changed file should have been deleted
-        assertFalse(changedOutput.getRoot().toPath().resolve(root.getRoot().toPath().relativize(catFile.toPath()))
-                .toFile().exists());
+        assertThat(changedOutput.getRoot()
+                .toPath()
+                .resolve(root.getRoot().toPath().relativize(catFile.toPath()))
+                .toFile().exists())
+                .isFalse();
         // Re-compile
         assertEquals(NO_ERRORS, compiler.compile(ImmutableSet.of()));
 
@@ -431,8 +433,10 @@ public class GroovyWorkspaceCompilerTest {
         // Assert file contents
         assertEquals("class Cat {\n}\n", FileUtils.readFileToString(catFile));
         // The changed file should have been deleted
-        assertFalse(changedOutput.getRoot().toPath().resolve(root.getRoot().toPath().relativize(catFile.toPath()))
-                .toFile().exists());
+        assertThat(changedOutput.getRoot()
+                .toPath()
+                .resolve(root.getRoot().toPath().relativize(catFile.toPath())).toFile().exists())
+                .isFalse();
 
         // Re-compile
         assertEquals(NO_ERRORS, compiler.compile(ImmutableSet.of()));
@@ -455,7 +459,7 @@ public class GroovyWorkspaceCompilerTest {
         assertSingleSourceFileUri(catFile, compiler.get().iterator());
 
         // Delete the file
-        assertTrue(catFile.delete());
+        assertThat(catFile.delete()).isTrue();
 
         // Call handleChangeWatchedFile with a change saying this file has been deleted outside this language server
         compiler.handleChangeWatchedFiles(Lists.newArrayList(
@@ -467,7 +471,7 @@ public class GroovyWorkspaceCompilerTest {
         assertEquals(NO_ERRORS, compiler.compile(ImmutableSet.of()));
 
         // Assert the compiler has no source units
-        assertFalse(compiler.get().iterator().hasNext());
+        assertThat(compiler.get().iterator().hasNext()).isFalse();
     }
 
     @Test
@@ -478,7 +482,7 @@ public class GroovyWorkspaceCompilerTest {
         assertEquals(NO_ERRORS, compiler.compile(ImmutableSet.of()));
 
         // Assert the compiler has no source units
-        assertFalse(compiler.get().iterator().hasNext());
+        assertThat(compiler.get().iterator().hasNext()).isFalse();
 
         File catFile = addFileToFolder(newFolder1, "Cat.groovy",
                 "class Cat {\n"
