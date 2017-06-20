@@ -264,10 +264,12 @@ public class DefaultTextDocumentServiceTest {
     @Test
     public void testCompletion() throws InterruptedException, ExecutionException {
         String uri = filePath.toAbsolutePath().toString();
-        TextDocumentPositionParams params = new TextDocumentPositionParams(new TextDocumentIdentifier(uri), uri, new Position(5, 5));
+        TextDocumentPositionParams params =
+                new TextDocumentPositionParams(new TextDocumentIdentifier(uri), uri, new Position(5, 5));
         CompletableFuture<Either<List<CompletionItem>, CompletionList>> response = service.completion(params);
         assertThat(response.get().getRight().isIncomplete(), is(expectedCompletionList.isIncomplete()));
-        assertThat(Sets.newHashSet(response.get().getRight().getItems()), is(Sets.newHashSet(expectedCompletionList.getItems())));
+        assertThat(Sets.newHashSet(response.get().getRight().getItems()),
+                is(Sets.newHashSet(expectedCompletionList.getItems())));
     }
 
     @Test

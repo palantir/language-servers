@@ -52,7 +52,7 @@ import org.junit.rules.TemporaryFolder;
 
 public class GroovyWorkspaceCompilerTest {
 
-    private static final Set<Diagnostic> NO_ERRORS = Sets.newHashSet();
+    private static final Set<PublishDiagnosticsParams> NO_ERRORS = Sets.newHashSet();
 
     @Rule
     public ExpectedException expectedException = ExpectedException.none();

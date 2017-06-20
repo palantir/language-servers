@@ -26,7 +26,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.io.Files;
 import com.palantir.ls.api.WorkspaceCompiler;
-import com.palantir.ls.groovy.util.DefaultDiagnosticBuilder;
 import com.palantir.ls.groovy.util.GroovyConstants;
 import com.palantir.ls.util.Ranges;
 import com.palantir.ls.util.SourceWriter;
@@ -245,7 +244,10 @@ public final class GroovyWorkspaceCompiler implements WorkspaceCompiler, Supplie
 
         for (int i = 0; i < collector.getWarningCount(); i++) {
             WarningMessage message = collector.getWarning(i);
-            Diagnostic diag = DefaultDiagnosticBuilder.of(message.getMessage(), DiagnosticSeverity.Warning);
+            String message1 = message.getMessage();
+            checkNotNull(message1, "message cannot be null");
+            Diagnostic diag = new Diagnostic(Ranges.UNDEFINED_RANGE, message1, DiagnosticSeverity.Warning,
+                    GroovyConstants.GROOVY_COMPILER);
             diagnosticsByFile.compute(workspaceRoot.toUri(),
                     (key, existingVal) -> {
                         if (existingVal == null) {
@@ -274,7 +276,10 @@ public final class GroovyWorkspaceCompiler implements WorkspaceCompiler, Supplie
                 PrintWriter writer = new PrintWriter(data);
                 message.write(writer);
                 uri = workspaceRoot.toUri();
-                diagnostic = DefaultDiagnosticBuilder.of(data.toString(), DiagnosticSeverity.Error);
+                String message1 = data.toString();
+                checkNotNull(message1, "message cannot be null");
+                diagnostic = new Diagnostic(Ranges.UNDEFINED_RANGE, message1, DiagnosticSeverity.Error,
+                        GroovyConstants.GROOVY_COMPILER);
             }
             diagnosticsByFile.compute(uri, (key, existingValue) -> {
                 if (existingValue == null) {

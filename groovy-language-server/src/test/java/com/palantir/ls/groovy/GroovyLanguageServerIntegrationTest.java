@@ -28,6 +28,7 @@ import com.palantir.ls.groovy.util.GroovyConstants;
 import com.palantir.ls.services.DefaultTextDocumentService;
 import com.palantir.ls.services.DefaultWorkspaceService;
 import com.palantir.ls.util.Ranges;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -86,6 +87,7 @@ public class GroovyLanguageServerIntegrationTest {
     private static LanguageServer actualServer;
     private LanguageServer server;
 
+    @SuppressFBWarnings("DM_DEFAULT_ENCODING")
     @Before
     public void before() throws IOException, InterruptedException {
         PipedOutputStream clientOutputStream = new PipedOutputStream();
@@ -95,8 +97,8 @@ public class GroovyLanguageServerIntegrationTest {
 
         // Start Groovy language server
         createAndLaunchLanguageServer(serverInputStream, serverOutputStream);
-        int i = 0;
-        while (server != null && i++ < 20) {
+        int counter = 0;
+        while (server != null && counter++ < 20) {
             Thread.sleep(50);
         }
         LanguageClient client = getClient();
@@ -330,15 +332,15 @@ public class GroovyLanguageServerIntegrationTest {
 
     private void assertCorrectInitializeResult(InitializeResult result) {
         CompletionOptions comp = new CompletionOptions(false, ImmutableList.of("."));
-        ServerCapabilities server = new ServerCapabilities();
-        server.setDocumentSymbolProvider(true);
-        server.setWorkspaceSymbolProvider(true);
-        server.setReferencesProvider(true);
-        server.setCompletionProvider(comp);
-        server.setDefinitionProvider(true);
-        server.setTextDocumentSync(TextDocumentSyncKind.Incremental);
+        ServerCapabilities capabilities = new ServerCapabilities();
+        capabilities.setDocumentSymbolProvider(true);
+        capabilities.setWorkspaceSymbolProvider(true);
+        capabilities.setReferencesProvider(true);
+        capabilities.setCompletionProvider(comp);
+        capabilities.setDefinitionProvider(true);
+        capabilities.setTextDocumentSync(TextDocumentSyncKind.Incremental);
 
-        assertThat(server).isEqualToIgnoringGivenFields(result.getCapabilities(), "textDocumentSync");
+        assertThat(capabilities).isEqualToIgnoringGivenFields(result.getCapabilities(), "textDocumentSync");
     }
 
     private static File addFileToFolder(File parent, String filename, String contents) throws IOException {
