@@ -16,24 +16,21 @@
 
 package com.palantir.ls.groovy;
 
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import com.palantir.ls.api.LanguageServerState;
-import io.typefox.lsapi.InitializeParams;
-import io.typefox.lsapi.InitializeResult;
-import io.typefox.lsapi.TextDocumentSyncKind;
-import io.typefox.lsapi.builders.InitializeParamsBuilder;
-import io.typefox.lsapi.impl.ClientCapabilitiesImpl;
-import io.typefox.lsapi.services.TextDocumentService;
-import io.typefox.lsapi.services.WindowService;
-import io.typefox.lsapi.services.WorkspaceService;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Optional;
 import java.util.concurrent.ExecutionException;
+import org.eclipse.lsp4j.ClientCapabilities;
+import org.eclipse.lsp4j.InitializeParams;
+import org.eclipse.lsp4j.InitializeResult;
+import org.eclipse.lsp4j.TextDocumentSyncKind;
+import org.eclipse.lsp4j.services.TextDocumentService;
+import org.eclipse.lsp4j.services.WorkspaceService;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -50,36 +47,40 @@ public class GroovyLanguageServerTest {
     @Before
     public void before() {
         server = new GroovyLanguageServer(Mockito.mock(LanguageServerState.class),
-                Mockito.mock(TextDocumentService.class), Mockito.mock(WorkspaceService.class),
-                Mockito.mock(WindowService.class));
+                Mockito.mock(TextDocumentService.class), Mockito.mock(WorkspaceService.class));
     }
 
     @Test
     public void testInitialize_absoluteWorkspacePath() throws InterruptedException, ExecutionException {
-        InitializeParams params =
-                new InitializeParamsBuilder().capabilities(new ClientCapabilitiesImpl()).processId(1)
-                        .rootPath(folder.getRoot().toPath().toAbsolutePath().toString()).build();
-        InitializeResult result = server.initialize(params).get();
+        InitializeParams initializeParams = getInitializeParams(Optional.empty());
+
+        InitializeResult result = server.initialize(initializeParams).get();
         assertInitializeResultIsCorrect(folder.getRoot().toPath().toAbsolutePath().normalize(), result);
 
         // Test normalization
-        params = new InitializeParamsBuilder().capabilities(new ClientCapabilitiesImpl()).processId(1)
-                        .rootPath(folder.getRoot().toPath().toAbsolutePath().toString() + "/somethingelse/..").build();
-        result = server.initialize(params).get();
+        initializeParams = getInitializeParams(Optional.of(
+                folder.getRoot().toPath().toAbsolutePath().toString() + "/somethingelse/.."));
+        result = server.initialize(initializeParams).get();
         assertInitializeResultIsCorrect(folder.getRoot().toPath().toAbsolutePath().normalize(), result);
+    }
+
+    private InitializeParams getInitializeParams(Optional<String> root) {
+        InitializeParams initializeParams = new InitializeParams();
+        initializeParams.setProcessId(1);
+        initializeParams.setCapabilities(new ClientCapabilities());
+        initializeParams.setRootPath(root.orElse(folder.getRoot().toPath().toAbsolutePath().toString()));
+        return initializeParams;
     }
 
     @Test
     public void testInitialize_uriWorkspacePath() throws InterruptedException, ExecutionException {
-        InitializeParams params =
-                new InitializeParamsBuilder().capabilities(new ClientCapabilitiesImpl()).processId(1)
-                        .rootPath(folder.getRoot().toURI().toString()).build();
+        InitializeParams params = getInitializeParams(Optional.empty());
         InitializeResult result = server.initialize(params).get();
         assertInitializeResultIsCorrect(folder.getRoot().toPath().toAbsolutePath().normalize(), result);
 
         // Test normalization
-        params = new InitializeParamsBuilder().capabilities(new ClientCapabilitiesImpl()).processId(1)
-                        .rootPath(folder.getRoot().toURI().toString() + "/somethingelse/..").build();
+        params = getInitializeParams(Optional.of(
+                folder.getRoot().toPath().toAbsolutePath().toString() + "/somethingelse/.."));
         result = server.initialize(params).get();
         assertInitializeResultIsCorrect(folder.getRoot().toPath().toAbsolutePath().normalize(), result);
     }
@@ -89,34 +90,31 @@ public class GroovyLanguageServerTest {
         File workspaceRoot = Paths.get("").toAbsolutePath().resolve("test-directory-to-be-deleted").toFile();
         // Create a directory in our working directory
         // If this fails, make sure ./groovy-language-server/test-directory-to-be-deleted doesn't exist.
-        assertTrue(workspaceRoot.mkdir());
+        assertThat(workspaceRoot.mkdir()).isTrue();
 
-        InitializeParams params =
-                new InitializeParamsBuilder().capabilities(new ClientCapabilitiesImpl()).processId(1)
-                        .rootPath("test-directory-to-be-deleted").build();
+        InitializeParams params = getInitializeParams(Optional.of("test-directory-to-be-deleted"));
         InitializeResult result = server.initialize(params).get();
         assertInitializeResultIsCorrect(workspaceRoot.toPath(), result);
 
         // Test normalization
-        params = new InitializeParamsBuilder().capabilities(new ClientCapabilitiesImpl()).processId(1)
-                        .rootPath("./test-directory-to-be-deleted").build();
+        params = getInitializeParams(Optional.of("./test-directory-to-be-deleted"));
         result = server.initialize(params).get();
         assertInitializeResultIsCorrect(workspaceRoot.toPath(), result);
 
-        params = new InitializeParamsBuilder().capabilities(new ClientCapabilitiesImpl()).processId(1)
-                        .rootPath("somethingelse/../something/../test-directory-to-be-deleted").build();
+        params = getInitializeParams(Optional.of("somethingelse/../something/../test-directory-to-be-deleted"));
         result = server.initialize(params).get();
         assertInitializeResultIsCorrect(workspaceRoot.toPath(), result);
 
         // Delete the directory we created in our working directory
-        assertTrue(workspaceRoot.delete());
+        assertThat(workspaceRoot.delete()).isTrue();
     }
 
     private void assertInitializeResultIsCorrect(Path expectedWorkspaceRoot, InitializeResult result) {
-        assertThat(server.getWorkspaceRoot(), is(expectedWorkspaceRoot));
-        assertThat(result.getCapabilities().getTextDocumentSync(), is(TextDocumentSyncKind.Incremental));
-        assertTrue(result.getCapabilities().isDocumentSymbolProvider());
-        assertTrue(result.getCapabilities().isWorkspaceSymbolProvider());
+        assertThat(server.getWorkspaceRoot()).isEqualTo(expectedWorkspaceRoot);
+        assertThat(result.getCapabilities().getTextDocumentSync().getLeft())
+                .isEqualTo(TextDocumentSyncKind.Incremental);
+        assertThat(result.getCapabilities().getDocumentSymbolProvider()).isTrue();
+        assertThat(result.getCapabilities().getWorkspaceSymbolProvider()).isTrue();
     }
 
 }

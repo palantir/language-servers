@@ -16,41 +16,18 @@
 
 package com.palantir.ls.groovy;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.palantir.ls.DefaultLanguageServerState;
-import com.palantir.ls.StreamLanguageServerLauncher;
 import com.palantir.ls.api.LanguageServerState;
-import com.palantir.ls.groovy.util.DefaultDiagnosticBuilder;
+import com.palantir.ls.groovy.util.GroovyConstants;
 import com.palantir.ls.services.DefaultTextDocumentService;
-import com.palantir.ls.services.DefaultWindowService;
 import com.palantir.ls.services.DefaultWorkspaceService;
 import com.palantir.ls.util.Ranges;
-import io.typefox.lsapi.Diagnostic;
-import io.typefox.lsapi.DiagnosticSeverity;
-import io.typefox.lsapi.InitializeResult;
-import io.typefox.lsapi.Message;
-import io.typefox.lsapi.ServerCapabilities;
-import io.typefox.lsapi.SymbolInformation;
-import io.typefox.lsapi.SymbolKind;
-import io.typefox.lsapi.TextDocumentSyncKind;
-import io.typefox.lsapi.builders.CompletionOptionsBuilder;
-import io.typefox.lsapi.builders.DidOpenTextDocumentParamsBuilder;
-import io.typefox.lsapi.builders.DocumentSymbolParamsBuilder;
-import io.typefox.lsapi.builders.InitializeParamsBuilder;
-import io.typefox.lsapi.builders.ServerCapabilitiesBuilder;
-import io.typefox.lsapi.builders.SymbolInformationBuilder;
-import io.typefox.lsapi.builders.TextDocumentItemBuilder;
-import io.typefox.lsapi.services.LanguageServer;
-import io.typefox.lsapi.services.json.MessageJsonHandler;
-import io.typefox.lsapi.services.json.StreamMessageReader;
-import io.typefox.lsapi.services.json.StreamMessageWriter;
-import io.typefox.lsapi.services.transport.client.LanguageClientEndpoint;
-import io.typefox.lsapi.services.transport.io.ConcurrentMessageReader;
-import io.typefox.lsapi.services.transport.io.MessageReader;
-import io.typefox.lsapi.services.transport.io.MessageWriter;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -65,13 +42,27 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
-import org.eclipse.xtext.xbase.lib.Procedures.Procedure2;
+import org.eclipse.lsp4j.CompletionOptions;
+import org.eclipse.lsp4j.Diagnostic;
+import org.eclipse.lsp4j.DiagnosticSeverity;
+import org.eclipse.lsp4j.DidOpenTextDocumentParams;
+import org.eclipse.lsp4j.DocumentSymbolParams;
+import org.eclipse.lsp4j.InitializeParams;
+import org.eclipse.lsp4j.InitializeResult;
+import org.eclipse.lsp4j.Location;
+import org.eclipse.lsp4j.ServerCapabilities;
+import org.eclipse.lsp4j.SymbolInformation;
+import org.eclipse.lsp4j.SymbolKind;
+import org.eclipse.lsp4j.TextDocumentIdentifier;
+import org.eclipse.lsp4j.TextDocumentItem;
+import org.eclipse.lsp4j.TextDocumentSyncKind;
+import org.eclipse.lsp4j.jsonrpc.Launcher;
+import org.eclipse.lsp4j.launch.LSPLauncher;
+import org.eclipse.lsp4j.services.LanguageClient;
+import org.eclipse.lsp4j.services.LanguageServer;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -86,79 +77,57 @@ public class GroovyLanguageServerIntegrationTest {
     @Rule
     public TemporaryFolder workspaceRoot = new TemporaryFolder();
 
-    private LanguageClientEndpoint client;
     private List<MyPublishDiagnosticParams> publishedDiagnostics = Lists.newArrayList();
+    private static LanguageServerState state;
+    private static Launcher<LanguageClient> launcher;
+    private static LanguageServer server;
 
     @Before
-    public void before() throws IOException {
-        ExecutorService executorService = Executors.newCachedThreadPool();
-        client = new LanguageClientEndpoint(executorService);
-
-        MessageJsonHandler jsonHandler = new MessageJsonHandler();
-        jsonHandler.setMethodResolver(client);
-
+    public void before() throws IOException, InterruptedException {
         PipedOutputStream clientOutputStream = new PipedOutputStream();
         PipedOutputStream serverOutputStream = new PipedOutputStream();
         PipedInputStream clientInputStream = new PipedInputStream(serverOutputStream);
         PipedInputStream serverInputStream = new PipedInputStream(clientOutputStream);
 
-        MessageReader reader =
-                new ConcurrentMessageReader(new StreamMessageReader(clientInputStream, jsonHandler), executorService);
-        MessageWriter writer = new StreamMessageWriter(clientOutputStream, jsonHandler);
-
-        reader.setOnError(new Consumer<Throwable>() {
-            @Override
-            public void accept(Throwable error) {
-                System.err.println("ERROR:\n" + error);
-            }
-        });
-        reader.setOnRead(new Procedure2<Message, String>() {
-            @Override
-            public void apply(Message message, String data) {
-                System.err.println("READ:\n" + message.getJsonrpc() + "\n" + data);
-            }
-        });
-        writer.setOnWrite(new Procedure2<Message, String>() {
-            @Override
-            public void apply(Message message, String data) {
-                System.err.println("WRITE:\n" + message.getJsonrpc() + "\n" + data);
-            }
-        });
-
-        client.connect(reader, writer);
-
         // Start Groovy language server
         createAndLaunchLanguageServer(serverInputStream, serverOutputStream);
-
-        client.getTextDocumentService().onPublishDiagnostics((diagnosticsParams) -> {
-            publishedDiagnostics.add(new MyPublishDiagnosticParams(diagnosticsParams.getUri(),
-                    diagnosticsParams.getDiagnostics().stream().collect(Collectors.toSet())));
-        });
+        // TODO (Darora): get rid of the sleep
+        Thread.sleep(500L);
     }
 
-    private static void createAndLaunchLanguageServer(final InputStream in, final OutputStream out) {
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                LanguageServerState state = new DefaultLanguageServerState();
-                LanguageServer server =
-                        new GroovyLanguageServer(state, new DefaultTextDocumentService(state),
-                                new DefaultWorkspaceService(state), new DefaultWindowService(state));
-
-                StreamLanguageServerLauncher launcher = new StreamLanguageServerLauncher(server, in, out);
-                launcher.setLogger(logger);
-                launcher.launch();
-            }
+    private void createAndLaunchLanguageServer(final InputStream in, final OutputStream out) {
+        new Thread(() -> {
+            state = new DefaultLanguageServerState();
+            server = new GroovyLanguageServer(
+                    state,
+                    new DefaultTextDocumentService(state),
+                    new DefaultWorkspaceService(state));
+            launcher = LSPLauncher.createServerLauncher(server, in, out);
+            launcher.startListening();
+            state.setPublishDiagnostics(params -> {
+                publishedDiagnostics.add(
+                        new MyPublishDiagnosticParams(
+                                params.getUri(),
+                                params.getDiagnostics().stream().collect(Collectors.toSet())));
+            });
         }).start();
     }
 
     @Test
     public void testInitialize() throws InterruptedException, ExecutionException, TimeoutException {
-        CompletableFuture<InitializeResult> completableResult =
-                client.initialize(new InitializeParamsBuilder().clientName("natacha").processId(0)
-                        .rootPath(workspaceRoot.getRoot().toPath().toUri().toString()).build());
+        InitializeParams params = getInitializeParams();
+
+        CompletableFuture<InitializeResult> completableResult = server.initialize(params);
         InitializeResult result = completableResult.get(60, TimeUnit.SECONDS);
         assertCorrectInitializeResult(result);
+    }
+
+    private InitializeParams getInitializeParams() {
+        InitializeParams params = new InitializeParams();
+        params.setProcessId(0);
+        params.setClientName("natacha");
+        params.setRootPath(workspaceRoot.getRoot().toPath().toUri().toString());
+        return params;
     }
 
     @Test
@@ -178,9 +147,7 @@ public class GroovyLanguageServerIntegrationTest {
                         + "   }\n"
                         + "}\n");
 
-        CompletableFuture<InitializeResult> completableResult =
-                client.initialize(new InitializeParamsBuilder().clientName("natacha").processId(0)
-                        .rootPath(workspaceRoot.getRoot().toPath().toUri().toString()).build());
+        CompletableFuture<InitializeResult> completableResult = server.initialize(getInitializeParams());
         InitializeResult result = completableResult.get(60, TimeUnit.SECONDS);
         assertCorrectInitializeResult(result);
 
@@ -193,8 +160,8 @@ public class GroovyLanguageServerIntegrationTest {
         // Assert no diagnostics were published because compilation was successful
         assertEquals(Sets.newHashSet(), publishedDiagnostics.stream().collect(Collectors.toSet()));
 
-        CompletableFuture<List<? extends SymbolInformation>> documentSymbolResult = client.getTextDocumentService()
-                .documentSymbol(new DocumentSymbolParamsBuilder().textDocument(file.getAbsolutePath()).build());
+        CompletableFuture<List<? extends SymbolInformation>> documentSymbolResult = server.getTextDocumentService()
+                .documentSymbol(new DocumentSymbolParams(new TextDocumentIdentifier(file.getAbsolutePath())));
         Set<SymbolInformation> actualSymbols = Sets.newHashSet(documentSymbolResult.get(60, TimeUnit.SECONDS));
         // Remove generated symbols for a saner comparison
         actualSymbols = actualSymbols.stream()
@@ -202,55 +169,44 @@ public class GroovyLanguageServerIntegrationTest {
 
         String fileUri = file.toPath().toUri().toString();
         Set<SymbolInformation> expectedResults = Sets.newHashSet(
-                new SymbolInformationBuilder()
-                        .name("Coordinates")
-                        .kind(SymbolKind.Class)
-                        .location(fileUri, Ranges.createRange(0, 0, 1, 0))
-                        .build(),
-                new SymbolInformationBuilder()
-                        .name("getAt")
-                        .containerName("Coordinates")
-                        .kind(SymbolKind.Method)
-                        .location(fileUri, Ranges.createRange(4, 3, 10, 4))
-                        .build(),
-                new SymbolInformationBuilder()
-                        .name("latitude")
-                        .containerName("Coordinates")
-                        .kind(SymbolKind.Field)
-                        .location(fileUri, Ranges.createRange(1, 3, 1, 18))
-                        .build(),
-                new SymbolInformationBuilder()
-                        .name("longitude")
-                        .containerName("Coordinates")
-                        .kind(SymbolKind.Field)
-                        .location(fileUri, Ranges.createRange(2, 3, 2, 19))
-                        .build(),
-                new SymbolInformationBuilder()
-                        .name("name")
-                        .containerName("Coordinates")
-                        .kind(SymbolKind.Field)
-                        .location(fileUri, Ranges.createRange(3, 3, 3, 23))
-                        .build(),
-                new SymbolInformationBuilder()
-                        .name("idx1")
-                        .containerName("getAt")
-                        .kind(SymbolKind.Variable)
-                        .location(fileUri, Ranges.createRange(4, 16, 4, 24))
-                        .build(),
-                new SymbolInformationBuilder()
-                        .name("idx2")
-                        .containerName("getAt")
-                        .kind(SymbolKind.Variable)
-                        .location(fileUri, Ranges.createRange(4, 26, 4, 34))
-                        .build(),
-                new SymbolInformationBuilder()
-                        .name("someString")
-                        .containerName("getAt")
-                        .kind(SymbolKind.Variable)
-                        .location(fileUri, Ranges.createRange(5, 10, 5, 20))
-                        .build());
-
-        assertEquals(expectedResults, actualSymbols);
+                new SymbolInformation(
+                        "Coordinates", SymbolKind.Class, new Location(fileUri, Ranges.createRange(0, 0, 1, 0))),
+                new SymbolInformation(
+                        "getAt",
+                        SymbolKind.Method,
+                        new Location(fileUri, Ranges.createRange(4, 3, 10, 4)),
+                        "Coordinates"),
+                new SymbolInformation(
+                        "latitude",
+                        SymbolKind.Field,
+                        new Location(fileUri, Ranges.createRange(1, 3, 1, 18)),
+                        "Coordinates"),
+                new SymbolInformation(
+                        "longitude",
+                        SymbolKind.Field,
+                        new Location(fileUri, Ranges.createRange(2, 3, 2, 19)),
+                        "Coordinates"),
+                new SymbolInformation(
+                        "name",
+                        SymbolKind.Field,
+                        new Location(fileUri, Ranges.createRange(3, 3, 3, 23)),
+                        "Coordinates"),
+                new SymbolInformation(
+                        "idx1",
+                        SymbolKind.Variable,
+                        new Location(fileUri, Ranges.createRange(4, 16, 4, 24)),
+                        "getAt"),
+                new SymbolInformation(
+                        "idx2",
+                        SymbolKind.Variable,
+                        new Location(fileUri, Ranges.createRange(4, 26, 4, 34)),
+                        "getAt"),
+                new SymbolInformation(
+                        "someString",
+                        SymbolKind.Variable,
+                        new Location(fileUri, Ranges.createRange(5, 10, 5, 20)),
+                        "getAt"));
+        assertThat(actualSymbols).containsOnlyElementsOf(expectedResults);
     }
 
     @Test
@@ -290,9 +246,7 @@ public class GroovyLanguageServerIntegrationTest {
                         + "}\n");
         addFileToFolder(workspaceRoot.getRoot(), "test4.groovy", "class ExceptionNew {}\n");
 
-        CompletableFuture<InitializeResult> completableResult =
-                client.initialize(new InitializeParamsBuilder().clientName("natacha").processId(0)
-                        .rootPath(workspaceRoot.getRoot().toPath().toUri().toString()).build());
+        CompletableFuture<InitializeResult> completableResult = server.initialize(getInitializeParams());
         InitializeResult result = completableResult.get(60, TimeUnit.SECONDS);
         assertCorrectInitializeResult(result);
 
@@ -305,47 +259,38 @@ public class GroovyLanguageServerIntegrationTest {
         Set<MyPublishDiagnosticParams> expectedDiagnosticsResult =
                 Sets.newHashSet(
                         new MyPublishDiagnosticParams(test1.toPath().toUri().toString(),
-                                Sets.newHashSet(new DefaultDiagnosticBuilder(
+                                Sets.newHashSet(new Diagnostic(
+                                        Ranges.createRange(6, 17, 6, 72),
                                         "unable to resolve class ExceptionNew1 \n @ line 7, column 18.",
-                                        DiagnosticSeverity.Error)
-                                                .range(Ranges.createRange(6, 17, 6, 72))
-                                                .build())),
+                                        DiagnosticSeverity.Error,
+                                        GroovyConstants.GROOVY_COMPILER))),
                         new MyPublishDiagnosticParams(test2.toPath().toUri().toString(),
-                                Sets.newHashSet(new DefaultDiagnosticBuilder(
+                                Sets.newHashSet(new Diagnostic(
+                                        Ranges.createRange(6, 17, 6, 74),
                                         "unable to resolve class ExceptionNew222 \n @ line 7, column 18.",
-                                        DiagnosticSeverity.Error)
-                                                .range(Ranges.createRange(6, 17, 6, 74))
-                                                .build())));
+                                        DiagnosticSeverity.Error,
+                                                GroovyConstants.GROOVY_COMPILER))));
         assertEquals(expectedDiagnosticsResult, publishedDiagnostics.stream().collect(Collectors.toSet()));
         assertEquals(2, publishedDiagnostics.size());
     }
 
     private void sendDidOpen(File file) {
-        client.getTextDocumentService()
-                .didOpen(new DidOpenTextDocumentParamsBuilder()
-                        .textDocument(
-                                new TextDocumentItemBuilder()
-                                        .languageId("groovy")
-                                        .uri(file.getAbsolutePath())
-                                        .version(0)
-                                        .text("foo")
-                                        .build())
-                        .build());
+        server.getTextDocumentService()
+                .didOpen(new DidOpenTextDocumentParams(
+                        new TextDocumentItem(file.getAbsolutePath(), "groovy", 0, "foo")));
     }
 
     private void assertCorrectInitializeResult(InitializeResult result) {
-        ServerCapabilities expectedCapabilities = new ServerCapabilitiesBuilder()
-                .textDocumentSync(TextDocumentSyncKind.Incremental)
-                .documentSymbolProvider(true)
-                .workspaceSymbolProvider(true)
-                .referencesProvider(true)
-                .completionProvider(new CompletionOptionsBuilder()
-                        .resolveProvider(false)
-                        .triggerCharacter(".")
-                        .build())
-                .definitionProvider(true)
-                .build();
-        assertEquals(expectedCapabilities, result.getCapabilities());
+        CompletionOptions comp = new CompletionOptions(false, ImmutableList.of("."));
+        ServerCapabilities server = new ServerCapabilities();
+        server.setDocumentSymbolProvider(true);
+        server.setWorkspaceSymbolProvider(true);
+        server.setReferencesProvider(true);
+        server.setCompletionProvider(comp);
+        server.setDefinitionProvider(true);
+        server.setTextDocumentSync(TextDocumentSyncKind.Incremental);
+
+        assertThat(server).isEqualToIgnoringGivenFields(result.getCapabilities(), "textDocumentSync");
     }
 
     private static File addFileToFolder(File parent, String filename, String contents) throws IOException {

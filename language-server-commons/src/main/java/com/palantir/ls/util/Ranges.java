@@ -18,12 +18,10 @@ package com.palantir.ls.util;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
-import io.typefox.lsapi.Position;
-import io.typefox.lsapi.Range;
-import io.typefox.lsapi.builders.RangeBuilder;
-import io.typefox.lsapi.impl.PositionImpl;
 import java.util.Comparator;
 import java.util.List;
+import org.eclipse.lsp4j.Position;
+import org.eclipse.lsp4j.Range;
 
 public final class Ranges {
 
@@ -45,10 +43,7 @@ public final class Ranges {
      * Returns a newly created range.
      */
     public static Range createRange(int startLine, int startColumn, int endLine, int endColumn) {
-        return new RangeBuilder()
-                .start(new PositionImpl(startLine, startColumn))
-                .end(new PositionImpl(endLine, endColumn))
-                .build();
+        return new Range(new Position(startLine, startColumn), new Position(endLine, endColumn));
     }
 
     /**

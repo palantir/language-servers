@@ -20,18 +20,18 @@ import com.google.common.base.Optional;
 import com.palantir.ls.api.CompilerWrapper;
 import com.palantir.ls.api.TreeParser;
 import com.palantir.ls.api.WorkspaceCompiler;
-import io.typefox.lsapi.CompletionList;
-import io.typefox.lsapi.FileEvent;
-import io.typefox.lsapi.Location;
-import io.typefox.lsapi.Position;
-import io.typefox.lsapi.PublishDiagnosticsParams;
-import io.typefox.lsapi.ReferenceParams;
-import io.typefox.lsapi.SymbolInformation;
-import io.typefox.lsapi.TextDocumentContentChangeEvent;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.eclipse.lsp4j.CompletionList;
+import org.eclipse.lsp4j.FileEvent;
+import org.eclipse.lsp4j.Location;
+import org.eclipse.lsp4j.Position;
+import org.eclipse.lsp4j.PublishDiagnosticsParams;
+import org.eclipse.lsp4j.ReferenceParams;
+import org.eclipse.lsp4j.SymbolInformation;
+import org.eclipse.lsp4j.TextDocumentContentChangeEvent;
 
 /**
  * Wraps a WorkspaceCompiler and TreeParser. Ensures the tree is updated when the compiler is compiled successfully.

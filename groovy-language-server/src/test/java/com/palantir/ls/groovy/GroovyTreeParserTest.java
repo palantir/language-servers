@@ -16,6 +16,7 @@
 
 package com.palantir.ls.groovy;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -25,15 +26,6 @@ import com.google.common.collect.Sets;
 import com.palantir.ls.util.Ranges;
 import com.palantir.ls.util.UriSupplier;
 import com.palantir.ls.util.WorkspaceUriSupplier;
-import io.typefox.lsapi.Location;
-import io.typefox.lsapi.Range;
-import io.typefox.lsapi.ReferenceParams;
-import io.typefox.lsapi.SymbolInformation;
-import io.typefox.lsapi.SymbolKind;
-import io.typefox.lsapi.builders.LocationBuilder;
-import io.typefox.lsapi.builders.ReferenceParamsBuilder;
-import io.typefox.lsapi.builders.SymbolInformationBuilder;
-import io.typefox.lsapi.impl.PositionImpl;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -46,6 +38,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
+import org.eclipse.lsp4j.Location;
+import org.eclipse.lsp4j.Position;
+import org.eclipse.lsp4j.Range;
+import org.eclipse.lsp4j.ReferenceContext;
+import org.eclipse.lsp4j.ReferenceParams;
+import org.eclipse.lsp4j.SymbolInformation;
+import org.eclipse.lsp4j.SymbolKind;
+import org.eclipse.lsp4j.TextDocumentIdentifier;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -242,58 +242,51 @@ public class GroovyTreeParserTest {
         parser.parseAllSymbols();
 
         Set<SymbolInformation> filteredSymbols = parser.getFilteredSymbols("Coordinates");
-        assertEquals(Sets.newHashSet(new SymbolInformationBuilder()
-                .name("Coordinates")
-                .kind(SymbolKind.Class)
-                .location(createLocation(coordinatesFiles.toPath(), Ranges.createRange(0, 0, 1, 0)))
-                .build()), filteredSymbols);
+        assertEquals(Sets.newHashSet(new SymbolInformation(
+                        "Coordinates",
+                        SymbolKind.Class,
+                        createLocation(coordinatesFiles.toPath(), Ranges.createRange(0, 0, 1, 0)))),
+                filteredSymbols);
 
         filteredSymbols = parser.getFilteredSymbols("Coordinates*");
         assertEquals(Sets.newHashSet(
-                new SymbolInformationBuilder()
-                        .name("Coordinates")
-                        .kind(SymbolKind.Class)
-                        .location(createLocation(coordinatesFiles.toPath(), Ranges.createRange(0, 0, 1, 0)))
-                        .build(),
-                new SymbolInformationBuilder()
-                        .name("CoordinatesVar")
-                        .kind(SymbolKind.Field)
-                        .location(createLocation(coordinatesFiles.toPath(), Ranges.createRange(4, 3, 4, 32)))
-                        .containerName("Coordinates")
-                        .build()),
+                new SymbolInformation(
+                        "Coordinates",
+                        SymbolKind.Class,
+                        createLocation(coordinatesFiles.toPath(), Ranges.createRange(0, 0, 1, 0))),
+                new SymbolInformation(
+                        "CoordinatesVar",
+                        SymbolKind.Field,
+                        createLocation(coordinatesFiles.toPath(), Ranges.createRange(4, 3, 4, 32)),
+                        "Coordinates")),
                 filteredSymbols);
 
         filteredSymbols = parser.getFilteredSymbols("Coordinates?");
         assertEquals(NO_SYMBOLS, filteredSymbols);
 
         filteredSymbols = parser.getFilteredSymbols("*Coordinates*");
-        assertEquals(Sets.newHashSet(
-                new SymbolInformationBuilder()
-                        .name("Coordinates")
-                        .kind(SymbolKind.Class)
-                        .location(createLocation(coordinatesFiles.toPath(), Ranges.createRange(0, 0, 1, 0)))
-                        .build(),
-                new SymbolInformationBuilder()
-                        .name("CoordinatesVar")
-                        .kind(SymbolKind.Field)
-                        .location(createLocation(coordinatesFiles.toPath(), Ranges.createRange(4, 3, 4, 32)))
-                        .containerName("Coordinates")
-                        .build(),
-                new SymbolInformationBuilder()
-                        .name("ICoordinates")
-                        .kind(SymbolKind.Interface)
-                        .location(createLocation(icoordinatesFiles.toPath(), Ranges.createRange(0, 0, 1, 0)))
-                        .build()),
-                filteredSymbols);
+        assertThat(filteredSymbols).containsExactlyInAnyOrder(
+                new SymbolInformation(
+                        "Coordinates",
+                        SymbolKind.Class,
+                        createLocation(coordinatesFiles.toPath(), Ranges.createRange(0, 0, 1, 0))),
+                new SymbolInformation(
+                        "ICoordinates",
+                        SymbolKind.Interface,
+                        createLocation(icoordinatesFiles.toPath(), Ranges.createRange(0, 0, 1, 0))),
+                new SymbolInformation(
+                        "CoordinatesVar",
+                        SymbolKind.Field,
+                        createLocation(coordinatesFiles.toPath(), Ranges.createRange(4, 3, 4, 32)),
+                        "Coordinates"));
 
         filteredSymbols = parser.getFilteredSymbols("Coordinates???");
         assertEquals(Sets.newHashSet(
-                new SymbolInformationBuilder()
-                        .name("CoordinatesVar")
-                        .kind(SymbolKind.Field)
-                        .location(createLocation(coordinatesFiles.toPath(), Ranges.createRange(4, 3, 4, 32)))
-                        .containerName("Coordinates")
-                        .build()),
+                new SymbolInformation(
+                        "CoordinatesVar",
+                        SymbolKind.Field,
+                        createLocation(coordinatesFiles.toPath(), Ranges.createRange(4, 3, 4, 32)),
+                        "Coordinates")),
                 filteredSymbols);
         filteredSymbols = parser.getFilteredSymbols("Coordinates...");
         assertEquals(NO_SYMBOLS, filteredSymbols);
@@ -943,49 +936,37 @@ public class GroovyTreeParserTest {
         parser.parseAllSymbols();
 
         // InnerClass
-        Location expectedLocation = new LocationBuilder()
-                .uri(file.toPath().toUri().toString())
-                .range(Ranges.createRange(2, 3, 3, 0)).build();
-        assertEquals(expectedLocation, parser.gotoDefinition(file.toURI(), new PositionImpl(1, 15)).get());
-        assertEquals(expectedLocation, parser.gotoDefinition(file.toURI(), new PositionImpl(10, 10)).get());
-        assertEquals(expectedLocation, parser.gotoDefinition(file.toURI(), new PositionImpl(10, 31)).get());
-        assertEquals(expectedLocation, parser.gotoDefinition(file.toURI(), new PositionImpl(12, 12)).get());
-        assertEquals(expectedLocation, parser.gotoDefinition(file.toURI(), new PositionImpl(14, 11)).get());
+        Location expectedLocation = new Location(file.toPath().toUri().toString(), Ranges.createRange(2, 3, 3, 0));
+        assertEquals(expectedLocation, parser.gotoDefinition(file.toURI(), new Position(1, 15)).get());
+        assertEquals(expectedLocation, parser.gotoDefinition(file.toURI(), new Position(10, 10)).get());
+        assertEquals(expectedLocation, parser.gotoDefinition(file.toURI(), new Position(10, 31)).get());
+        assertEquals(expectedLocation, parser.gotoDefinition(file.toURI(), new Position(12, 12)).get());
+        assertEquals(expectedLocation, parser.gotoDefinition(file.toURI(), new Position(14, 11)).get());
 
         // someStaticField
-        expectedLocation = new LocationBuilder()
-                .uri(file.toPath().toUri().toString())
-                // TODO(#124): figure out how to make these more precise
-                .range(Ranges.createRange(1, 3, 1, 36)).build();
-        assertEquals(expectedLocation, parser.gotoDefinition(file.toURI(), new PositionImpl(11, 15)).get());
+        // TODO(#124): figure out how to make these more precise
+        expectedLocation = new Location(file.toPath().toUri().toString(), Ranges.createRange(1, 3, 1, 36));
+        assertEquals(expectedLocation, parser.gotoDefinition(file.toURI(), new Position(11, 15)).get());
 
         // localField
-        expectedLocation = new LocationBuilder()
-                .uri(file.toPath().toUri().toString())
-                .range(Ranges.createRange(10, 17, 10, 27)).build();
-        assertEquals(expectedLocation, parser.gotoDefinition(file.toURI(), new PositionImpl(13, 10)).get());
+        expectedLocation = new Location(file.toPath().toUri().toString(), Ranges.createRange(10, 17, 10, 27));
+        assertEquals(expectedLocation, parser.gotoDefinition(file.toURI(), new Position(13, 10)).get());
 
         // myICNonStaticMethod
-        expectedLocation = new LocationBuilder()
-                .uri(file.toPath().toUri().toString())
-                .range(Ranges.createRange(3, 6, 3, 35)).build();
-        assertEquals(expectedLocation, parser.gotoDefinition(file.toURI(), new PositionImpl(11, 23)).get());
-        assertEquals(expectedLocation, parser.gotoDefinition(file.toURI(), new PositionImpl(12, 23)).get());
-        assertEquals(expectedLocation, parser.gotoDefinition(file.toURI(), new PositionImpl(13, 23)).get());
+        expectedLocation = new Location(file.toPath().toUri().toString(), Ranges.createRange(3, 6, 3, 35));
+        assertEquals(expectedLocation, parser.gotoDefinition(file.toURI(), new Position(11, 23)).get());
+        assertEquals(expectedLocation, parser.gotoDefinition(file.toURI(), new Position(12, 23)).get());
+        assertEquals(expectedLocation, parser.gotoDefinition(file.toURI(), new Position(13, 23)).get());
 
         // myICStaticMethod
-        expectedLocation = new LocationBuilder()
-                .uri(file.toPath().toUri().toString())
-                // TODO(#124): figure out how to make these more precise
-                .range(Ranges.createRange(4, 6, 4, 39)).build();
-        assertEquals(expectedLocation, parser.gotoDefinition(file.toURI(), new PositionImpl(14, 20)).get());
+        // TODO(#124): figure out how to make these more precise
+        expectedLocation = new Location(file.toPath().toUri().toString(), Ranges.createRange(4, 6, 4, 39));
+        assertEquals(expectedLocation, parser.gotoDefinition(file.toURI(), new Position(14, 20)).get());
 
         // test2
-        expectedLocation = new LocationBuilder()
-                .uri(file.toPath().toUri().toString())
-                // TODO(#124): figure out how to make these more precise
-                .range(Ranges.createRange(6, 3, 8, 4)).build();
-        assertEquals(expectedLocation, parser.gotoDefinition(file.toURI(), new PositionImpl(15, 20)).get());
+        // TODO(#124): figure out how to make these more precise
+        expectedLocation = new Location(file.toPath().toUri().toString(), Ranges.createRange(6, 3, 8, 4));
+        assertEquals(expectedLocation, parser.gotoDefinition(file.toURI(), new Position(15, 20)).get());
     }
 
     @Test
@@ -1004,26 +985,20 @@ public class GroovyTreeParserTest {
         parser.parseAllSymbols();
 
         // Dog class
-        Location expectedLocation = new LocationBuilder()
-                .uri(dog.toPath().toUri().toString())
-                .range(Ranges.createRange(0, 0, 0, 19)).build();
-        assertEquals(Optional.of(expectedLocation), parser.gotoDefinition(cat.toURI(), new PositionImpl(1, 18)));
-        assertEquals(Optional.of(expectedLocation), parser.gotoDefinition(cat.toURI(), new PositionImpl(2, 18)));
-        assertEquals(Optional.of(expectedLocation), parser.gotoDefinition(cat.toURI(), new PositionImpl(3, 8)));
-        assertEquals(Optional.of(expectedLocation), parser.gotoDefinition(cat.toURI(), new PositionImpl(3, 25)));
+        Location expectedLocation = new Location(dog.toPath().toUri().toString(), Ranges.createRange(0, 0, 0, 19));
+        assertEquals(Optional.of(expectedLocation), parser.gotoDefinition(cat.toURI(), new Position(1, 18)));
+        assertEquals(Optional.of(expectedLocation), parser.gotoDefinition(cat.toURI(), new Position(2, 18)));
+        assertEquals(Optional.of(expectedLocation), parser.gotoDefinition(cat.toURI(), new Position(3, 8)));
+        assertEquals(Optional.of(expectedLocation), parser.gotoDefinition(cat.toURI(), new Position(3, 25)));
 
         // newDog local variable
-        expectedLocation = new LocationBuilder()
-                .uri(cat.toPath().toUri().toString())
-                .range(Ranges.createRange(3, 11, 3, 17)).build();
-        assertEquals(Optional.of(expectedLocation), parser.gotoDefinition(cat.toURI(), new PositionImpl(5, 18)));
+        expectedLocation = new Location(cat.toPath().toUri().toString(), Ranges.createRange(3, 11, 3, 17));
+        assertEquals(Optional.of(expectedLocation), parser.gotoDefinition(cat.toURI(), new Position(5, 18)));
 
         // foo method
-        expectedLocation = new LocationBuilder()
-                .uri(cat.toPath().toUri().toString())
-                // TODO(#124): make this more accurate
-                .range(Ranges.createRange(2, 3, 6, 4)).build();
-        assertEquals(Optional.of(expectedLocation), parser.gotoDefinition(cat.toURI(), new PositionImpl(4, 10)));
+        // TODO(#124): make this more accurate
+        expectedLocation = new Location(cat.toPath().toUri().toString(), Ranges.createRange(2, 3, 6, 4));
+        assertEquals(Optional.of(expectedLocation), parser.gotoDefinition(cat.toURI(), new Position(4, 10)));
     }
 
     private boolean mapHasSymbol(Map<URI, Set<SymbolInformation>> map, Optional<String> container, String fieldName,
@@ -1049,14 +1024,14 @@ public class GroovyTreeParserTest {
     }
 
     private static Location createLocation(Path path, Range range) {
-        return new LocationBuilder().uri(path.toUri().toString()).range(range).build();
+        return new Location(path.toUri().toString(), range);
     }
 
     private static ReferenceParams createReferenceParams(URI uri, int line, int col, boolean includeDeclaration) {
-        return new ReferenceParamsBuilder()
-                .context(includeDeclaration)
-                .textDocument(uri.toString())
-                .position(line, col).build();
+        ReferenceParams referenceParams = new ReferenceParams(new ReferenceContext(includeDeclaration));
+        referenceParams.setTextDocument(new TextDocumentIdentifier(uri.toString()));
+        referenceParams.setPosition(new Position(line, col));
+        return referenceParams;
     }
 
 }

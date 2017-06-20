@@ -22,9 +22,8 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 import com.google.common.collect.Lists;
-import io.typefox.lsapi.Position;
-import io.typefox.lsapi.Range;
-import io.typefox.lsapi.impl.PositionImpl;
+import org.eclipse.lsp4j.Position;
+import org.eclipse.lsp4j.Range;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -166,7 +165,7 @@ public class RangesTest {
     }
 
     private static Position position(int line, int character) {
-        return new PositionImpl(line, character);
+        return new Position(line, character);
     }
 
 }

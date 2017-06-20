@@ -19,9 +19,6 @@ package com.palantir.ls.util;
 import static org.junit.Assert.assertEquals;
 
 import com.google.common.collect.Lists;
-import io.typefox.lsapi.Range;
-import io.typefox.lsapi.TextDocumentContentChangeEvent;
-import io.typefox.lsapi.builders.TextDocumentContentChangeEventBuilder;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -31,6 +28,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import org.apache.commons.io.FileUtils;
+import org.eclipse.lsp4j.Range;
+import org.eclipse.lsp4j.TextDocumentContentChangeEvent;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -80,9 +79,7 @@ public class SourceWriterTest {
         Path destination = destinationFolder.getRoot().toPath().resolve("myfile.txt");
         SourceWriter writer = SourceWriter.of(source, destination);
         List<TextDocumentContentChangeEvent> changes = Lists.newArrayList();
-        changes.add(new TextDocumentContentChangeEventBuilder()
-                .text("foo")
-                .build());
+        changes.add(new TextDocumentContentChangeEvent("foo"));
         writer.applyChanges(changes);
         assertEquals("foo", FileUtils.readFileToString(destination.toFile()));
     }
@@ -94,14 +91,8 @@ public class SourceWriterTest {
         Path destination = destinationFolder.getRoot().toPath().resolve("myfile.txt");
         SourceWriter writer = SourceWriter.of(source, destination);
         List<TextDocumentContentChangeEvent> changes = Lists.newArrayList();
-        changes.add(new TextDocumentContentChangeEventBuilder()
-                .text("foo")
-                .build());
-        changes.add(new TextDocumentContentChangeEventBuilder()
-                .range(Ranges.createRange(1, 0, 1, 0))
-                .rangeLength(1)
-                .text("notfoo")
-                .build());
+        changes.add(new TextDocumentContentChangeEvent("foo"));
+        changes.add(new TextDocumentContentChangeEvent(Ranges.createRange(1, 0, 1, 0), 1, "notfoo"));
         expectedException.expect(IllegalArgumentException.class);
         expectedException.expectMessage(String.format("Cannot handle more than one change when a null range exists: %s",
                 changes.get(0).toString()));
@@ -114,11 +105,7 @@ public class SourceWriterTest {
         Path destination = destinationFolder.getRoot().toPath().resolve("myfile.txt");
         SourceWriter writer = SourceWriter.of(source, destination);
         List<TextDocumentContentChangeEvent> changes = Lists.newArrayList();
-        changes.add(new TextDocumentContentChangeEventBuilder()
-                .range(Ranges.createRange(1, 0, 1, 0))
-                .rangeLength(1)
-                .text("s")
-                .build());
+        changes.add(new TextDocumentContentChangeEvent(Ranges.createRange(1, 0, 1, 0), 1, "s"));
         writer.applyChanges(changes);
         assertEquals("first line\nsecond line\n", FileUtils.readFileToString(destination.toFile()));
     }
@@ -129,11 +116,7 @@ public class SourceWriterTest {
         Path destination = destinationFolder.getRoot().toPath().resolve("myfile.txt");
         SourceWriter writer = SourceWriter.of(source, destination);
         List<TextDocumentContentChangeEvent> changes = Lists.newArrayList();
-        changes.add(new TextDocumentContentChangeEventBuilder()
-                .range(Ranges.createRange(1, 20, 1, 20))
-                .rangeLength(13)
-                .text("small change\n")
-                .build());
+        changes.add(new TextDocumentContentChangeEvent(Ranges.createRange(1, 20, 1, 20), 13, "small change\n"));
         writer.applyChanges(changes);
         // Two new lines expected, one from the original contents and one from the change
         assertEquals("first line\nsecond linesmall change\n\n", FileUtils.readFileToString(destination.toFile()));
@@ -145,11 +128,7 @@ public class SourceWriterTest {
         Path destination = destinationFolder.getRoot().toPath().resolve("myfile.txt");
         SourceWriter writer = SourceWriter.of(source, destination);
         List<TextDocumentContentChangeEvent> changes = Lists.newArrayList();
-        changes.add(new TextDocumentContentChangeEventBuilder()
-                .range(Ranges.createRange(0, 6, 0, 10))
-                .rangeLength(12)
-                .text("small change")
-                .build());
+        changes.add(new TextDocumentContentChangeEvent(Ranges.createRange(0, 6, 0, 10), 12, "small change"));
         writer.applyChanges(changes);
         assertEquals("first small change\nsecond line\n", FileUtils.readFileToString(destination.toFile()));
     }
@@ -160,11 +139,7 @@ public class SourceWriterTest {
         Path destination = destinationFolder.getRoot().toPath().resolve("myfile.txt");
         SourceWriter writer = SourceWriter.of(source, destination);
         List<TextDocumentContentChangeEvent> changes = Lists.newArrayList();
-        changes.add(new TextDocumentContentChangeEventBuilder()
-                .range(Ranges.createRange(0, 6, 1, 6))
-                .rangeLength(12)
-                .text("small change")
-                .build());
+        changes.add(new TextDocumentContentChangeEvent(Ranges.createRange(0, 6, 1, 6), 12, "small change"));
         writer.applyChanges(changes);
         assertEquals("first small change line\nthird line\n", FileUtils.readFileToString(destination.toFile()));
     }
@@ -175,21 +150,9 @@ public class SourceWriterTest {
         Path destination = destinationFolder.getRoot().toPath().resolve("myfile.txt");
         SourceWriter writer = SourceWriter.of(source, destination);
         List<TextDocumentContentChangeEvent> changes = Lists.newArrayList();
-        changes.add(new TextDocumentContentChangeEventBuilder()
-                .range(Ranges.createRange(0, 0, 0, 20))
-                .rangeLength(16)
-                .text("new line number 1")
-                .build());
-        changes.add(new TextDocumentContentChangeEventBuilder()
-                .range(Ranges.createRange(1, 0, 1, 20))
-                .rangeLength(16)
-                .text("new line number 2")
-                .build());
-        changes.add(new TextDocumentContentChangeEventBuilder()
-                .range(Ranges.createRange(2, 0, 2, 20))
-                .rangeLength(16)
-                .text("new line number 3")
-                .build());
+        changes.add(new TextDocumentContentChangeEvent(Ranges.createRange(0, 0, 0, 20), 16, "new line number 1"));
+        changes.add(new TextDocumentContentChangeEvent(Ranges.createRange(1, 0, 1, 20), 16, "new line number 2"));
+        changes.add(new TextDocumentContentChangeEvent(Ranges.createRange(2, 0, 2, 20), 16, "new line number 3"));
         writer.applyChanges(changes);
         assertEquals("new line number 1\nnew line number 2\nnew line number 3\n",
                 FileUtils.readFileToString(destination.toFile()));
@@ -202,21 +165,9 @@ public class SourceWriterTest {
         Path destination = destinationFolder.getRoot().toPath().resolve("myfile.txt");
         SourceWriter writer = SourceWriter.of(source, destination);
         List<TextDocumentContentChangeEvent> changes = Lists.newArrayList();
-        changes.add(new TextDocumentContentChangeEventBuilder()
-                .range(Ranges.createRange(0, 1, 0, 9))
-                .rangeLength(16)
-                .text("new line number 1")
-                .build());
-        changes.add(new TextDocumentContentChangeEventBuilder()
-                .range(Ranges.createRange(1, 1, 1, 10))
-                .rangeLength(16)
-                .text("new line number 2")
-                .build());
-        changes.add(new TextDocumentContentChangeEventBuilder()
-                .range(Ranges.createRange(2, 1, 2, 9))
-                .rangeLength(16)
-                .text("new line number 3")
-                .build());
+        changes.add(new TextDocumentContentChangeEvent(Ranges.createRange(0, 1, 0, 9), 16, "new line number 1"));
+        changes.add(new TextDocumentContentChangeEvent(Ranges.createRange(1, 1, 1, 10), 16, "new line number 2"));
+        changes.add(new TextDocumentContentChangeEvent(Ranges.createRange(2, 1, 2, 9), 16, "new line number 3"));
         writer.applyChanges(changes);
 
         assertEquals("fnew line number 1e\nsnew line number 2e\ntnew line number 3e\n",
@@ -230,11 +181,7 @@ public class SourceWriterTest {
         Path destination = destinationFolder.getRoot().toPath().resolve("myfile.txt");
         SourceWriter writer = SourceWriter.of(source, destination);
         List<TextDocumentContentChangeEvent> changes = Lists.newArrayList();
-        changes.add(new TextDocumentContentChangeEventBuilder()
-                .range(Ranges.createRange(0, 0, 0, 0))
-                .rangeLength(7)
-                .text("change\n")
-                .build());
+        changes.add(new TextDocumentContentChangeEvent(Ranges.createRange(0, 0, 0, 0), 7, "change\n"));
         writer.applyChanges(changes);
         assertEquals("change\nfirst line\nsecond line\nthird line\n",
                 FileUtils.readFileToString(destination.toFile()));
@@ -247,16 +194,8 @@ public class SourceWriterTest {
         Path destination = destinationFolder.getRoot().toPath().resolve("myfile.txt");
         SourceWriter writer = SourceWriter.of(source, destination);
         List<TextDocumentContentChangeEvent> changes = Lists.newArrayList();
-        changes.add(new TextDocumentContentChangeEventBuilder()
-                .range(Ranges.createRange(30, 1, 30, 1))
-                .rangeLength(6)
-                .text("first ")
-                .build());
-        changes.add(new TextDocumentContentChangeEventBuilder()
-                .range(Ranges.createRange(31, 1, 31, 1))
-                .rangeLength(6)
-                .text("second")
-                .build());
+        changes.add(new TextDocumentContentChangeEvent(Ranges.createRange(30, 1, 30, 1), 6, "first "));
+        changes.add(new TextDocumentContentChangeEvent(Ranges.createRange(31, 1, 31, 1), 6, "second"));
         writer.applyChanges(changes);
         assertEquals("first line\nsecond line\nthird line\nfirst second\n",
                 FileUtils.readFileToString(destination.toFile()));
@@ -269,16 +208,8 @@ public class SourceWriterTest {
         Path destination = destinationFolder.getRoot().toPath().resolve("myfile.txt");
         SourceWriter writer = SourceWriter.of(source, destination);
         List<TextDocumentContentChangeEvent> changes = Lists.newArrayList();
-        changes.add(new TextDocumentContentChangeEventBuilder()
-                .range(Ranges.createRange(-1, 0, 0, 0))
-                .rangeLength(3)
-                .text("one")
-                .build());
-        changes.add(new TextDocumentContentChangeEventBuilder()
-                .range(Ranges.createRange(0, 0, 0, 0))
-                .rangeLength(3)
-                .text("two")
-                .build());
+        changes.add(new TextDocumentContentChangeEvent(Ranges.createRange(-1, 0, 0, 0), 3, "one"));
+        changes.add(new TextDocumentContentChangeEvent(Ranges.createRange(0, 0, 0, 0), 3, "two"));
         expectedException.expect(IllegalArgumentException.class);
         expectedException
                 .expectMessage(String.format("range1 is not valid: %s", Ranges.createRange(-1, 0, 0, 0).toString()));
@@ -293,16 +224,8 @@ public class SourceWriterTest {
         SourceWriter writer = SourceWriter.of(source, destination);
         List<TextDocumentContentChangeEvent> changes = Lists.newArrayList();
         Range range = Ranges.createRange(0, 0, 0, 1);
-        changes.add(new TextDocumentContentChangeEventBuilder()
-                .range(range)
-                .rangeLength(3)
-                .text("one")
-                .build());
-        changes.add(new TextDocumentContentChangeEventBuilder()
-                .range(range)
-                .rangeLength(3)
-                .text("two")
-                .build());
+        changes.add(new TextDocumentContentChangeEvent(range, 3, "one"));
+        changes.add(new TextDocumentContentChangeEvent(range, 3, "two"));
         expectedException.expect(IllegalArgumentException.class);
         expectedException.expectMessage(
                 String.format("Cannot apply changes with intersecting ranges in changes: %s", changes));
@@ -318,51 +241,15 @@ public class SourceWriterTest {
         Path destination = destinationFolder.getRoot().toPath().resolve("myfile.txt");
         SourceWriter writer = SourceWriter.of(source, destination);
         List<TextDocumentContentChangeEvent> changes = Lists.newArrayList();
-        changes.add(new TextDocumentContentChangeEventBuilder()
-                .range(Ranges.createRange(0, 0, 0, 1))
-                .rangeLength(1)
-                .text("a")
-                .build());
-        changes.add(new TextDocumentContentChangeEventBuilder()
-                .range(Ranges.createRange(0, 2, 0, 3))
-                .rangeLength(1)
-                .text("b")
-                .build());
-        changes.add(new TextDocumentContentChangeEventBuilder()
-                .range(Ranges.createRange(0, 5, 0, 7))
-                .rangeLength(1)
-                .text("c")
-                .build());
-        changes.add(new TextDocumentContentChangeEventBuilder()
-                .range(Ranges.createRange(0, 8, 1, 2))
-                .rangeLength(1)
-                .text("d")
-                .build());
-        changes.add(new TextDocumentContentChangeEventBuilder()
-                .range(Ranges.createRange(1, 4, 2, 2))
-                .rangeLength(1)
-                .text("e")
-                .build());
-        changes.add(new TextDocumentContentChangeEventBuilder()
-                .range(Ranges.createRange(2, 4, 2, 6))
-                .rangeLength(1)
-                .text("f")
-                .build());
-        changes.add(new TextDocumentContentChangeEventBuilder()
-                .range(Ranges.createRange(2, 9, 2, 9))
-                .rangeLength(1)
-                .text("g")
-                .build());
-        changes.add(new TextDocumentContentChangeEventBuilder()
-                .range(Ranges.createRange(4, 2, 4, 3))
-                .rangeLength(1)
-                .text("h")
-                .build());
-        changes.add(new TextDocumentContentChangeEventBuilder()
-                .range(Ranges.createRange(4, 3, 4, 4))
-                .rangeLength(1)
-                .text("i")
-                .build());
+        changes.add(new TextDocumentContentChangeEvent(Ranges.createRange(0, 0, 0, 1), 1, "a"));
+        changes.add(new TextDocumentContentChangeEvent(Ranges.createRange(0, 2, 0, 3), 1, "b"));
+        changes.add(new TextDocumentContentChangeEvent(Ranges.createRange(0, 5, 0, 7), 1, "c"));
+        changes.add(new TextDocumentContentChangeEvent(Ranges.createRange(0, 8, 1, 2), 1, "d"));
+        changes.add(new TextDocumentContentChangeEvent(Ranges.createRange(1, 4, 2, 2), 1, "e"));
+        changes.add(new TextDocumentContentChangeEvent(Ranges.createRange(2, 4, 2, 6), 1, "f"));
+        changes.add(new TextDocumentContentChangeEvent(Ranges.createRange(2, 9, 2, 9), 1, "g"));
+        changes.add(new TextDocumentContentChangeEvent(Ranges.createRange(4, 2, 4, 3), 1, "h"));
+        changes.add(new TextDocumentContentChangeEvent(Ranges.createRange(4, 3, 4, 4), 1, "i"));
         writer.applyChanges(changes);
         assertEquals("a1b34c7d23e23f678g9\n0123456789\n01hi456789\n",
                 FileUtils.readFileToString(destination.toFile()));

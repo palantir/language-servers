@@ -16,57 +16,48 @@
 
 package com.palantir.ls.util;
 
-import io.typefox.lsapi.Message;
-import io.typefox.lsapi.NotificationMessage;
-import io.typefox.lsapi.RequestMessage;
-import io.typefox.lsapi.ResponseMessage;
-import io.typefox.lsapi.services.transport.trace.MessageTracer;
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import org.slf4j.Logger;
-
-public class LoggerMessageTracer implements MessageTracer {
-
-    private final Logger logger;
-
-    public LoggerMessageTracer(Logger logger) {
-        this.logger = logger;
-    }
-
-    @Override
-    public void onError(String message, Throwable throwable) {
-        if (message != null) {
-            logger.error(message);
-        }
-
-        if (throwable != null) {
-            StringWriter stringWriter = new StringWriter();
-            PrintWriter printWriter = new PrintWriter(stringWriter);
-            throwable.printStackTrace(printWriter);
-            logger.error(stringWriter.toString());
-        }
-    }
-
-    @Override
-    public void onRead(Message message, String json) {
-        if (message instanceof RequestMessage) {
-            logger.info("Client Request:\n\t" + json);
-        } else if (message instanceof NotificationMessage) {
-            logger.info("Client Notification:\n\t" + json);
-        } else {
-            logger.info("Client Sent:\n\t" + json);
-        }
-    }
-
-    @Override
-    public void onWrite(Message message, String json) {
-        if (message instanceof ResponseMessage) {
-            logger.info("Server Response:\n\t" + json);
-        } else if (message instanceof NotificationMessage) {
-            logger.info("Server Notification:\n\t" + json);
-        } else {
-            logger.info("Server Sent:\n\t" + json);
-        }
-    }
-
-}
+//public class LoggerMessageTracer implements MessageTracer {
+//
+//    private final Logger logger;
+//
+//    public LoggerMessageTracer(Logger logger) {
+//        this.logger = logger;
+//    }
+//
+//    @Override
+//    public void onError(String message, Throwable throwable) {
+//        if (message != null) {
+//            logger.error(message);
+//        }
+//
+//        if (throwable != null) {
+//            StringWriter stringWriter = new StringWriter();
+//            PrintWriter printWriter = new PrintWriter(stringWriter);
+//            throwable.printStackTrace(printWriter);
+//            logger.error(stringWriter.toString());
+//        }
+//    }
+//
+//    @Override
+//    public void onRead(Message message, String json) {
+//        if (message instanceof RequestMessage) {
+//            logger.info("Client Request:\n\t" + json);
+//        } else if (message instanceof NotificationMessage) {
+//            logger.info("Client Notification:\n\t" + json);
+//        } else {
+//            logger.info("Client Sent:\n\t" + json);
+//        }
+//    }
+//
+//    @Override
+//    public void onWrite(Message message, String json) {
+//        if (message instanceof ResponseMessage) {
+//            logger.info("Server Response:\n\t" + json);
+//        } else if (message instanceof NotificationMessage) {
+//            logger.info("Server Notification:\n\t" + json);
+//        } else {
+//            logger.info("Server Sent:\n\t" + json);
+//        }
+//    }
+//
+//}

@@ -21,9 +21,8 @@ import static org.junit.Assert.assertThat;
 
 import com.palantir.ls.util.Ranges;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import io.typefox.lsapi.Diagnostic;
-import io.typefox.lsapi.DiagnosticSeverity;
-import io.typefox.lsapi.Range;
+import org.eclipse.lsp4j.Diagnostic;
+import org.eclipse.lsp4j.DiagnosticSeverity;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -38,29 +37,15 @@ public class DefaultDiagnosticBuilderTest {
     public void testExceptionOnNullMessage() {
         expectedException.expect(NullPointerException.class);
         expectedException.expectMessage("message cannot be null");
-        new DefaultDiagnosticBuilder(null, DiagnosticSeverity.Error).build();
+        DefaultDiagnosticBuilder.of(null, DiagnosticSeverity.Error);
     }
 
     @Test
     public void testDefaults() {
-        Diagnostic diagnostic = new DefaultDiagnosticBuilder("message", DiagnosticSeverity.Error).build();
+        Diagnostic diagnostic = DefaultDiagnosticBuilder.of("message", DiagnosticSeverity.Error);
         assertThat(diagnostic.getMessage(), is("message"));
         assertThat(diagnostic.getSeverity(), is(DiagnosticSeverity.Error));
         assertThat(diagnostic.getRange(), is(Ranges.UNDEFINED_RANGE));
         assertThat(diagnostic.getSource(), is("groovyc"));
     }
-
-    @Test
-    public void testOverrideDefaults() {
-        Range expectedRange = Ranges.createRange(0, 0, 1, 1);
-        Diagnostic diagnostic = new DefaultDiagnosticBuilder("message", DiagnosticSeverity.Error)
-                .range(expectedRange)
-                .source("foo")
-                .build();
-        assertThat(diagnostic.getMessage(), is("message"));
-        assertThat(diagnostic.getSeverity(), is(DiagnosticSeverity.Error));
-        assertThat(diagnostic.getRange(), is(expectedRange));
-        assertThat(diagnostic.getSource(), is("foo"));
-    }
-
 }

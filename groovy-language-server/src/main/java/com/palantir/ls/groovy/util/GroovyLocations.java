@@ -17,12 +17,11 @@
 package com.palantir.ls.groovy.util;
 
 import com.palantir.ls.util.Ranges;
-import io.typefox.lsapi.Location;
-import io.typefox.lsapi.Range;
-import io.typefox.lsapi.builders.LocationBuilder;
 import java.net.URI;
 import org.codehaus.groovy.ast.ASTNode;
 import org.codehaus.groovy.ast.ClassNode;
+import org.eclipse.lsp4j.Location;
+import org.eclipse.lsp4j.Range;
 
 public final class GroovyLocations {
 
@@ -32,21 +31,20 @@ public final class GroovyLocations {
      * Creates a location from the given URI with an undefined range.
      */
     public static Location createLocation(URI uri) {
-        return new LocationBuilder()
-                .uri(uri.toString())
-                .range(Ranges.UNDEFINED_RANGE)
-                .build();
+        return new Location(uri.toString(), Ranges.UNDEFINED_RANGE);
     }
 
     /**
      * Creates a location from the given URI and node's start and end positions.
      */
     public static Location createLocation(URI uri, ASTNode node) {
-        return new LocationBuilder()
-                .uri(uri.toString())
-                .range(Ranges.createZeroBasedRange(node.getLineNumber(), node.getColumnNumber(),
-                        node.getLastLineNumber(), node.getLastColumnNumber()))
-                .build();
+        return new Location(
+                uri.toString(),
+                Ranges.createZeroBasedRange(
+                        node.getLineNumber(),
+                        node.getColumnNumber(),
+                        node.getLastLineNumber(),
+                        node.getLastColumnNumber()));
     }
 
     /**
@@ -63,10 +61,7 @@ public final class GroovyLocations {
                     Math.min(node.getLineNumber() + 1, node.getLastLineNumber()),
                     Math.min(1, node.getLastColumnNumber()));
         }
-        return new LocationBuilder()
-                .uri(uri.toString())
-                .range(range)
-                .build();
+        return new Location(uri.toString(), range);
     }
 
 }

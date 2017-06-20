@@ -20,18 +20,15 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.palantir.ls.util.Ranges;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import io.typefox.lsapi.DiagnosticSeverity;
-import io.typefox.lsapi.builders.DiagnosticBuilder;
+import org.eclipse.lsp4j.Diagnostic;
+import org.eclipse.lsp4j.DiagnosticSeverity;
 
 @SuppressFBWarnings("PT_EXTENDS_CONCRETE_TYPE")
-public class DefaultDiagnosticBuilder extends DiagnosticBuilder {
+public class DefaultDiagnosticBuilder {
 
-    public DefaultDiagnosticBuilder(String message, DiagnosticSeverity severity) {
+    public static Diagnostic of(String message, DiagnosticSeverity severity) {
         checkNotNull(message, "message cannot be null");
-        this.message(message);
-        this.severity(severity);
-        this.range(Ranges.UNDEFINED_RANGE);
-        this.source(GroovyConstants.GROOVY_COMPILER);
+        return new Diagnostic(Ranges.UNDEFINED_RANGE, message, severity, GroovyConstants.GROOVY_COMPILER);
     }
 
 }

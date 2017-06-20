@@ -21,28 +21,28 @@ import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.when;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import com.palantir.ls.api.CompilerWrapper;
 import com.palantir.ls.api.LanguageServerState;
 import com.palantir.ls.util.Ranges;
-import io.typefox.lsapi.DiagnosticSeverity;
-import io.typefox.lsapi.DidChangeConfigurationParams;
-import io.typefox.lsapi.FileChangeType;
-import io.typefox.lsapi.PublishDiagnosticsParams;
-import io.typefox.lsapi.SymbolInformation;
-import io.typefox.lsapi.SymbolKind;
-import io.typefox.lsapi.builders.DiagnosticBuilder;
-import io.typefox.lsapi.builders.DidChangeWatchedFilesParamsBuilder;
-import io.typefox.lsapi.builders.LocationBuilder;
-import io.typefox.lsapi.builders.PublishDiagnosticsParamsBuilder;
-import io.typefox.lsapi.builders.SymbolInformationBuilder;
-import io.typefox.lsapi.builders.WorkspaceSymbolParamsBuilder;
 import java.io.IOException;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
+import org.eclipse.lsp4j.Diagnostic;
+import org.eclipse.lsp4j.DiagnosticSeverity;
+import org.eclipse.lsp4j.DidChangeConfigurationParams;
+import org.eclipse.lsp4j.DidChangeWatchedFilesParams;
+import org.eclipse.lsp4j.FileChangeType;
+import org.eclipse.lsp4j.FileEvent;
+import org.eclipse.lsp4j.Location;
+import org.eclipse.lsp4j.PublishDiagnosticsParams;
+import org.eclipse.lsp4j.SymbolInformation;
+import org.eclipse.lsp4j.SymbolKind;
+import org.eclipse.lsp4j.WorkspaceSymbolParams;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -87,47 +87,26 @@ public class AbstractWorkspaceServiceTest {
     public void setup() throws IOException {
         MockitoAnnotations.initMocks(this);
 
+        Diagnostic d1 = new Diagnostic();
+        d1.setMessage("Some message");
+        d1.setSeverity(DiagnosticSeverity.Error);
+        Diagnostic d2 = new Diagnostic();
+        d2.setMessage("Some other message");
+        d2.setSeverity(DiagnosticSeverity.Warning);
         expectedDiagnostics =
-                Sets.newHashSet(new PublishDiagnosticsParamsBuilder().uri("foo")
-                        .diagnostic(new DiagnosticBuilder()
-                                .message("Some message")
-                                .severity(DiagnosticSeverity.Error)
-                                .build()
-                        ).diagnostic(new DiagnosticBuilder()
-                                .message("Some other message")
-                                .severity(DiagnosticSeverity.Warning)
-                                .build()
-                        ).build());
+                Sets.newHashSet(new PublishDiagnosticsParams("uri", ImmutableList.of(d1, d2)));
 
-        expectedReferences.add(new SymbolInformationBuilder()
-                .containerName("Something")
-                .kind(SymbolKind.Class)
-                .name("MyClassName")
-                .location(new LocationBuilder()
-                        .uri("uri")
-                        .range(Ranges.createRange(1, 1, 9, 9))
-                        .build())
-                .build());
-        expectedReferences.add(new SymbolInformationBuilder()
-                .containerName("SomethingElse")
-                .kind(SymbolKind.Class)
-                .name("MyClassName2")
-                .location(new LocationBuilder()
-                            .uri("uri")
-                            .range(Ranges.createRange(1, 1, 9, 9))
-                            .build())
-                .build());
+        expectedReferences.add(new SymbolInformation(
+                "MyClassName", SymbolKind.Class, new Location("uri", Ranges.createRange(1, 1, 9, 9)), "Something"));
+        expectedReferences.add(new SymbolInformation(
+                "MyClassName2",
+                SymbolKind.Class,
+                new Location("uri", Ranges.createRange(1, 1, 9, 9)),
+                "SomethingElse"));
         Set<SymbolInformation> allReferencesReturned = Sets.newHashSet(expectedReferences);
         // The reference that will be filtered out
-        allReferencesReturned.add(new SymbolInformationBuilder()
-                .containerName("SomethingElse")
-                .kind(SymbolKind.Class)
-                .name("MyClassName3")
-                .location(new LocationBuilder()
-                            .uri("uri")
-                            .range(Ranges.UNDEFINED_RANGE)
-                            .build())
-                .build());
+        allReferencesReturned.add(new SymbolInformation(
+                "MyClassName3", SymbolKind.Class, new Location("uri", Ranges.UNDEFINED_RANGE), "SomethingElse"));
 
         when(compilerWrapper.getWorkspaceRoot()).thenReturn(workspace.getRoot().toPath().toUri());
         when(compilerWrapper.compile(any())).thenReturn(expectedDiagnostics);
@@ -141,14 +120,16 @@ public class AbstractWorkspaceServiceTest {
     @Test
     public void testSymbol() throws InterruptedException, ExecutionException {
         CompletableFuture<List<? extends SymbolInformation>> response =
-                service.symbol(new WorkspaceSymbolParamsBuilder().query("myQuery").build());
+                service.symbol(new WorkspaceSymbolParams("myQuery"));
         assertThat(response.get().stream().collect(Collectors.toSet()), is(expectedReferences));
     }
 
     @Test
     public void testDidChangeWatchedFiles() throws InterruptedException, ExecutionException {
-        service.didChangeWatchedFiles(new DidChangeWatchedFilesParamsBuilder().change("uri", FileChangeType.Deleted)
-                .change("uri", FileChangeType.Created).change("uri", FileChangeType.Changed).build());
+        service.didChangeWatchedFiles(new DidChangeWatchedFilesParams(ImmutableList.of(
+                new FileEvent("uri", FileChangeType.Deleted),
+                new FileEvent("uri", FileChangeType.Created),
+                new FileEvent("uri", FileChangeType.Changed))));
         // assert diagnostics were published
         Mockito.verify(state, Mockito.times(1)).publishDiagnostics(expectedDiagnostics);
     }

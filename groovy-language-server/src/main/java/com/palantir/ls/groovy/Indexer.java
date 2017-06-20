@@ -20,11 +20,11 @@ import com.google.common.base.Optional;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.palantir.ls.util.Ranges;
-import io.typefox.lsapi.Location;
-import io.typefox.lsapi.SymbolInformation;
 import java.net.URI;
 import java.util.Map;
 import java.util.Set;
+import org.eclipse.lsp4j.Location;
+import org.eclipse.lsp4j.SymbolInformation;
 
 public class Indexer {
 
