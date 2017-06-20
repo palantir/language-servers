@@ -16,14 +16,20 @@
 
 package com.palantir.ls;
 
+import com.palantir.ls.util.DelegatingOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.PrintWriter;
 import org.eclipse.lsp4j.jsonrpc.Launcher;
 import org.eclipse.lsp4j.launch.LSPLauncher;
 import org.eclipse.lsp4j.services.LanguageClient;
 import org.eclipse.lsp4j.services.LanguageServer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class StreamLanguageServerLauncher {
+
+    private static final Logger log = LoggerFactory.getLogger(StreamLanguageServerLauncher.class);
 
     private final InputStream inputStream;
     private final OutputStream outputStream;
@@ -37,8 +43,12 @@ public class StreamLanguageServerLauncher {
     }
 
     public void launch() {
-        Launcher<LanguageClient> serverLauncher =
-                LSPLauncher.createServerLauncher(languageServer, inputStream, outputStream);
+        Launcher<LanguageClient> serverLauncher = LSPLauncher.createServerLauncher(
+                languageServer,
+                inputStream,
+                outputStream,
+                false,
+                new PrintWriter(new DelegatingOutputStream(log::info)));
         serverLauncher.startListening();
     }
 }

@@ -57,8 +57,8 @@ public class GroovyLanguageServer implements LanguageServer, LanguageClientAware
     private Path targetDirectory;
     private Path changedFilesDirectory;
 
-    public GroovyLanguageServer(LanguageServerState state, TextDocumentService textDocumentService,
-            WorkspaceService workspaceService) {
+    public GroovyLanguageServer(
+            LanguageServerState state, TextDocumentService textDocumentService, WorkspaceService workspaceService) {
         this.state = state;
         this.textDocumentService = textDocumentService;
         this.workspaceService = workspaceService;
@@ -130,8 +130,9 @@ public class GroovyLanguageServer implements LanguageServer, LanguageClientAware
     public static void main(String[] args) {
         LanguageServerState state = new DefaultLanguageServerState();
         LanguageServer server =
-                new GroovyLanguageServer(state, new DefaultTextDocumentService(state),
-                        new DefaultWorkspaceService(state));
+                new GroovyLanguageServer(
+                        state, new DefaultTextDocumentService(state), new DefaultWorkspaceService(state));
+
 
         StreamLanguageServerLauncher launcher = new StreamLanguageServerLauncher(server, System.in, System.out);
         launcher.launch();
@@ -141,5 +142,8 @@ public class GroovyLanguageServer implements LanguageServer, LanguageClientAware
     public void connect(LanguageClient client) {
         state.setPublishDiagnostics(client::publishDiagnostics);
         state.setTelemetryEvent(client::telemetryEvent);
+        state.setShowMessage(client::showMessage);
+        state.setShowMessageRequest(client::showMessageRequest);
+        state.setLogMessage(client::logMessage);
     }
 }

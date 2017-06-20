@@ -177,11 +177,10 @@ public class GroovyWorkspaceCompilerTest {
 
         assertEquals(Sets.newHashSet(new PublishDiagnosticsParams(
                         test.toPath().toUri().toString(),
-                        ImmutableList.of(
-                                new Diagnostic(Ranges.createRange(0, 19, 0, 26),
-                                        "unable to resolve class Foo \n @ line 1, column 20.",
-                                        DiagnosticSeverity.Error,
-                                        GroovyConstants.GROOVY_COMPILER)))),
+                        ImmutableList.of(new Diagnostic(Ranges.createRange(0, 19, 0, 26),
+                                "unable to resolve class Foo \n @ line 1, column 20.",
+                                DiagnosticSeverity.Error,
+                                GroovyConstants.GROOVY_COMPILER)))),
                 diagnostics);
     }
 

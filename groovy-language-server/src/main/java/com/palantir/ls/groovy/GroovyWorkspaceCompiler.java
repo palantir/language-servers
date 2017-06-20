@@ -244,18 +244,12 @@ public final class GroovyWorkspaceCompiler implements WorkspaceCompiler, Supplie
 
         for (int i = 0; i < collector.getWarningCount(); i++) {
             WarningMessage message = collector.getWarning(i);
-            String message1 = message.getMessage();
-            checkNotNull(message1, "message cannot be null");
-            Diagnostic diag = new Diagnostic(Ranges.UNDEFINED_RANGE, message1, DiagnosticSeverity.Warning,
-                    GroovyConstants.GROOVY_COMPILER);
-            diagnosticsByFile.compute(workspaceRoot.toUri(),
-                    (key, existingVal) -> {
-                        if (existingVal == null) {
-                            return Lists.newArrayList(diag);
-                        }
-                        existingVal.add(diag);
-                        return existingVal;
-                    });
+            String message1 = message.getMessage() == null
+                    ? ""
+                    : message.getMessage();
+            Diagnostic diag = new Diagnostic(
+                    Ranges.UNDEFINED_RANGE, message1, DiagnosticSeverity.Warning, GroovyConstants.GROOVY_COMPILER);
+            diagnosticsByFile.computeIfAbsent(workspaceRoot.toUri(), (ignored) -> Lists.newArrayList()).add(diag);
         }
         for (int i = 0; i < collector.getErrorCount(); i++) {
             Message message = collector.getError(i);
@@ -277,17 +271,10 @@ public final class GroovyWorkspaceCompiler implements WorkspaceCompiler, Supplie
                 message.write(writer);
                 uri = workspaceRoot.toUri();
                 String message1 = data.toString();
-                checkNotNull(message1, "message cannot be null");
-                diagnostic = new Diagnostic(Ranges.UNDEFINED_RANGE, message1, DiagnosticSeverity.Error,
-                        GroovyConstants.GROOVY_COMPILER);
+                diagnostic = new Diagnostic(
+                        Ranges.UNDEFINED_RANGE, message1, DiagnosticSeverity.Error, GroovyConstants.GROOVY_COMPILER);
             }
-            diagnosticsByFile.compute(uri, (key, existingValue) -> {
-                if (existingValue == null) {
-                    return Lists.newArrayList(diagnostic);
-                }
-                existingValue.add(diagnostic);
-                return existingValue;
-            });
+            diagnosticsByFile.computeIfAbsent(uri, (ignored) -> Lists.newArrayList()).add(diagnostic);
         }
         return diagnosticsByFile.entrySet()
                 .stream()

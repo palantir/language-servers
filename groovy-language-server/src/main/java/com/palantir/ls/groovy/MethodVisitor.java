@@ -218,9 +218,9 @@ public class MethodVisitor extends CodeVisitorSupport {
     }
 
     private SymbolInformation getVariableSymbolInformation(Variable variable) {
-        String containerName;
-        SymbolKind kind;
-        Location location;
+        final String containerName;
+        final SymbolKind kind;
+        final Location location;
         if (methodNode.isPresent()) {
             containerName = methodNode.get().getName();
         } else {

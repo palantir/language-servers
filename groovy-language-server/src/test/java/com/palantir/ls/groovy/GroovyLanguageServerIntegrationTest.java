@@ -117,15 +117,9 @@ public class GroovyLanguageServerIntegrationTest {
         new Thread(() -> {
             LanguageServerState state = new DefaultLanguageServerState();
             actualServer = new GroovyLanguageServer(
-                    state,
-                    new DefaultTextDocumentService(state),
-                    new DefaultWorkspaceService(state));
+                    state, new DefaultTextDocumentService(state), new DefaultWorkspaceService(state));
             Launcher<LanguageClient> launcher = LSPLauncher.createServerLauncher(
-                    actualServer,
-                    in,
-                    out,
-                    false,
-                    new PrintWriter(System.out));
+                    actualServer, in, out, false, new PrintWriter(System.out));
             launcher.startListening();
         }).start();
     }

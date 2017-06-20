@@ -113,9 +113,7 @@ public class DefaultTextDocumentServiceTest {
         thisIsASymbol.setKind(CompletionItemKind.Field);
         CompletionItem methodA = new CompletionItem("methodA");
         methodA.setKind(CompletionItemKind.Method);
-        expectedCompletionList = new CompletionList(
-                false,
-                Lists.newArrayList(thisIsASymbol, methodA));
+        expectedCompletionList = new CompletionList(false, Lists.newArrayList(thisIsASymbol, methodA));
 
         expectedReferences.add(new Location("uri", Ranges.createRange(1, 1, 9, 9)));
         expectedReferences.add(new Location("uri", Ranges.createRange(1, 1, 9, 9)));
