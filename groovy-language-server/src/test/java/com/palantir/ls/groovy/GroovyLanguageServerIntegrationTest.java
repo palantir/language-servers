@@ -53,7 +53,11 @@ import org.eclipse.lsp4j.DocumentSymbolParams;
 import org.eclipse.lsp4j.InitializeParams;
 import org.eclipse.lsp4j.InitializeResult;
 import org.eclipse.lsp4j.Location;
+import org.eclipse.lsp4j.MessageActionItem;
+import org.eclipse.lsp4j.MessageParams;
+import org.eclipse.lsp4j.PublishDiagnosticsParams;
 import org.eclipse.lsp4j.ServerCapabilities;
+import org.eclipse.lsp4j.ShowMessageRequestParams;
 import org.eclipse.lsp4j.SymbolInformation;
 import org.eclipse.lsp4j.SymbolKind;
 import org.eclipse.lsp4j.TextDocumentIdentifier;
@@ -62,6 +66,7 @@ import org.eclipse.lsp4j.TextDocumentSyncKind;
 import org.eclipse.lsp4j.jsonrpc.Launcher;
 import org.eclipse.lsp4j.launch.LSPLauncher;
 import org.eclipse.lsp4j.services.LanguageClient;
+import org.eclipse.lsp4j.services.LanguageClientAware;
 import org.eclipse.lsp4j.services.LanguageServer;
 import org.junit.Before;
 import org.junit.Rule;
@@ -78,9 +83,8 @@ public class GroovyLanguageServerIntegrationTest {
     public TemporaryFolder workspaceRoot = new TemporaryFolder();
 
     private List<MyPublishDiagnosticParams> publishedDiagnostics = Lists.newArrayList();
-    private static LanguageServerState state;
-    private static Launcher<LanguageClient> launcher;
-    private static LanguageServer server;
+    private static LanguageServer actualServer;
+    private LanguageServer server;
 
     @Before
     public void before() throws IOException, InterruptedException {
@@ -91,26 +95,70 @@ public class GroovyLanguageServerIntegrationTest {
 
         // Start Groovy language server
         createAndLaunchLanguageServer(serverInputStream, serverOutputStream);
-        // TODO (Darora): get rid of the sleep
-        Thread.sleep(500L);
+        int i = 0;
+        while (server != null && i++ < 20) {
+            Thread.sleep(50);
+        }
+        LanguageClient client = getClient();
+        Launcher<LanguageServer> clientLauncher = LSPLauncher.createClientLauncher(
+                client,
+                clientInputStream,
+                clientOutputStream,
+                false,
+                new PrintWriter(System.out));
+        clientLauncher.startListening();
+        server = clientLauncher.getRemoteProxy();
+        ((LanguageClientAware) actualServer).connect(client);
     }
 
     private void createAndLaunchLanguageServer(final InputStream in, final OutputStream out) {
         new Thread(() -> {
-            state = new DefaultLanguageServerState();
-            server = new GroovyLanguageServer(
+            LanguageServerState state = new DefaultLanguageServerState();
+            actualServer = new GroovyLanguageServer(
                     state,
                     new DefaultTextDocumentService(state),
                     new DefaultWorkspaceService(state));
-            launcher = LSPLauncher.createServerLauncher(server, in, out);
+            Launcher<LanguageClient> launcher = LSPLauncher.createServerLauncher(
+                    actualServer,
+                    in,
+                    out,
+                    false,
+                    new PrintWriter(System.out));
             launcher.startListening();
-            state.setPublishDiagnostics(params -> {
+        }).start();
+    }
+
+    private LanguageClient getClient() {
+        return new LanguageClient() {
+            @Override
+            public void telemetryEvent(Object object) {
+                logger.info("TELEMETRY");
+            }
+
+            @Override
+            public void publishDiagnostics(PublishDiagnosticsParams diagnostics) {
                 publishedDiagnostics.add(
                         new MyPublishDiagnosticParams(
-                                params.getUri(),
-                                params.getDiagnostics().stream().collect(Collectors.toSet())));
-            });
-        }).start();
+                                diagnostics.getUri(),
+                                diagnostics.getDiagnostics().stream().collect(Collectors.toSet())));
+            }
+
+            @Override
+            public void showMessage(MessageParams messageParams) {
+                logger.info("MESSAGE");
+            }
+
+            @Override
+            public CompletableFuture<MessageActionItem> showMessageRequest(ShowMessageRequestParams requestParams) {
+                logger.info("message");
+                return CompletableFuture.completedFuture(new MessageActionItem());
+            }
+
+            @Override
+            public void logMessage(MessageParams message) {
+                logger.info("LOG!");
+            }
+        };
     }
 
     @Test

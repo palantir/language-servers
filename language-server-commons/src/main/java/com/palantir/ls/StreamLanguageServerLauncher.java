@@ -37,7 +37,6 @@ public class StreamLanguageServerLauncher {
     }
 
     public void launch() {
-        // TODO (darora): maybe bring back the logging producer/consumer
         Launcher<LanguageClient> serverLauncher =
                 LSPLauncher.createServerLauncher(languageServer, inputStream, outputStream);
         serverLauncher.startListening();
