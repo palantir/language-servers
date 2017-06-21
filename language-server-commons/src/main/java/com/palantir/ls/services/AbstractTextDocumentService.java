@@ -102,11 +102,6 @@ public abstract class AbstractTextDocumentService implements TextDocumentService
         getState().publishDiagnostics(getState().getCompilerWrapper().compile(ImmutableSet.of(uri)));
     }
 
-//    @Override
-//    public final void onPublishDiagnostics(Consumer<PublishDiagnosticsParams> callback) {
-//        getState().setPublishDiagnostics(callback);
-//    }
-
     final Path getWorkspacePath() {
         return Paths.get(getState().getCompilerWrapper().getWorkspaceRoot());
     }
