@@ -203,7 +203,8 @@ public final class GroovyWorkspaceCompiler implements WorkspaceCompiler, Supplie
     }
 
     private void addAllSourcesToCompilationUnit() {
-        // We don't include the files that have a corresponding FileBackedContentsManager since that means they will be replaced.
+        // We don't include the files that have a corresponding FileBackedContentsManager
+        // since that means they will be replaced.
         for (File file : Files.fileTreeTraverser().preOrderTraversal(workspaceRoot.toFile())) {
             String fileExtension = Files.getFileExtension(file.getAbsolutePath());
             if (!originalSourceToChangedSource.containsKey(file.toURI()) && file.isFile()
@@ -213,7 +214,8 @@ public final class GroovyWorkspaceCompiler implements WorkspaceCompiler, Supplie
         }
         // Add the replaced sources
         originalSourceToChangedSource.values()
-                .forEach(fileBackedContentsManager -> unit.addSource(fileBackedContentsManager.getDestination().toFile()));
+                .forEach(fileBackedContentsManager ->
+                        unit.addSource(fileBackedContentsManager.getDestination().toFile()));
     }
 
     private void resetCompilationUnit() {
