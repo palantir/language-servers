@@ -39,7 +39,7 @@ public class DelegatingOutputStream extends OutputStream {
     }
 
     @Override
-    public void write(final int b) throws IOException {
+    public void write(final int byteToWrite) throws IOException {
         checkState(!closed, "Attempted to write to a closed stream.");
         if (count >= currentBufferSize) {
             int newSize = currentBufferSize + DEFAULT_BUFFER_LENGTH;
@@ -48,7 +48,7 @@ public class DelegatingOutputStream extends OutputStream {
             buffer = newBuffer;
             currentBufferSize = newSize;
         }
-        buffer[count] = (byte) b;
+        buffer[count] = (byte) byteToWrite;
         count++;
     }
 
