@@ -19,6 +19,7 @@ package com.palantir.ls.util;
 import static com.google.common.base.Preconditions.checkArgument;
 
 import com.google.common.base.Throwables;
+import com.palantir.ls.api.ContentsManager;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -29,6 +30,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -41,24 +43,24 @@ import org.slf4j.LoggerFactory;
 /**
  * Writes incremental changes to files.
  */
-public final class SourceWriter {
+public final class FileBackedContentsManager implements ContentsManager {
 
-    private static final Logger logger = LoggerFactory.getLogger(SourceWriter.class);
+    private static final Logger logger = LoggerFactory.getLogger(FileBackedContentsManager.class);
 
     private final Path source;
     private final Path destination;
 
-    private SourceWriter(Path source, Path destination) {
+    private FileBackedContentsManager(Path source, Path destination) {
         this.source = source;
         this.destination = destination;
     }
 
     /**
-     * Creates a SourceWriter which creates a copy of source at destination.
+     * Creates a FileBackedContentsManager which creates a copy of source at destination.
      */
     @SuppressFBWarnings("PT_FINAL_TYPE_RETURN")
-    public static SourceWriter of(Path source, Path destination) throws IOException {
-        SourceWriter writer = new SourceWriter(source, destination);
+    public static FileBackedContentsManager of(Path source, Path destination) throws IOException {
+        FileBackedContentsManager writer = new FileBackedContentsManager(source, destination);
         writer.initialize();
         return writer;
     }
@@ -74,7 +76,8 @@ public final class SourceWriter {
     /**
      * Applies the given changes to the destination file. Does not handle intersecting ranges in the changes.
      */
-    public synchronized void applyChanges(List<TextDocumentContentChangeEvent> contentChanges) throws IOException {
+    @Override
+    public synchronized void applyChanges(List<TextDocumentContentChangeEvent> contentChanges) {
         // Check if any of the ranges are null
         for (TextDocumentContentChangeEvent change : contentChanges) {
             if (change.getRange() == null) {
@@ -87,9 +90,12 @@ public final class SourceWriter {
         }
 
         // From earliest start of range to latest
-        List<TextDocumentContentChangeEvent> sortedChanges =
-                contentChanges.stream().sorted((c1, c2) -> Ranges.POSITION_COMPARATOR.compare(c1.getRange().getStart(),
-                        c2.getRange().getStart())).collect(Collectors.toList());
+        List<TextDocumentContentChangeEvent> sortedChanges = contentChanges.stream()
+                .sorted((c1, c2) -> Ranges.POSITION_COMPARATOR
+                        .compare(
+                                c1.getRange().getStart(),
+                                c2.getRange().getStart()))
+                .collect(Collectors.toList());
 
         // Check if any of the ranges intersect
         checkArgument(
@@ -98,12 +104,38 @@ public final class SourceWriter {
                 String.format("Cannot apply changes with intersecting ranges in changes: %s",
                         contentChanges.toString()));
 
-        handleChanges(sortedChanges);
+        try {
+            handleChanges(sortedChanges);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
-    private synchronized void handleFullReplacement(TextDocumentContentChangeEvent change) throws IOException {
+    @Override
+    public synchronized String getContents() {
+        try {
+            return new String(Files.readAllBytes(destination), StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public synchronized void reload() {
+        try {
+            FileUtils.copyFile(source.toFile(), destination.toFile());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private synchronized void handleFullReplacement(TextDocumentContentChangeEvent change) {
         File file = new File(destination.toAbsolutePath().toString());
-        FileUtils.writeStringToFile(file, change.getText());
+        try {
+            FileUtils.writeStringToFile(file, change.getText());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private synchronized void handleChanges(List<TextDocumentContentChangeEvent> sortedChanges) throws IOException {
@@ -206,12 +238,8 @@ public final class SourceWriter {
         }
     }
 
-    public synchronized void saveChangesToSource() throws IOException {
+    private synchronized void saveChangesToSource() throws IOException {
         FileUtils.copyFile(destination.toFile(), source.toFile());
-    }
-
-    public synchronized void reloadFile() throws IOException {
-        FileUtils.copyFile(source.toFile(), destination.toFile());
     }
 
     private synchronized void initialize() throws IOException {

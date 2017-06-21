@@ -27,8 +27,8 @@ import com.google.common.collect.Maps;
 import com.google.common.io.Files;
 import com.palantir.ls.api.WorkspaceCompiler;
 import com.palantir.ls.groovy.util.GroovyConstants;
+import com.palantir.ls.util.FileBackedContentsManager;
 import com.palantir.ls.util.Ranges;
-import com.palantir.ls.util.SourceWriter;
 import com.palantir.ls.util.Uris;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.io.File;
@@ -74,7 +74,7 @@ public final class GroovyWorkspaceCompiler implements WorkspaceCompiler, Supplie
     private CompilationUnit unit;
 
     // Map from origin source filename to its changed version source writer
-    private Map<URI, SourceWriter> originalSourceToChangedSource = Maps.newHashMap();
+    private Map<URI, FileBackedContentsManager> originalSourceToChangedSource = Maps.newHashMap();
 
     private GroovyWorkspaceCompiler(Path workspaceRoot, Path changedFilesRoot, CompilerConfiguration config) {
         this.workspaceRoot = workspaceRoot;
@@ -137,18 +137,18 @@ public final class GroovyWorkspaceCompiler implements WorkspaceCompiler, Supplie
     @Override
     public void handleFileChanged(URI originalFile, List<TextDocumentContentChangeEvent> contentChanges) {
         try {
-            SourceWriter sourceWriter = null;
+            FileBackedContentsManager fileBackedContentsManager = null;
             if (originalSourceToChangedSource.containsKey(originalFile)) {
                 // New change on existing changed source
-                sourceWriter = originalSourceToChangedSource.get(originalFile);
+                fileBackedContentsManager = originalSourceToChangedSource.get(originalFile);
             } else {
                 // New source to switch out
                 Path newChangedFilePath = changedFilesRoot.resolve(workspaceRoot.relativize(Paths.get(originalFile)));
-                sourceWriter = SourceWriter.of(Paths.get(originalFile), newChangedFilePath);
-                originalSourceToChangedSource.put(originalFile, sourceWriter);
+                fileBackedContentsManager = FileBackedContentsManager.of(Paths.get(originalFile), newChangedFilePath);
+                originalSourceToChangedSource.put(originalFile, fileBackedContentsManager);
             }
             // Apply changes to source writer and reset compilation unit
-            sourceWriter.applyChanges(contentChanges);
+            fileBackedContentsManager.applyChanges(contentChanges);
             resetCompilationUnit();
         } catch (IOException e) {
             logger.error("Error occurred while handling file changes", e);
@@ -172,14 +172,9 @@ public final class GroovyWorkspaceCompiler implements WorkspaceCompiler, Supplie
 
     @Override
     public void handleFileSaved(URI originalFile) {
-        try {
-            if (originalSourceToChangedSource.containsKey(originalFile)) {
-                originalSourceToChangedSource.get(originalFile).reloadFile();
-                resetCompilationUnit();
-            }
-        } catch (IOException e) {
-            logger.error("Error occurred while handling file saved", e);
-            throw Throwables.propagate(e);
+        if (originalSourceToChangedSource.containsKey(originalFile)) {
+            originalSourceToChangedSource.get(originalFile).reload();
+            resetCompilationUnit();
         }
     }
 
@@ -208,7 +203,8 @@ public final class GroovyWorkspaceCompiler implements WorkspaceCompiler, Supplie
     }
 
     private void addAllSourcesToCompilationUnit() {
-        // We don't include the files that have a corresponding SourceWriter since that means they will be replaced.
+        // We don't include the files that have a corresponding FileBackedContentsManager
+        // since that means they will be replaced.
         for (File file : Files.fileTreeTraverser().preOrderTraversal(workspaceRoot.toFile())) {
             String fileExtension = Files.getFileExtension(file.getAbsolutePath());
             if (!originalSourceToChangedSource.containsKey(file.toURI()) && file.isFile()
@@ -218,7 +214,8 @@ public final class GroovyWorkspaceCompiler implements WorkspaceCompiler, Supplie
         }
         // Add the replaced sources
         originalSourceToChangedSource.values()
-                .forEach(sourceWriter -> unit.addSource(sourceWriter.getDestination().toFile()));
+                .forEach(fileBackedContentsManager ->
+                        unit.addSource(fileBackedContentsManager.getDestination().toFile()));
     }
 
     private void resetCompilationUnit() {

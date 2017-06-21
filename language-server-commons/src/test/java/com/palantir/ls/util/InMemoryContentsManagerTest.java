@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Palantir Technologies, Inc. All rights reserved.
+ * Copyright 2017 Palantir Technologies, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,10 @@
 
 package com.palantir.ls.util;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 
+import com.google.common.base.Stopwatch;
 import com.google.common.collect.Lists;
 import java.io.File;
 import java.io.IOException;
@@ -27,15 +29,16 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
-import org.apache.commons.io.FileUtils;
+import java.util.concurrent.TimeUnit;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.TextDocumentContentChangeEvent;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 
-public class SourceWriterTest {
+public class InMemoryContentsManagerTest {
 
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
@@ -49,47 +52,34 @@ public class SourceWriterTest {
     @Test
     public void testInitialize_noNewLine() throws IOException {
         Path source = addFileToFolder(sourceFolder.getRoot(), "myfile.txt", "my file contents");
-        Path destination = destinationFolder.getRoot().toPath().resolve("myfile.txt");
-        SourceWriter.of(source, destination);
-        assertEquals("my file contents", FileUtils.readFileToString(source.toFile()));
-    }
-
-    @Test
-    public void testInitialize_withNewline() throws IOException {
-        Path source = addFileToFolder(sourceFolder.getRoot(), "myfile.txt", "my file contents\n");
-        Path destination = destinationFolder.getRoot().toPath().resolve("myfile.txt");
-        SourceWriter.of(source, destination);
-        assertEquals("my file contents\n", FileUtils.readFileToString(source.toFile()));
-        assertEquals("my file contents\n", FileUtils.readFileToString(destination.toFile()));
+        InMemoryContentsManager manager = new InMemoryContentsManager(source);
+        assertEquals("my file contents", manager.getContents());
     }
 
     @Test
     public void testDidChanges_noChanges() throws IOException {
         Path source = addFileToFolder(sourceFolder.getRoot(), "myfile.txt", "first line\nsecond line\n");
-        Path destination = destinationFolder.getRoot().toPath().resolve("myfile.txt");
-        SourceWriter writer = SourceWriter.of(source, destination);
+        InMemoryContentsManager manager = new InMemoryContentsManager(source);
         List<TextDocumentContentChangeEvent> changes = Lists.newArrayList();
-        writer.applyChanges(changes);
-        assertEquals("first line\nsecond line\n", FileUtils.readFileToString(destination.toFile()));
+        manager.applyChanges(changes);
+        assertEquals("first line\nsecond line\n", manager.getContents());
     }
 
     @Test
     public void testDidChanges_nullRangeChange() throws IOException {
         Path source = addFileToFolder(sourceFolder.getRoot(), "myfile.txt", "first line\nsecond line\n");
-        Path destination = destinationFolder.getRoot().toPath().resolve("myfile.txt");
-        SourceWriter writer = SourceWriter.of(source, destination);
+        InMemoryContentsManager writer = new InMemoryContentsManager(source);
         List<TextDocumentContentChangeEvent> changes = Lists.newArrayList();
         changes.add(new TextDocumentContentChangeEvent("foo"));
         writer.applyChanges(changes);
-        assertEquals("foo", FileUtils.readFileToString(destination.toFile()));
+        assertEquals("foo", writer.getContents());
     }
 
 
     @Test
     public void testDidChanges_nullRangeWithMultipleChanges() throws IOException {
         Path source = addFileToFolder(sourceFolder.getRoot(), "myfile.txt", "first line\nsecond line\n");
-        Path destination = destinationFolder.getRoot().toPath().resolve("myfile.txt");
-        SourceWriter writer = SourceWriter.of(source, destination);
+        InMemoryContentsManager writer = new InMemoryContentsManager(source);
         List<TextDocumentContentChangeEvent> changes = Lists.newArrayList();
         changes.add(new TextDocumentContentChangeEvent("foo"));
         changes.add(new TextDocumentContentChangeEvent(Ranges.createRange(1, 0, 1, 0), 1, "notfoo"));
@@ -102,111 +92,118 @@ public class SourceWriterTest {
     @Test
     public void testDidChanges_insertionBeginningOfLine() throws IOException {
         Path source = addFileToFolder(sourceFolder.getRoot(), "myfile.txt", "first line\necond line\n");
-        Path destination = destinationFolder.getRoot().toPath().resolve("myfile.txt");
-        SourceWriter writer = SourceWriter.of(source, destination);
+        InMemoryContentsManager writer = new InMemoryContentsManager(source);
         List<TextDocumentContentChangeEvent> changes = Lists.newArrayList();
         changes.add(new TextDocumentContentChangeEvent(Ranges.createRange(1, 0, 1, 0), 1, "s"));
         writer.applyChanges(changes);
-        assertEquals("first line\nsecond line\n", FileUtils.readFileToString(destination.toFile()));
+        assertEquals("first line\nsecond line\n", writer.getContents());
     }
 
     @Test
     public void testDidChanges_insertionEndOfLine() throws IOException {
         Path source = addFileToFolder(sourceFolder.getRoot(), "myfile.txt", "first line\nsecond line\n");
-        Path destination = destinationFolder.getRoot().toPath().resolve("myfile.txt");
-        SourceWriter writer = SourceWriter.of(source, destination);
+        InMemoryContentsManager manager = new InMemoryContentsManager(source);
         List<TextDocumentContentChangeEvent> changes = Lists.newArrayList();
         changes.add(new TextDocumentContentChangeEvent(Ranges.createRange(1, 20, 1, 20), 13, "small change\n"));
-        writer.applyChanges(changes);
+        manager.applyChanges(changes);
         // Two new lines expected, one from the original contents and one from the change
-        assertEquals("first line\nsecond linesmall change\n\n", FileUtils.readFileToString(destination.toFile()));
+        assertEquals("first line\nsecond linesmall change\n\n", manager.getContents());
     }
 
     @Test
     public void testDidChanges_oneLineRange() throws IOException {
         Path source = addFileToFolder(sourceFolder.getRoot(), "myfile.txt", "first line\nsecond line\n");
-        Path destination = destinationFolder.getRoot().toPath().resolve("myfile.txt");
-        SourceWriter writer = SourceWriter.of(source, destination);
+        InMemoryContentsManager manager = new InMemoryContentsManager(source);
         List<TextDocumentContentChangeEvent> changes = Lists.newArrayList();
         changes.add(new TextDocumentContentChangeEvent(Ranges.createRange(0, 6, 0, 10), 12, "small change"));
-        writer.applyChanges(changes);
-        assertEquals("first small change\nsecond line\n", FileUtils.readFileToString(destination.toFile()));
+        manager.applyChanges(changes);
+        assertEquals("first small change\nsecond line\n", manager.getContents());
     }
 
+    @Ignore("Purely for very naive perf testing")
+    @Test
+    public void testDidChanges_multiLineRange_new() throws IOException {
+        Path source = addFileToFolder(sourceFolder.getRoot(), "myfile.txt", "first line\nsecond line\nthird line\n");
+        InMemoryContentsManager manager = new InMemoryContentsManager(source);
+        List<TextDocumentContentChangeEvent> changes = Lists.newArrayList();
+        changes.add(new TextDocumentContentChangeEvent(Ranges.createRange(0, 6, 1, 6), 12, "small change"));
+        Stopwatch started = Stopwatch.createStarted();
+        for (int i = 0; i < 10000; i++) {
+            manager.applyChanges(changes);
+        }
+        Stopwatch stop = started.stop();
+        System.out.println(stop.elapsed(TimeUnit.MILLISECONDS));
+    }
+
+    @Ignore("Purely for very naive perf testing")
     @Test
     public void testDidChanges_multiLineRange() throws IOException {
         Path source = addFileToFolder(sourceFolder.getRoot(), "myfile.txt", "first line\nsecond line\nthird line\n");
         Path destination = destinationFolder.getRoot().toPath().resolve("myfile.txt");
-        SourceWriter writer = SourceWriter.of(source, destination);
+        Stopwatch started = Stopwatch.createStarted();
+        FileBackedContentsManager writer = FileBackedContentsManager.of(source, destination);
         List<TextDocumentContentChangeEvent> changes = Lists.newArrayList();
         changes.add(new TextDocumentContentChangeEvent(Ranges.createRange(0, 6, 1, 6), 12, "small change"));
-        writer.applyChanges(changes);
-        assertEquals("first small change line\nthird line\n", FileUtils.readFileToString(destination.toFile()));
+        for (int i = 0; i < 10000; i++) {
+            writer.applyChanges(changes);
+        }
+        Stopwatch stop = started.stop();
+        System.out.println(stop.elapsed(TimeUnit.MILLISECONDS));
     }
 
     @Test
     public void testDidChanges_multipleRangesWholeLines() throws IOException {
         Path source = addFileToFolder(sourceFolder.getRoot(), "myfile.txt", "first line\nsecond line\nthird line\n");
-        Path destination = destinationFolder.getRoot().toPath().resolve("myfile.txt");
-        SourceWriter writer = SourceWriter.of(source, destination);
+        InMemoryContentsManager manager = new InMemoryContentsManager(source);
         List<TextDocumentContentChangeEvent> changes = Lists.newArrayList();
         changes.add(new TextDocumentContentChangeEvent(Ranges.createRange(0, 0, 0, 20), 16, "new line number 1"));
         changes.add(new TextDocumentContentChangeEvent(Ranges.createRange(1, 0, 1, 20), 16, "new line number 2"));
         changes.add(new TextDocumentContentChangeEvent(Ranges.createRange(2, 0, 2, 20), 16, "new line number 3"));
-        writer.applyChanges(changes);
-        assertEquals("new line number 1\nnew line number 2\nnew line number 3\n",
-                FileUtils.readFileToString(destination.toFile()));
+        manager.applyChanges(changes);
+        assertEquals("new line number 1\nnew line number 2\nnew line number 3\n", manager.getContents());
     }
 
     @Test
     public void testDidChanges_multipleRangesSpecific() throws IOException {
         // Tests replacing the whole lines
         Path source = addFileToFolder(sourceFolder.getRoot(), "myfile.txt", "first line\nsecond line\nthird line\n");
-        Path destination = destinationFolder.getRoot().toPath().resolve("myfile.txt");
-        SourceWriter writer = SourceWriter.of(source, destination);
+        InMemoryContentsManager manager = new InMemoryContentsManager(source);
         List<TextDocumentContentChangeEvent> changes = Lists.newArrayList();
         changes.add(new TextDocumentContentChangeEvent(Ranges.createRange(0, 1, 0, 9), 16, "new line number 1"));
         changes.add(new TextDocumentContentChangeEvent(Ranges.createRange(1, 1, 1, 10), 16, "new line number 2"));
         changes.add(new TextDocumentContentChangeEvent(Ranges.createRange(2, 1, 2, 9), 16, "new line number 3"));
-        writer.applyChanges(changes);
-
-        assertEquals("fnew line number 1e\nsnew line number 2e\ntnew line number 3e\n",
-                FileUtils.readFileToString(destination.toFile()));
+        manager.applyChanges(changes);
+        assertEquals("fnew line number 1e\nsnew line number 2e\ntnew line number 3e\n", manager.getContents());
     }
 
     @Test
     public void testDidChanges_beforeFile() throws IOException {
         // Should be appended to the start of the file
         Path source = addFileToFolder(sourceFolder.getRoot(), "myfile.txt", "first line\nsecond line\nthird line\n");
-        Path destination = destinationFolder.getRoot().toPath().resolve("myfile.txt");
-        SourceWriter writer = SourceWriter.of(source, destination);
+        InMemoryContentsManager writer = new InMemoryContentsManager(source);
         List<TextDocumentContentChangeEvent> changes = Lists.newArrayList();
         changes.add(new TextDocumentContentChangeEvent(Ranges.createRange(0, 0, 0, 0), 7, "change\n"));
         writer.applyChanges(changes);
-        assertEquals("change\nfirst line\nsecond line\nthird line\n",
-                FileUtils.readFileToString(destination.toFile()));
+        assertEquals("change\nfirst line\nsecond line\nthird line\n", writer.getContents());
     }
 
     @Test
     public void testDidChanges_afterFile() throws IOException {
         // Should be appended to the end of the file
         Path source = addFileToFolder(sourceFolder.getRoot(), "myfile.txt", "first line\nsecond line\nthird line\n");
-        Path destination = destinationFolder.getRoot().toPath().resolve("myfile.txt");
-        SourceWriter writer = SourceWriter.of(source, destination);
+        InMemoryContentsManager writer = new InMemoryContentsManager(source);
         List<TextDocumentContentChangeEvent> changes = Lists.newArrayList();
         changes.add(new TextDocumentContentChangeEvent(Ranges.createRange(30, 1, 30, 1), 6, "first "));
         changes.add(new TextDocumentContentChangeEvent(Ranges.createRange(31, 1, 31, 1), 6, "second"));
         writer.applyChanges(changes);
-        assertEquals("first line\nsecond line\nthird line\nfirst second\n",
-                FileUtils.readFileToString(destination.toFile()));
+        assertEquals("first line\nsecond line\nthird line\nfirst second\n", writer.getContents());
     }
 
     @Test
     public void testDidChanges_invalidRanges() throws IOException {
         // Should be appended to the end of the file
         Path source = addFileToFolder(sourceFolder.getRoot(), "myfile.txt", "first line\nsecond line\nthird line\n");
-        Path destination = destinationFolder.getRoot().toPath().resolve("myfile.txt");
-        SourceWriter writer = SourceWriter.of(source, destination);
+        InMemoryContentsManager writer = new InMemoryContentsManager(source);
         List<TextDocumentContentChangeEvent> changes = Lists.newArrayList();
         changes.add(new TextDocumentContentChangeEvent(Ranges.createRange(-1, 0, 0, 0), 3, "one"));
         changes.add(new TextDocumentContentChangeEvent(Ranges.createRange(0, 0, 0, 0), 3, "two"));
@@ -220,8 +217,7 @@ public class SourceWriterTest {
     public void testDidChanges_intersectingRanges() throws IOException {
         // Should be appended to the end of the file
         Path source = addFileToFolder(sourceFolder.getRoot(), "myfile.txt", "first line\nsecond line\nthird line\n");
-        Path destination = destinationFolder.getRoot().toPath().resolve("myfile.txt");
-        SourceWriter writer = SourceWriter.of(source, destination);
+        InMemoryContentsManager writer = new InMemoryContentsManager(source);
         List<TextDocumentContentChangeEvent> changes = Lists.newArrayList();
         Range range = Ranges.createRange(0, 0, 0, 1);
         changes.add(new TextDocumentContentChangeEvent(range, 3, "one"));
@@ -238,8 +234,7 @@ public class SourceWriterTest {
         Path source =
                 addFileToFolder(sourceFolder.getRoot(), "myfile.txt",
                         "0123456789\n0123456789\n0123456789\n0123456789\n0123456789\n");
-        Path destination = destinationFolder.getRoot().toPath().resolve("myfile.txt");
-        SourceWriter writer = SourceWriter.of(source, destination);
+        InMemoryContentsManager writer = new InMemoryContentsManager(source);
         List<TextDocumentContentChangeEvent> changes = Lists.newArrayList();
         changes.add(new TextDocumentContentChangeEvent(Ranges.createRange(0, 0, 0, 1), 1, "a"));
         changes.add(new TextDocumentContentChangeEvent(Ranges.createRange(0, 2, 0, 3), 1, "b"));
@@ -251,8 +246,7 @@ public class SourceWriterTest {
         changes.add(new TextDocumentContentChangeEvent(Ranges.createRange(4, 2, 4, 3), 1, "h"));
         changes.add(new TextDocumentContentChangeEvent(Ranges.createRange(4, 3, 4, 4), 1, "i"));
         writer.applyChanges(changes);
-        assertEquals("a1b34c7d23e23f678g9\n0123456789\n01hi456789\n",
-                FileUtils.readFileToString(destination.toFile()));
+        assertThat(writer.getContents()).isEqualTo("a1b34c7d23e23f678g9\n0123456789\n01hi456789\n");
     }
 
     private Path addFileToFolder(File parent, String filename, String contents) throws IOException {
