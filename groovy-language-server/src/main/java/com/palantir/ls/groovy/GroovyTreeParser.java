@@ -290,8 +290,8 @@ public final class GroovyTreeParser implements TreeParser {
 
     // sourceUri should already have been converted to a workspace URI
     private SymbolInformation getVariableSymbolInformation(String parentName, URI sourceUri, Variable variable) {
-        SymbolKind kind;
-        Location location;
+        final SymbolKind kind;
+        final Location location;
         if (variable instanceof DynamicVariable) {
             kind = SymbolKind.Field;
             location = GroovyLocations.createLocation(sourceUri);

@@ -16,9 +16,8 @@
 
 package com.palantir.ls.util;
 
-import com.google.common.collect.Lists;
-import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.eclipse.lsp4j.CompletionItem;
 import org.eclipse.lsp4j.CompletionItemKind;
 import org.eclipse.lsp4j.CompletionList;
@@ -30,13 +29,15 @@ public final class CompletionUtils {
         if (symbols == null) {
             return new CompletionList();
         }
-        List<CompletionItem> list = Lists.newArrayList();
-        symbols.forEach(symbol -> {
-            CompletionItem completionItem = new CompletionItem(symbol.getName());
-            completionItem.setKind(symbolKindToCompletionItemKind(symbol.getKind()));
-            list.add(completionItem);
-        });
-        return new CompletionList(false, list);
+        return new CompletionList(
+                false,
+                symbols.stream()
+                        .map(symbol -> {
+                            CompletionItem item = new CompletionItem(symbol.getName());
+                            item.setKind(symbolKindToCompletionItemKind(symbol.getKind()));
+                            return item;
+                        })
+                        .collect(Collectors.toList()));
     }
 
     @SuppressWarnings("checkstyle:cyclomaticcomplexity") // this is not complex behaviour

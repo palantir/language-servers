@@ -61,6 +61,7 @@ public class DelegatingOutputStream extends OutputStream {
 
     @Override
     public void close() throws IOException {
+        flush();
         closed = true;
     }
 }
