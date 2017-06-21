@@ -104,11 +104,11 @@ public final class InMemoryContentsManager implements ContentsManager {
 
         boolean endOfFile = false;
         int lastColumn = 0;
-        int i = 0;
+        int changeIndex = 0;
         int lineNum = 0;
         int currentContentsLineCount = currentContents.length;
-        for (; i < sortedChanges.size(); i++) {
-            Range range = sortedChanges.get(i).getRange();
+        for (; changeIndex < sortedChanges.size(); changeIndex++) {
+            Range range = sortedChanges.get(changeIndex).getRange();
             Position start = range.getStart();
             Position end = range.getEnd();
 
@@ -134,7 +134,7 @@ public final class InMemoryContentsManager implements ContentsManager {
             // handle the change under consideration
             String currentLine = currentContents[lineNum];
             contents.append(currentLine.substring(lastColumn, Math.min(start.getCharacter(), currentLine.length())))
-                    .append(sortedChanges.get(i).getText());
+                    .append(sortedChanges.get(changeIndex).getText());
 
             if (end.getLine() > currentContentsLineCount) {
                 break;
@@ -156,8 +156,7 @@ public final class InMemoryContentsManager implements ContentsManager {
             }
         }
 
-        List<TextDocumentContentChangeEvent> leftoverChanges = sortedChanges.subList(i,
-                sortedChanges.size());
+        List<TextDocumentContentChangeEvent> leftoverChanges = sortedChanges.subList(changeIndex, sortedChanges.size());
         leftoverChanges.forEach(change -> contents.append(change.getText()));
         if (!leftoverChanges.isEmpty()) {
             // Add a NEWLINE at the very end of the file to make it a valid file under most conventions
