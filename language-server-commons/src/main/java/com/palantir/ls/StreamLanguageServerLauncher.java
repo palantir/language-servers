@@ -17,6 +17,7 @@
 package com.palantir.ls;
 
 import com.palantir.ls.util.DelegatingOutputStream;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
@@ -42,6 +43,7 @@ public class StreamLanguageServerLauncher {
         this.outputStream = out;
     }
 
+    @SuppressFBWarnings("DM_DEFAULT_ENCODING")
     public void launch() {
         Launcher<LanguageClient> serverLauncher = LSPLauncher.createServerLauncher(
                 languageServer,
