@@ -16,49 +16,41 @@
 
 package com.palantir.ls;
 
-import com.palantir.ls.util.LoggerMessageTracer;
-import io.typefox.lsapi.services.LanguageServer;
-import io.typefox.lsapi.services.json.MessageJsonHandler;
-import io.typefox.lsapi.services.json.StreamMessageReader;
-import io.typefox.lsapi.services.json.StreamMessageWriter;
-import io.typefox.lsapi.services.transport.io.ConcurrentMessageReader;
-import io.typefox.lsapi.services.transport.io.MessageReader;
-import io.typefox.lsapi.services.transport.io.MessageWriter;
-import io.typefox.lsapi.services.transport.server.LanguageServerEndpoint;
+import com.palantir.ls.util.DelegatingOutputStream;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.io.PrintWriter;
+import org.eclipse.lsp4j.jsonrpc.Launcher;
+import org.eclipse.lsp4j.launch.LSPLauncher;
+import org.eclipse.lsp4j.services.LanguageClient;
+import org.eclipse.lsp4j.services.LanguageServer;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class StreamLanguageServerLauncher {
 
-    private final LanguageServerEndpoint languageServerEndpoint;
+    private static final Logger log = LoggerFactory.getLogger(StreamLanguageServerLauncher.class);
+
     private final InputStream inputStream;
     private final OutputStream outputStream;
 
-    private final ExecutorService executorService;
-    private final MessageJsonHandler jsonHandler;
+    private final LanguageServer languageServer;
 
     public StreamLanguageServerLauncher(LanguageServer languageServer, InputStream in, OutputStream out) {
-        this.languageServerEndpoint = new LanguageServerEndpoint(languageServer);
+        this.languageServer = languageServer;
         this.inputStream = in;
         this.outputStream = out;
-        this.executorService = Executors.newCachedThreadPool();
-        this.jsonHandler = new MessageJsonHandler();
     }
 
-    public void setLogger(Logger logger) {
-        languageServerEndpoint.setMessageTracer(new LoggerMessageTracer(logger));
-    }
-
+    @SuppressFBWarnings("DM_DEFAULT_ENCODING")
     public void launch() {
-        MessageReader reader = new StreamMessageReader(inputStream, jsonHandler);
-        ConcurrentMessageReader concurrentReader = new ConcurrentMessageReader(reader, executorService);
-        MessageWriter writer = new StreamMessageWriter(outputStream, jsonHandler);
-
-        languageServerEndpoint.connect(concurrentReader, writer);
-
-        concurrentReader.join();
+        Launcher<LanguageClient> serverLauncher = LSPLauncher.createServerLauncher(
+                languageServer,
+                inputStream,
+                outputStream,
+                false,
+                new PrintWriter(new DelegatingOutputStream(log::info)));
+        serverLauncher.startListening();
     }
 }

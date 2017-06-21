@@ -16,29 +16,28 @@
 
 package com.palantir.ls.util;
 
-import com.google.common.collect.Lists;
-import io.typefox.lsapi.CompletionItemKind;
-import io.typefox.lsapi.CompletionList;
-import io.typefox.lsapi.SymbolInformation;
-import io.typefox.lsapi.SymbolKind;
-import io.typefox.lsapi.builders.CompletionItemBuilder;
-import io.typefox.lsapi.builders.CompletionListBuilder;
-import io.typefox.lsapi.impl.CompletionListImpl;
 import java.util.Set;
+import java.util.stream.Collectors;
+import org.eclipse.lsp4j.CompletionItem;
+import org.eclipse.lsp4j.CompletionItemKind;
+import org.eclipse.lsp4j.CompletionList;
+import org.eclipse.lsp4j.SymbolInformation;
+import org.eclipse.lsp4j.SymbolKind;
 
 public final class CompletionUtils {
     public static CompletionList createCompletionListFromSymbols(Set<SymbolInformation> symbols) {
         if (symbols == null) {
-            return new CompletionListImpl(false, Lists.newArrayList());
+            return new CompletionList();
         }
-        CompletionListBuilder builder = new CompletionListBuilder().isIncomplete(false);
-        symbols.forEach(symbol -> {
-            builder.item(new CompletionItemBuilder()
-                    .label(symbol.getName())
-                    .kind(symbolKindToCompletionItemKind(symbol.getKind()))
-                    .build());
-        });
-        return builder.build();
+        return new CompletionList(
+                false,
+                symbols.stream()
+                        .map(symbol -> {
+                            CompletionItem item = new CompletionItem(symbol.getName());
+                            item.setKind(symbolKindToCompletionItemKind(symbol.getKind()));
+                            return item;
+                        })
+                        .collect(Collectors.toList()));
     }
 
     @SuppressWarnings("checkstyle:cyclomaticcomplexity") // this is not complex behaviour

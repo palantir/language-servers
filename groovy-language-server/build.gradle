@@ -14,14 +14,13 @@ dependencies {
     compile "commons-io:commons-io:${commonsIoVersion}"
     compile "org.slf4j:jcl-over-slf4j:${jclOverSlf4jVersion}"
     compile "org.slf4j:slf4j-api:${slf4jApiVersion}"
-    compile "io.typefox.lsapi:io.typefox.lsapi:${typefoxLsApiVersion}"
-    compile "io.typefox.lsapi:io.typefox.lsapi.annotations:${typefoxLsApiVersion}"
-    compile "io.typefox.lsapi:io.typefox.lsapi.services:${typefoxLsApiVersion}"
+    compile "org.eclipse.lsp4j:org.eclipse.lsp4j:${lsApiVersion}"
+    compile "org.eclipse.lsp4j:org.eclipse.lsp4j.jsonrpc:${lsApiVersion}"
     compile "javax.ws.rs:javax.ws.rs-api:${javaxRsVersion}"
     compile "org.codehaus.groovy:groovy-all:${groovyAllVersion}"
 
     testCompile "junit:junit:${junitVersion}"
     testCompile "org.hamcrest:hamcrest-all:${hamcrestVersion}"
     testCompile "org.mockito:mockito-core:${mockitoVersion}"
+    testCompile "org.assertj:assertj-core:${assertjVersion}"
 }
-

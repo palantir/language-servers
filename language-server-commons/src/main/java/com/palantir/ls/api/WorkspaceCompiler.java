@@ -16,12 +16,12 @@
 
 package com.palantir.ls.api;
 
-import io.typefox.lsapi.FileEvent;
-import io.typefox.lsapi.PublishDiagnosticsParams;
-import io.typefox.lsapi.TextDocumentContentChangeEvent;
 import java.net.URI;
 import java.util.List;
 import java.util.Set;
+import org.eclipse.lsp4j.FileEvent;
+import org.eclipse.lsp4j.PublishDiagnosticsParams;
+import org.eclipse.lsp4j.TextDocumentContentChangeEvent;
 
 /**
  * Provides wrapper methods for compiling a workspace, handles incremental changes, and returns Language Server Protocol

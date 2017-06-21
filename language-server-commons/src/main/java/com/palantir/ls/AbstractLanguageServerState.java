@@ -18,11 +18,11 @@ package com.palantir.ls;
 
 import com.palantir.ls.api.CompilerWrapper;
 import com.palantir.ls.api.LanguageServerState;
-import io.typefox.lsapi.MessageParams;
-import io.typefox.lsapi.PublishDiagnosticsParams;
-import io.typefox.lsapi.ShowMessageRequestParams;
 import java.util.Set;
 import java.util.function.Consumer;
+import org.eclipse.lsp4j.MessageParams;
+import org.eclipse.lsp4j.PublishDiagnosticsParams;
+import org.eclipse.lsp4j.ShowMessageRequestParams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

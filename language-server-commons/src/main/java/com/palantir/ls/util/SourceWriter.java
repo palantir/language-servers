@@ -20,8 +20,6 @@ import static com.google.common.base.Preconditions.checkArgument;
 
 import com.google.common.base.Throwables;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import io.typefox.lsapi.Position;
-import io.typefox.lsapi.TextDocumentContentChangeEvent;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -35,6 +33,8 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.commons.io.FileUtils;
+import org.eclipse.lsp4j.Position;
+import org.eclipse.lsp4j.TextDocumentContentChangeEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -16,23 +16,16 @@
 
 package com.palantir.ls.groovy;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import com.palantir.ls.groovy.util.DefaultDiagnosticBuilder;
+import com.palantir.ls.groovy.util.GroovyConstants;
 import com.palantir.ls.util.Ranges;
-import io.typefox.lsapi.Diagnostic;
-import io.typefox.lsapi.DiagnosticSeverity;
-import io.typefox.lsapi.FileChangeType;
-import io.typefox.lsapi.PublishDiagnosticsParams;
-import io.typefox.lsapi.builders.FileEventBuilder;
-import io.typefox.lsapi.builders.PublishDiagnosticsParamsBuilder;
-import io.typefox.lsapi.builders.TextDocumentContentChangeEventBuilder;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -46,6 +39,12 @@ import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import org.apache.commons.io.FileUtils;
 import org.codehaus.groovy.control.SourceUnit;
+import org.eclipse.lsp4j.Diagnostic;
+import org.eclipse.lsp4j.DiagnosticSeverity;
+import org.eclipse.lsp4j.FileChangeType;
+import org.eclipse.lsp4j.FileEvent;
+import org.eclipse.lsp4j.PublishDiagnosticsParams;
+import org.eclipse.lsp4j.TextDocumentContentChangeEvent;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -53,7 +52,7 @@ import org.junit.rules.TemporaryFolder;
 
 public class GroovyWorkspaceCompilerTest {
 
-    private static final Set<Diagnostic> NO_ERRORS = Sets.newHashSet();
+    private static final Set<PublishDiagnosticsParams> NO_ERRORS = Sets.newHashSet();
 
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
@@ -176,13 +175,12 @@ public class GroovyWorkspaceCompilerTest {
         GroovyWorkspaceCompiler compiler = createGroovyWorkspaceCompiler();
         Set<PublishDiagnosticsParams> diagnostics = compiler.compile(ImmutableSet.of());
 
-        assertEquals(Sets.newHashSet(new PublishDiagnosticsParamsBuilder()
-                .uri(test.toPath().toUri().toString())
-                .diagnostic(new DefaultDiagnosticBuilder(
-                        "unable to resolve class Foo \n @ line 1, column 20.", DiagnosticSeverity.Error)
-                                .range(Ranges.createRange(0, 19, 0, 26))
-                                .build())
-                .build()),
+        assertEquals(Sets.newHashSet(new PublishDiagnosticsParams(
+                        test.toPath().toUri().toString(),
+                        ImmutableList.of(new Diagnostic(Ranges.createRange(0, 19, 0, 26),
+                                "unable to resolve class Foo \n @ line 1, column 20.",
+                                DiagnosticSeverity.Error,
+                                GroovyConstants.GROOVY_COMPILER)))),
                 diagnostics);
     }
 
@@ -247,24 +245,21 @@ public class GroovyWorkspaceCompilerTest {
         Set<PublishDiagnosticsParams> diagnostics = compiler.compile(ImmutableSet.of());
 
         Set<PublishDiagnosticsParams> expectedDiagnostics = Sets.newHashSet(
-                new PublishDiagnosticsParamsBuilder()
-                        .uri(test1.toPath().toUri().toString())
-                        .diagnostic(
-                                new DefaultDiagnosticBuilder(
+                new PublishDiagnosticsParams(test1.toPath().toUri().toString(),
+                        ImmutableList.of(
+                                new Diagnostic(
+                                        Ranges.createRange(6, 17, 6, 72),
                                         "unable to resolve class ExceptionNew1 \n @ line 7, column 18.",
-                                        DiagnosticSeverity.Error)
-                                                .range(Ranges.createRange(6, 17, 6, 72))
-                                                .build())
-                        .build(),
-                new PublishDiagnosticsParamsBuilder()
-                        .uri(test2.toPath().toUri().toString())
-                        .diagnostic(
-                                new DefaultDiagnosticBuilder(
+                                        DiagnosticSeverity.Error,
+                                        GroovyConstants.GROOVY_COMPILER))),
+                new PublishDiagnosticsParams(test2.toPath().toUri().toString(),
+                        ImmutableList.of(
+                                new Diagnostic(
+                                        Ranges.createRange(6, 17, 6, 74),
                                         "unable to resolve class ExceptionNew222 \n @ line 7, column 18.",
-                                        DiagnosticSeverity.Error)
-                                                .range(Ranges.createRange(6, 17, 6, 74))
-                                                .build())
-                        .build());
+                                        DiagnosticSeverity.Error,
+                                        GroovyConstants.GROOVY_COMPILER))));
+
         assertEquals(expectedDiagnostics, diagnostics);
     }
 
@@ -283,8 +278,8 @@ public class GroovyWorkspaceCompilerTest {
         assertSingleSourceFileUri(catFile, compiler.get().iterator());
 
         // First change
-        compiler.handleFileChanged(catFile.toURI(), Lists.newArrayList(new TextDocumentContentChangeEventBuilder()
-                .range(Ranges.createRange(0, 6, 0, 9)).rangeLength(3).text("Dog").build()));
+        compiler.handleFileChanged(catFile.toURI(),
+                Lists.newArrayList(new TextDocumentContentChangeEvent(Ranges.createRange(0, 6, 0, 9), 3, "Dog")));
 
         // Re-compile
         assertEquals(NO_ERRORS, compiler.compile(ImmutableSet.of()));
@@ -297,8 +292,8 @@ public class GroovyWorkspaceCompilerTest {
         assertSingleSourceFileUri(catChangedFile, compiler.get().iterator());
 
         // Second change
-        compiler.handleFileChanged(catFile.toURI(), Lists.newArrayList(new TextDocumentContentChangeEventBuilder()
-                .range(Ranges.createRange(0, 6, 0, 9)).rangeLength(6).text("Turtle").build()));
+        compiler.handleFileChanged(catFile.toURI(),
+                Lists.newArrayList(new TextDocumentContentChangeEvent(Ranges.createRange(0, 6, 0, 9), 6, "Turtle")));
 
         // Re-compile
         assertEquals(NO_ERRORS, compiler.compile(ImmutableSet.of()));
@@ -329,8 +324,8 @@ public class GroovyWorkspaceCompilerTest {
 
 
         // First change
-        compiler.handleFileChanged(catFile.toURI(), Lists.newArrayList(new TextDocumentContentChangeEventBuilder()
-                .range(Ranges.createRange(0, 6, 0, 9)).rangeLength(3).text("Dog").build()));
+        compiler.handleFileChanged(catFile.toURI(),
+                Lists.newArrayList(new TextDocumentContentChangeEvent(Ranges.createRange(0, 6, 0, 9), 3, "Dog")));
         // Re-compile
         assertEquals(NO_ERRORS, compiler.compile(ImmutableSet.of()));
 
@@ -346,8 +341,11 @@ public class GroovyWorkspaceCompilerTest {
         // Assert file contents
         assertEquals("class Cat {\n}\n", FileUtils.readFileToString(catFile));
         // The changed file should have been deleted
-        assertFalse(changedOutput.getRoot().toPath().resolve(root.getRoot().toPath().relativize(catFile.toPath()))
-                .toFile().exists());
+        assertThat(changedOutput.getRoot()
+                .toPath()
+                .resolve(root.getRoot().toPath().relativize(catFile.toPath()))
+                .toFile().exists())
+                .isFalse();
         // Re-compile
         assertEquals(NO_ERRORS, compiler.compile(ImmutableSet.of()));
 
@@ -372,8 +370,8 @@ public class GroovyWorkspaceCompilerTest {
         assertSingleSourceFileUri(catFile, compiler.get().iterator());
 
         // First change
-        compiler.handleFileChanged(catFile.toURI(), Lists.newArrayList(new TextDocumentContentChangeEventBuilder()
-                .range(Ranges.createRange(0, 6, 0, 9)).rangeLength(3).text("Dog").build()));
+        compiler.handleFileChanged(catFile.toURI(),
+                Lists.newArrayList(new TextDocumentContentChangeEvent(Ranges.createRange(0, 6, 0, 9), 3, "Dog")));
         // Assert file contents
         assertEquals("class Cat {\n}\n", FileUtils.readFileToString(catFile));
         assertEquals("class Dog {\n}\n", FileUtils.readFileToString(catChangedFile));
@@ -414,8 +412,8 @@ public class GroovyWorkspaceCompilerTest {
         assertSingleSourceFileUri(catFile, compiler.get().iterator());
 
         // First change
-        compiler.handleFileChanged(catFile.toURI(), Lists.newArrayList(new TextDocumentContentChangeEventBuilder()
-                .range(Ranges.createRange(0, 6, 0, 9)).rangeLength(3).text("Dog").build()));
+        compiler.handleFileChanged(catFile.toURI(),
+                Lists.newArrayList(new TextDocumentContentChangeEvent(Ranges.createRange(0, 6, 0, 9), 3, "Dog")));
         // Assert file contents
         assertEquals("class Cat {\n}\n", FileUtils.readFileToString(catFile));
         assertEquals("class Dog {\n}\n", FileUtils.readFileToString(catChangedFile));
@@ -428,13 +426,16 @@ public class GroovyWorkspaceCompilerTest {
 
         // Call handleChangeWatchedFile with a change saying this file has been changed outside this language server
         compiler.handleChangeWatchedFiles(Lists.newArrayList(
-                new FileEventBuilder().uri(root.getRoot().toPath().relativize(catFile.toPath()).toString())
-                        .type(FileChangeType.Changed).build()));
+                new FileEvent(
+                        root.getRoot().toPath().relativize(catFile.toPath()).toString(),
+                        FileChangeType.Changed)));
         // Assert file contents
         assertEquals("class Cat {\n}\n", FileUtils.readFileToString(catFile));
         // The changed file should have been deleted
-        assertFalse(changedOutput.getRoot().toPath().resolve(root.getRoot().toPath().relativize(catFile.toPath()))
-                .toFile().exists());
+        assertThat(changedOutput.getRoot()
+                .toPath()
+                .resolve(root.getRoot().toPath().relativize(catFile.toPath())).toFile().exists())
+                .isFalse();
 
         // Re-compile
         assertEquals(NO_ERRORS, compiler.compile(ImmutableSet.of()));
@@ -457,18 +458,19 @@ public class GroovyWorkspaceCompilerTest {
         assertSingleSourceFileUri(catFile, compiler.get().iterator());
 
         // Delete the file
-        assertTrue(catFile.delete());
+        assertThat(catFile.delete()).isTrue();
 
         // Call handleChangeWatchedFile with a change saying this file has been deleted outside this language server
         compiler.handleChangeWatchedFiles(Lists.newArrayList(
-                new FileEventBuilder().uri(root.getRoot().toPath().relativize(catFile.toPath()).toString())
-                        .type(FileChangeType.Changed).build()));
+                new FileEvent(
+                        root.getRoot().toPath().relativize(catFile.toPath()).toString(),
+                        FileChangeType.Changed)));
 
         // Re-compile
         assertEquals(NO_ERRORS, compiler.compile(ImmutableSet.of()));
 
         // Assert the compiler has no source units
-        assertFalse(compiler.get().iterator().hasNext());
+        assertThat(compiler.get().iterator().hasNext()).isFalse();
     }
 
     @Test
@@ -479,7 +481,7 @@ public class GroovyWorkspaceCompilerTest {
         assertEquals(NO_ERRORS, compiler.compile(ImmutableSet.of()));
 
         // Assert the compiler has no source units
-        assertFalse(compiler.get().iterator().hasNext());
+        assertThat(compiler.get().iterator().hasNext()).isFalse();
 
         File catFile = addFileToFolder(newFolder1, "Cat.groovy",
                 "class Cat {\n"
@@ -487,8 +489,9 @@ public class GroovyWorkspaceCompilerTest {
 
         // Call handleChangeWatchedFile with a change saying this file has been changed outside this language server
         compiler.handleChangeWatchedFiles(Lists.newArrayList(
-                new FileEventBuilder().uri(root.getRoot().toPath().relativize(catFile.toPath()).toString())
-                        .type(FileChangeType.Created).build()));
+                new FileEvent(
+                        root.getRoot().toPath().relativize(catFile.toPath()).toString(),
+                        FileChangeType.Created)));
 
         // Re-compile
         assertEquals(NO_ERRORS, compiler.compile(ImmutableSet.of()));

@@ -21,10 +21,6 @@ import com.palantir.ls.groovy.util.GroovyConstants;
 import com.palantir.ls.groovy.util.GroovyLocations;
 import com.palantir.ls.util.Ranges;
 import com.palantir.ls.util.UriSupplier;
-import io.typefox.lsapi.Location;
-import io.typefox.lsapi.SymbolInformation;
-import io.typefox.lsapi.SymbolKind;
-import io.typefox.lsapi.builders.SymbolInformationBuilder;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
@@ -46,6 +42,9 @@ import org.codehaus.groovy.ast.expr.PropertyExpression;
 import org.codehaus.groovy.ast.expr.StaticMethodCallExpression;
 import org.codehaus.groovy.ast.expr.VariableExpression;
 import org.codehaus.groovy.ast.stmt.CatchStatement;
+import org.eclipse.lsp4j.Location;
+import org.eclipse.lsp4j.SymbolInformation;
+import org.eclipse.lsp4j.SymbolKind;
 
 public class MethodVisitor extends CodeVisitorSupport {
 
@@ -219,33 +218,34 @@ public class MethodVisitor extends CodeVisitorSupport {
     }
 
     private SymbolInformation getVariableSymbolInformation(Variable variable) {
-        SymbolInformationBuilder builder =
-                new SymbolInformationBuilder().name(variable.getName());
+        final String containerName;
+        final SymbolKind kind;
+        final Location location;
         if (methodNode.isPresent()) {
-            builder.containerName(methodNode.get().getName());
+            containerName = methodNode.get().getName();
         } else {
-            builder.containerName(clazz.getName());
+            containerName = clazz.getName();
         }
 
         if (variable instanceof DynamicVariable) {
-            builder.kind(SymbolKind.Field);
-            builder.location(GroovyLocations.createLocation(workspaceUriSupplier.get(uri)));
+            kind = SymbolKind.Field;
+            location = GroovyLocations.createLocation(workspaceUriSupplier.get(uri));
         } else if (variable instanceof FieldNode) {
-            builder.kind(SymbolKind.Field);
-            builder.location(createLocation(uri, (FieldNode) variable));
+            kind = SymbolKind.Field;
+            location = createLocation(uri, (FieldNode) variable);
         } else if (variable instanceof Parameter) {
-            builder.kind(SymbolKind.Variable);
-            builder.location(createLocation(uri, (Parameter) variable));
+            kind = SymbolKind.Variable;
+            location = createLocation(uri, (Parameter) variable);
         } else if (variable instanceof PropertyNode) {
-            builder.kind(SymbolKind.Field);
-            builder.location(createLocation(uri, (PropertyNode) variable));
+            kind = SymbolKind.Field;
+            location = createLocation(uri, (PropertyNode) variable);
         } else if (variable instanceof VariableExpression) {
-            builder.kind(SymbolKind.Variable);
-            builder.location(createLocation(uri, (VariableExpression) variable));
+            kind = SymbolKind.Variable;
+            location = createLocation(uri, (VariableExpression) variable);
         } else {
             throw new IllegalArgumentException(String.format("Unknown type of variable: %s", variable));
         }
-        return builder.build();
+        return new SymbolInformation(variable.getName(), kind, location, containerName);
     }
 
     private static boolean areEquals(Parameter[] parameters, ArgumentListExpression arguments) {

@@ -18,16 +18,16 @@ package com.palantir.ls.services;
 
 import com.palantir.ls.api.LanguageServerState;
 import com.palantir.ls.util.Ranges;
-import io.typefox.lsapi.DidChangeConfigurationParams;
-import io.typefox.lsapi.DidChangeWatchedFilesParams;
-import io.typefox.lsapi.SymbolInformation;
-import io.typefox.lsapi.WorkspaceSymbolParams;
-import io.typefox.lsapi.services.WorkspaceService;
 import java.net.URI;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
+import org.eclipse.lsp4j.DidChangeConfigurationParams;
+import org.eclipse.lsp4j.DidChangeWatchedFilesParams;
+import org.eclipse.lsp4j.SymbolInformation;
+import org.eclipse.lsp4j.WorkspaceSymbolParams;
+import org.eclipse.lsp4j.services.WorkspaceService;
 
 public abstract class AbstractWorkspaceService implements WorkspaceService {
 

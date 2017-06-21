@@ -24,6 +24,7 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.when;
 
 import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -31,35 +32,6 @@ import com.palantir.ls.DefaultLanguageServerState;
 import com.palantir.ls.api.CompilerWrapper;
 import com.palantir.ls.api.LanguageServerState;
 import com.palantir.ls.util.Ranges;
-import io.typefox.lsapi.CompletionItemKind;
-import io.typefox.lsapi.CompletionList;
-import io.typefox.lsapi.Diagnostic;
-import io.typefox.lsapi.DiagnosticSeverity;
-import io.typefox.lsapi.Location;
-import io.typefox.lsapi.PublishDiagnosticsParams;
-import io.typefox.lsapi.ReferenceParams;
-import io.typefox.lsapi.SymbolInformation;
-import io.typefox.lsapi.SymbolKind;
-import io.typefox.lsapi.TextDocumentIdentifier;
-import io.typefox.lsapi.TextDocumentItem;
-import io.typefox.lsapi.TextDocumentPositionParams;
-import io.typefox.lsapi.builders.CompletionItemBuilder;
-import io.typefox.lsapi.builders.CompletionListBuilder;
-import io.typefox.lsapi.builders.DiagnosticBuilder;
-import io.typefox.lsapi.builders.DidChangeTextDocumentParamsBuilder;
-import io.typefox.lsapi.builders.DidCloseTextDocumentParamsBuilder;
-import io.typefox.lsapi.builders.DidOpenTextDocumentParamsBuilder;
-import io.typefox.lsapi.builders.DidSaveTextDocumentParamsBuilder;
-import io.typefox.lsapi.builders.DocumentSymbolParamsBuilder;
-import io.typefox.lsapi.builders.LocationBuilder;
-import io.typefox.lsapi.builders.PublishDiagnosticsParamsBuilder;
-import io.typefox.lsapi.builders.ReferenceParamsBuilder;
-import io.typefox.lsapi.builders.SymbolInformationBuilder;
-import io.typefox.lsapi.builders.TextDocumentIdentifierBuilder;
-import io.typefox.lsapi.builders.TextDocumentItemBuilder;
-import io.typefox.lsapi.builders.TextDocumentPositionParamsBuilder;
-import io.typefox.lsapi.builders.VersionedTextDocumentIdentifierBuilder;
-import io.typefox.lsapi.impl.PositionImpl;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
@@ -70,6 +42,29 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import org.eclipse.lsp4j.CompletionItem;
+import org.eclipse.lsp4j.CompletionItemKind;
+import org.eclipse.lsp4j.CompletionList;
+import org.eclipse.lsp4j.Diagnostic;
+import org.eclipse.lsp4j.DiagnosticSeverity;
+import org.eclipse.lsp4j.DidChangeTextDocumentParams;
+import org.eclipse.lsp4j.DidCloseTextDocumentParams;
+import org.eclipse.lsp4j.DidOpenTextDocumentParams;
+import org.eclipse.lsp4j.DidSaveTextDocumentParams;
+import org.eclipse.lsp4j.DocumentSymbolParams;
+import org.eclipse.lsp4j.Location;
+import org.eclipse.lsp4j.Position;
+import org.eclipse.lsp4j.PublishDiagnosticsParams;
+import org.eclipse.lsp4j.ReferenceContext;
+import org.eclipse.lsp4j.ReferenceParams;
+import org.eclipse.lsp4j.SymbolInformation;
+import org.eclipse.lsp4j.SymbolKind;
+import org.eclipse.lsp4j.TextDocumentContentChangeEvent;
+import org.eclipse.lsp4j.TextDocumentIdentifier;
+import org.eclipse.lsp4j.TextDocumentItem;
+import org.eclipse.lsp4j.TextDocumentPositionParams;
+import org.eclipse.lsp4j.VersionedTextDocumentIdentifier;
+import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -104,65 +99,46 @@ public class DefaultTextDocumentServiceTest {
         MockitoAnnotations.initMocks(this);
 
         filePath = workspace.newFile("something.groovy").toPath();
-        expectedDiagnostics =
-                Sets.newHashSet(new PublishDiagnosticsParamsBuilder().uri("foo")
-                        .diagnostic(createDiagnostic("Some message", DiagnosticSeverity.Error, filePath.toString()))
-                        .diagnostic(createDiagnostic(
-                                "Some other message", DiagnosticSeverity.Warning, filePath.toString()))
-                        .build());
+        expectedDiagnostics = Sets.newHashSet(new PublishDiagnosticsParams("foo", ImmutableList.of(
+                        createDiagnostic("Some message", DiagnosticSeverity.Error, filePath.toString()),
+                        createDiagnostic("Some other message", DiagnosticSeverity.Warning, filePath.toString())
+                )));
 
-        SymbolInformation symbol1 = new SymbolInformationBuilder().name("ThisIsASymbol").kind(SymbolKind.Field).build();
-        SymbolInformation symbol2 = new SymbolInformationBuilder().name("methodA").kind(SymbolKind.Method).build();
+        SymbolInformation symbol1 = new SymbolInformation("ThisIsASymbol", SymbolKind.Field, new Location());
+        SymbolInformation symbol2 = new SymbolInformation("methodA", SymbolKind.Method, new Location());
         symbolsMap.put(filePath.toUri(), Sets.newHashSet(symbol1, symbol2));
 
-        emptyCompletionList = new CompletionListBuilder().isIncomplete(false).build();
-        expectedCompletionList = new CompletionListBuilder()
-                .isIncomplete(false)
-                .item(new CompletionItemBuilder()
-                        .label("ThisIsASymbol")
-                        .kind(CompletionItemKind.Field)
-                        .build())
-                .item(new CompletionItemBuilder()
-                        .label("methodA")
-                        .kind(CompletionItemKind.Method).build())
-                .build();
+        emptyCompletionList = new CompletionList(false, Lists.newArrayList());
+        CompletionItem thisIsASymbol = new CompletionItem("ThisIsASymbol");
+        thisIsASymbol.setKind(CompletionItemKind.Field);
+        CompletionItem methodA = new CompletionItem("methodA");
+        methodA.setKind(CompletionItemKind.Method);
+        expectedCompletionList = new CompletionList(false, Lists.newArrayList(thisIsASymbol, methodA));
 
-        expectedReferences.add(new LocationBuilder()
-                .uri("uri")
-                .range(Ranges.createRange(1, 1, 9, 9))
-                .build());
-        expectedReferences.add(new LocationBuilder()
-                .uri("uri")
-                .range(Ranges.createRange(1, 1, 9, 9))
-                .build());
+        expectedReferences.add(new Location("uri", Ranges.createRange(1, 1, 9, 9)));
+        expectedReferences.add(new Location("uri", Ranges.createRange(1, 1, 9, 9)));
         Set<Location> allReferencesReturned = Sets.newHashSet(expectedReferences);
         // The reference that will be filtered out
-        allReferencesReturned.add(new LocationBuilder()
-                .uri("uri")
-                .range(Ranges.UNDEFINED_RANGE)
-                .build());
-        expectedDefinitionLocation =
-                Optional.of(new LocationBuilder().uri("foo").range(Ranges.createRange(0, 1, 0, 1)).build());
+        allReferencesReturned.add(new Location("uri", Ranges.UNDEFINED_RANGE));
+        expectedDefinitionLocation = Optional.of(new Location("foo", Ranges.createRange(0, 1, 0, 1)));
         when(compilerWrapper.getWorkspaceRoot()).thenReturn(workspace.getRoot().toPath().toUri());
         when(compilerWrapper.compile(any())).thenReturn(expectedDiagnostics);
         when(compilerWrapper.getFileSymbols()).thenReturn(symbolsMap);
         when(compilerWrapper.getCompletion(any(), any())).thenReturn(emptyCompletionList);
-        when(compilerWrapper.getCompletion(filePath.toUri(), new PositionImpl(5, 5)))
+        when(compilerWrapper.getCompletion(filePath.toUri(), new Position(5, 5)))
                 .thenReturn(expectedCompletionList);
         when(compilerWrapper.findReferences(any())).thenReturn(allReferencesReturned);
-        when(compilerWrapper.gotoDefinition(any(), eq(new PositionImpl(5, 5)))).thenReturn(expectedDefinitionLocation);
-        when(compilerWrapper.gotoDefinition(any(), eq(new PositionImpl(4, 4)))).thenReturn(Optional.absent());
+        when(compilerWrapper.gotoDefinition(any(), eq(new Position(5, 5)))).thenReturn(expectedDefinitionLocation);
+        when(compilerWrapper.gotoDefinition(any(), eq(new Position(4, 4)))).thenReturn(Optional.absent());
 
         LanguageServerState state = new DefaultLanguageServerState();
         state.setCompilerWrapper(compilerWrapper);
 
         service = new DefaultTextDocumentService(state);
 
-        Consumer<PublishDiagnosticsParams> callback = p -> {
-            publishDiagnostics(p);
-        };
+        Consumer<PublishDiagnosticsParams> callback = this::publishDiagnostics;
 
-        service.onPublishDiagnostics(callback);
+        service.getState().setPublishDiagnostics(callback);
     }
 
     private void publishDiagnostics(PublishDiagnosticsParams params) {
@@ -171,13 +147,9 @@ public class DefaultTextDocumentServiceTest {
 
     @Test
     public void testDidOpen() {
-        TextDocumentItem textDocument = new TextDocumentItemBuilder()
-                .uri(filePath.toAbsolutePath().toString())
-                .languageId("groovy")
-                .version(1)
-                .text("something")
-                .build();
-        service.didOpen(new DidOpenTextDocumentParamsBuilder().textDocument(textDocument).build());
+        TextDocumentItem textDocument = new TextDocumentItem(
+                filePath.toAbsolutePath().toString(), "groovy", 1, "something");
+        service.didOpen(new DidOpenTextDocumentParams(textDocument));
         // assert diagnostics were published
         assertEquals(1, publishedDiagnostics.size());
         assertEquals(expectedDiagnostics, Sets.newHashSet(publishedDiagnostics.get(0)));
@@ -185,13 +157,10 @@ public class DefaultTextDocumentServiceTest {
 
     @Test
     public void testDidChange() {
-        service.didChange(new DidChangeTextDocumentParamsBuilder()
-                .contentChange(Ranges.createRange(0, 0, 1, 1), 3, "Hello")
-                .textDocument(new VersionedTextDocumentIdentifierBuilder()
-                        .version(0)
-                        .uri(filePath.toAbsolutePath().toString())
-                        .build())
-                .build());
+        VersionedTextDocumentIdentifier ident = new VersionedTextDocumentIdentifier(0);
+        ident.setUri(filePath.toAbsolutePath().toString());
+        service.didChange(new DidChangeTextDocumentParams(ident,
+                ImmutableList.of(new TextDocumentContentChangeEvent(Ranges.createRange(0, 0, 1, 1), 3, "Hello"))));
         // assert diagnostics were published
         assertEquals(1, publishedDiagnostics.size());
         assertEquals(expectedDiagnostics, Sets.newHashSet(publishedDiagnostics.get(0)));
@@ -202,33 +171,26 @@ public class DefaultTextDocumentServiceTest {
         expectedException.expect(IllegalArgumentException.class);
         expectedException.expectMessage(
                 String.format("Calling didChange with no changes on uri '%s'", filePath.toUri()));
-        service.didChange(new DidChangeTextDocumentParamsBuilder()
-                .textDocument(new VersionedTextDocumentIdentifierBuilder()
-                        .version(0)
-                        .uri(filePath.toAbsolutePath().toString())
-                        .build())
-                .build());
+        VersionedTextDocumentIdentifier ident = new VersionedTextDocumentIdentifier(0);
+        ident.setUri(filePath.toAbsolutePath().toString());
+        service.didChange(new DidChangeTextDocumentParams(ident, ImmutableList.of()));
     }
 
     @Test
     public void testDidChange_nonExistantUri() {
         expectedException.expect(IllegalArgumentException.class);
         expectedException
-                .expectMessage(String.format("Uri '%s' does not exist", filePath.toUri() + "boo"));
-        service.didChange(new DidChangeTextDocumentParamsBuilder()
-                .textDocument(new VersionedTextDocumentIdentifierBuilder()
-                        .version(0)
-                        .uri(filePath.toAbsolutePath().toString() + "boo")
-                        .build())
-                .build());
+                .expectMessage(String.format("Uri '%s' does not exist", filePath.toUri() + "_fake"));
+        VersionedTextDocumentIdentifier ident = new VersionedTextDocumentIdentifier(0);
+        ident.setUri(filePath.toAbsolutePath().toString() + "_fake");
+        service.didChange(new DidChangeTextDocumentParams(ident,
+                ImmutableList.of(new TextDocumentContentChangeEvent(Ranges.createRange(0, 0, 1, 1), 3, "Hello"))));
     }
 
     @Test
     public void testDidClose() {
-        TextDocumentIdentifier textDocument = new TextDocumentIdentifierBuilder()
-                .uri(filePath.toAbsolutePath().toString())
-                .build();
-        service.didClose(new DidCloseTextDocumentParamsBuilder().textDocument(textDocument).build());
+        service.didClose(new DidCloseTextDocumentParams(
+                new TextDocumentIdentifier(filePath.toAbsolutePath().toString())));
         // assert diagnostics were published
         assertEquals(1, publishedDiagnostics.size());
         assertEquals(expectedDiagnostics, Sets.newHashSet(publishedDiagnostics.get(0)));
@@ -236,21 +198,17 @@ public class DefaultTextDocumentServiceTest {
 
     @Test
     public void testDidClose_nonExistantUri() {
-        TextDocumentIdentifier textDocument = new TextDocumentIdentifierBuilder()
-                .uri(filePath.toAbsolutePath().toString() + "boo")
-                .build();
         expectedException.expect(IllegalArgumentException.class);
         expectedException
-                .expectMessage(String.format("Uri '%s' does not exist", filePath.toUri() + "boo"));
-        service.didClose(new DidCloseTextDocumentParamsBuilder().textDocument(textDocument).build());
+                .expectMessage(String.format("Uri '%s' does not exist", filePath.toUri() + "_fake"));
+        service.didClose(new DidCloseTextDocumentParams(
+                new TextDocumentIdentifier(filePath.toAbsolutePath().toString() + "_fake")));
     }
 
     @Test
     public void testDidSave() {
-        TextDocumentIdentifier textDocument = new TextDocumentIdentifierBuilder()
-                .uri(filePath.toAbsolutePath().toString())
-                .build();
-        service.didSave(new DidSaveTextDocumentParamsBuilder().textDocument(textDocument).build());
+        service.didSave(new DidSaveTextDocumentParams(
+                new TextDocumentIdentifier(filePath.toAbsolutePath().toString())));
         // assert diagnostics were published
         assertEquals(1, publishedDiagnostics.size());
         assertEquals(expectedDiagnostics, Sets.newHashSet(publishedDiagnostics.get(0)));
@@ -258,54 +216,45 @@ public class DefaultTextDocumentServiceTest {
 
     @Test
     public void testDidSave_nonExistantUri() {
-        TextDocumentIdentifier textDocument = new TextDocumentIdentifierBuilder()
-                .uri(filePath.toAbsolutePath().toString() + "boo")
-                .build();
         expectedException.expect(IllegalArgumentException.class);
         expectedException
-                .expectMessage(String.format("Uri '%s' does not exist", filePath.toUri() + "boo"));
-        service.didSave(new DidSaveTextDocumentParamsBuilder().textDocument(textDocument).build());
+                .expectMessage(String.format("Uri '%s' does not exist", filePath.toUri() + "_fake"));
+        service.didSave(new DidSaveTextDocumentParams(
+                new TextDocumentIdentifier(filePath.toAbsolutePath().toString() + "_fake")));
     }
 
     @Test
     public void testDocumentSymbols_absolutePath() throws InterruptedException, ExecutionException {
-        TextDocumentIdentifier textDocument = new TextDocumentIdentifierBuilder()
-                .uri(filePath.toAbsolutePath().toString())
-                .build();
-        CompletableFuture<List<? extends SymbolInformation>> response =
-                service.documentSymbol(new DocumentSymbolParamsBuilder().textDocument(textDocument).build());
+        CompletableFuture<List<? extends SymbolInformation>> response = service.documentSymbol(
+                new DocumentSymbolParams(
+                        new TextDocumentIdentifier(filePath.toAbsolutePath().toString())));
         assertThat(response.get().stream().collect(Collectors.toSet()),
                 is(symbolsMap.get(filePath.toUri())));
     }
 
     @Test
     public void testDocumentSymbols_relativePath() throws InterruptedException, ExecutionException {
-        TextDocumentIdentifier textDocument = new TextDocumentIdentifierBuilder().uri("something.groovy").build();
         CompletableFuture<List<? extends SymbolInformation>> response =
-                service.documentSymbol(new DocumentSymbolParamsBuilder().textDocument(textDocument).build());
+                service.documentSymbol(new DocumentSymbolParams(new TextDocumentIdentifier("something.groovy")));
         assertThat(response.get().stream().collect(Collectors.toSet()),
                 is(symbolsMap.get(filePath.toUri())));
     }
 
     @Test
     public void testDocumentSymbols_nonExistantUri() throws InterruptedException, ExecutionException {
-        TextDocumentIdentifier textDocument = new TextDocumentIdentifierBuilder()
-                .uri(filePath.toAbsolutePath().toString() + "boo")
-                .build();
         expectedException.expect(IllegalArgumentException.class);
         expectedException
-                .expectMessage(String.format("Uri '%s' does not exist", filePath.toUri() + "boo"));
-        service.documentSymbol(new DocumentSymbolParamsBuilder().textDocument(textDocument).build());
+                .expectMessage(String.format("Uri '%s' does not exist", filePath.toUri() + "_fake"));
+        service.documentSymbol(new DocumentSymbolParams(
+                new TextDocumentIdentifier(filePath.toAbsolutePath().toString() + "_fake")));
     }
 
     @Test
     public void testReferences() throws InterruptedException, ExecutionException {
-        ReferenceParams params = new ReferenceParamsBuilder()
-                .context(false)
-                .position(5, 5)
-                .textDocument("uri")
-                .uri("uri")
-                .build();
+        ReferenceParams params = new ReferenceParams(new ReferenceContext(false));
+        params.setPosition(new Position(5, 5));
+        params.setTextDocument(new TextDocumentIdentifier("uri"));
+        params.setUri("uri");
         CompletableFuture<List<? extends Location>> response = service.references(params);
         assertThat(response.get().stream().collect(Collectors.toSet()), is(expectedReferences));
     }
@@ -313,37 +262,29 @@ public class DefaultTextDocumentServiceTest {
     @Test
     public void testCompletion() throws InterruptedException, ExecutionException {
         String uri = filePath.toAbsolutePath().toString();
-        TextDocumentPositionParams params = new TextDocumentPositionParamsBuilder()
-                .position(5, 5)
-                .textDocument(uri)
-                .uri(uri)
-                .build();
-        CompletableFuture<CompletionList> response = service.completion(params);
-        assertThat(response.get().isIncomplete(), is(expectedCompletionList.isIncomplete()));
-        assertThat(Sets.newHashSet(response.get().getItems()), is(Sets.newHashSet(expectedCompletionList.getItems())));
+        TextDocumentPositionParams params =
+                new TextDocumentPositionParams(new TextDocumentIdentifier(uri), uri, new Position(5, 5));
+        CompletableFuture<Either<List<CompletionItem>, CompletionList>> response = service.completion(params);
+        assertThat(response.get().getRight().isIncomplete(), is(expectedCompletionList.isIncomplete()));
+        assertThat(Sets.newHashSet(response.get().getRight().getItems()),
+                is(Sets.newHashSet(expectedCompletionList.getItems())));
     }
 
     @Test
     public void testCompletion_noSymbols() throws InterruptedException, ExecutionException {
         String uri = workspace.getRoot().toPath().resolve("somethingthatdoesntexist.groovy").toString();
-        TextDocumentPositionParams params = new TextDocumentPositionParamsBuilder()
-                .position(5, 5)
-                .textDocument(uri)
-                .uri(uri)
-                .build();
-        CompletableFuture<CompletionList> response = service.completion(params);
-        assertThat(response.get().isIncomplete(), is(false));
-        assertThat(response.get().getItems(), is(Lists.newArrayList()));
+        TextDocumentPositionParams params =
+                new TextDocumentPositionParams(new TextDocumentIdentifier(uri), uri, new Position(5, 5));
+        CompletableFuture<Either<List<CompletionItem>, CompletionList>> response = service.completion(params);
+        assertThat(response.get().getRight().isIncomplete(), is(false));
+        assertThat(response.get().getRight().getItems(), is(Lists.newArrayList()));
     }
 
     @Test
     public void testDefinition() throws InterruptedException, ExecutionException {
         String uri = filePath.toAbsolutePath().toString();
-        TextDocumentPositionParams params = new TextDocumentPositionParamsBuilder()
-                .position(5, 5)
-                .textDocument(uri)
-                .uri(uri)
-                .build();
+        TextDocumentPositionParams params =
+                new TextDocumentPositionParams(new TextDocumentIdentifier(uri), uri, new Position(5, 5));
         CompletableFuture<List<? extends Location>> response = service.definition(params);
         assertThat(response.get(), is(Lists.newArrayList(expectedDefinitionLocation.get())));
     }
@@ -351,22 +292,14 @@ public class DefaultTextDocumentServiceTest {
     @Test
     public void testDefinition_NoDefinition() throws InterruptedException, ExecutionException {
         String uri = filePath.toAbsolutePath().toString();
-        TextDocumentPositionParams params = new TextDocumentPositionParamsBuilder()
-                .position(4, 4)
-                .textDocument(uri)
-                .uri(uri)
-                .build();
+        TextDocumentPositionParams params =
+                new TextDocumentPositionParams(new TextDocumentIdentifier(uri), uri, new Position(4, 4));
         CompletableFuture<List<? extends Location>> response = service.definition(params);
         assertThat(response.get(), is(Lists.newArrayList()));
     }
 
     private Diagnostic createDiagnostic(String message, DiagnosticSeverity severity, String source) {
-        return new DiagnosticBuilder()
-                .message(message)
-                .severity(severity)
-                .source(source)
-                .range(Ranges.UNDEFINED_RANGE)
-                .build();
+        return new Diagnostic(Ranges.UNDEFINED_RANGE, message, severity, source);
     }
 
 }

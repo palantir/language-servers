@@ -41,12 +41,6 @@ allprojects {
 
     repositories {
         jcenter()
-        maven {
-            url "https://oss.sonatype.org/content/repositories/snapshots/"
-        }
-        maven {
-            url "https://oss.jfrog.org/artifactory/oss-snapshot-local"
-        }
     }
 
     if (System.env.CIRCLE_ARTIFACTS) {

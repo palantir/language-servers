@@ -19,15 +19,16 @@ package com.palantir.ls;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.when;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.palantir.ls.api.TreeParser;
 import com.palantir.ls.api.WorkspaceCompiler;
 import com.palantir.ls.util.Ranges;
-import io.typefox.lsapi.DiagnosticSeverity;
-import io.typefox.lsapi.builders.DiagnosticBuilder;
-import io.typefox.lsapi.builders.PublishDiagnosticsParamsBuilder;
 import java.io.IOException;
+import org.eclipse.lsp4j.Diagnostic;
+import org.eclipse.lsp4j.DiagnosticSeverity;
+import org.eclipse.lsp4j.PublishDiagnosticsParams;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
@@ -60,16 +61,8 @@ public class DefaultCompilerWrapperTest {
     @Test
     public void testCompile_withDiagnostics() throws IOException {
         when(compiler.compile(any())).thenReturn(Sets.newHashSet(
-                new PublishDiagnosticsParamsBuilder()
-                        .uri("uri")
-                        .diagnostic(
-                                new DiagnosticBuilder()
-                                        .message("name")
-                                        .range(Ranges.UNDEFINED_RANGE)
-                                        .severity(DiagnosticSeverity.Error)
-                                        .source("groovyc")
-                                        .build())
-                        .build()));
+                new PublishDiagnosticsParams("uri", ImmutableList.of(
+                        new Diagnostic(Ranges.UNDEFINED_RANGE, "name", DiagnosticSeverity.Error, "groovyc")))));
         wrapper.compile(ImmutableSet.of());
         // assert parser wasn't called
         Mockito.verify(parser, Mockito.never()).parseAllSymbols();

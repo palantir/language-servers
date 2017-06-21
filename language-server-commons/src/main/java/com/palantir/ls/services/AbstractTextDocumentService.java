@@ -24,40 +24,39 @@ import com.google.common.collect.Lists;
 import com.palantir.ls.api.LanguageServerState;
 import com.palantir.ls.util.Ranges;
 import com.palantir.ls.util.Uris;
-import io.typefox.lsapi.CodeActionParams;
-import io.typefox.lsapi.CodeLens;
-import io.typefox.lsapi.CodeLensParams;
-import io.typefox.lsapi.Command;
-import io.typefox.lsapi.CompletionItem;
-import io.typefox.lsapi.CompletionList;
-import io.typefox.lsapi.DidChangeTextDocumentParams;
-import io.typefox.lsapi.DidCloseTextDocumentParams;
-import io.typefox.lsapi.DidOpenTextDocumentParams;
-import io.typefox.lsapi.DidSaveTextDocumentParams;
-import io.typefox.lsapi.DocumentFormattingParams;
-import io.typefox.lsapi.DocumentHighlight;
-import io.typefox.lsapi.DocumentOnTypeFormattingParams;
-import io.typefox.lsapi.DocumentRangeFormattingParams;
-import io.typefox.lsapi.DocumentSymbolParams;
-import io.typefox.lsapi.Hover;
-import io.typefox.lsapi.Location;
-import io.typefox.lsapi.PublishDiagnosticsParams;
-import io.typefox.lsapi.ReferenceParams;
-import io.typefox.lsapi.RenameParams;
-import io.typefox.lsapi.SignatureHelp;
-import io.typefox.lsapi.SymbolInformation;
-import io.typefox.lsapi.TextDocumentPositionParams;
-import io.typefox.lsapi.TextEdit;
-import io.typefox.lsapi.WorkspaceEdit;
-import io.typefox.lsapi.services.TextDocumentService;
 import java.io.File;
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import org.eclipse.lsp4j.CodeActionParams;
+import org.eclipse.lsp4j.CodeLens;
+import org.eclipse.lsp4j.CodeLensParams;
+import org.eclipse.lsp4j.Command;
+import org.eclipse.lsp4j.CompletionItem;
+import org.eclipse.lsp4j.CompletionList;
+import org.eclipse.lsp4j.DidChangeTextDocumentParams;
+import org.eclipse.lsp4j.DidCloseTextDocumentParams;
+import org.eclipse.lsp4j.DidOpenTextDocumentParams;
+import org.eclipse.lsp4j.DidSaveTextDocumentParams;
+import org.eclipse.lsp4j.DocumentFormattingParams;
+import org.eclipse.lsp4j.DocumentHighlight;
+import org.eclipse.lsp4j.DocumentOnTypeFormattingParams;
+import org.eclipse.lsp4j.DocumentRangeFormattingParams;
+import org.eclipse.lsp4j.DocumentSymbolParams;
+import org.eclipse.lsp4j.Hover;
+import org.eclipse.lsp4j.Location;
+import org.eclipse.lsp4j.ReferenceParams;
+import org.eclipse.lsp4j.RenameParams;
+import org.eclipse.lsp4j.SignatureHelp;
+import org.eclipse.lsp4j.SymbolInformation;
+import org.eclipse.lsp4j.TextDocumentPositionParams;
+import org.eclipse.lsp4j.TextEdit;
+import org.eclipse.lsp4j.WorkspaceEdit;
+import org.eclipse.lsp4j.jsonrpc.messages.Either;
+import org.eclipse.lsp4j.services.TextDocumentService;
 
 /**
  * Provides a default implemented not dissimilar to to antlr generated visitors.
@@ -101,11 +100,6 @@ public abstract class AbstractTextDocumentService implements TextDocumentService
         assertFileExists(uri);
         getState().getCompilerWrapper().handleFileSaved(uri);
         getState().publishDiagnostics(getState().getCompilerWrapper().compile(ImmutableSet.of(uri)));
-    }
-
-    @Override
-    public final void onPublishDiagnostics(Consumer<PublishDiagnosticsParams> callback) {
-        getState().setPublishDiagnostics(callback);
     }
 
     final Path getWorkspacePath() {
@@ -172,9 +166,13 @@ public abstract class AbstractTextDocumentService implements TextDocumentService
     }
 
     @Override
-    public CompletableFuture<CompletionList> completion(TextDocumentPositionParams position) {
-        return CompletableFuture.completedFuture(getState().getCompilerWrapper().getCompletion(
-                Uris.resolveToRoot(getWorkspacePath(), position.getTextDocument().getUri()), position.getPosition()));
+    public CompletableFuture<Either<List<CompletionItem>, CompletionList>> completion(
+            TextDocumentPositionParams position) {
+        return CompletableFuture.completedFuture(Either.forRight(
+                getState().getCompilerWrapper()
+                        .getCompletion(
+                                Uris.resolveToRoot(getWorkspacePath(), position.getTextDocument().getUri()),
+                                position.getPosition())));
     }
 
     @Override

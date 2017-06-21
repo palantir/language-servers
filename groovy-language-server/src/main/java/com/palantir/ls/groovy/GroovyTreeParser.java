@@ -32,13 +32,6 @@ import com.palantir.ls.util.Ranges;
 import com.palantir.ls.util.UriSupplier;
 import com.palantir.ls.util.Uris;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import io.typefox.lsapi.CompletionList;
-import io.typefox.lsapi.Location;
-import io.typefox.lsapi.Position;
-import io.typefox.lsapi.ReferenceParams;
-import io.typefox.lsapi.SymbolInformation;
-import io.typefox.lsapi.SymbolKind;
-import io.typefox.lsapi.builders.SymbolInformationBuilder;
 import java.net.URI;
 import java.nio.file.Path;
 import java.util.Collection;
@@ -58,6 +51,12 @@ import org.codehaus.groovy.ast.Variable;
 import org.codehaus.groovy.ast.expr.VariableExpression;
 import org.codehaus.groovy.ast.stmt.BlockStatement;
 import org.codehaus.groovy.control.CompilationUnit;
+import org.eclipse.lsp4j.CompletionList;
+import org.eclipse.lsp4j.Location;
+import org.eclipse.lsp4j.Position;
+import org.eclipse.lsp4j.ReferenceParams;
+import org.eclipse.lsp4j.SymbolInformation;
+import org.eclipse.lsp4j.SymbolKind;
 
 /**
  * Groovy implementation of the TreeParser. Depends on a supplier of a Groovy CompilationUnit.
@@ -291,27 +290,27 @@ public final class GroovyTreeParser implements TreeParser {
 
     // sourceUri should already have been converted to a workspace URI
     private SymbolInformation getVariableSymbolInformation(String parentName, URI sourceUri, Variable variable) {
-        SymbolInformationBuilder builder =
-                new SymbolInformationBuilder().name(variable.getName()).containerName(parentName);
+        final SymbolKind kind;
+        final Location location;
         if (variable instanceof DynamicVariable) {
-            builder.kind(SymbolKind.Field);
-            builder.location(GroovyLocations.createLocation(sourceUri));
+            kind = SymbolKind.Field;
+            location = GroovyLocations.createLocation(sourceUri);
         } else if (variable instanceof FieldNode) {
-            builder.kind(SymbolKind.Field);
-            builder.location(GroovyLocations.createLocation(sourceUri, (FieldNode) variable));
+            kind = SymbolKind.Field;
+            location = GroovyLocations.createLocation(sourceUri, (FieldNode) variable);
         } else if (variable instanceof Parameter) {
-            builder.kind(SymbolKind.Variable);
-            builder.location(GroovyLocations.createLocation(sourceUri, (Parameter) variable));
+            kind = SymbolKind.Variable;
+            location = GroovyLocations.createLocation(sourceUri, (Parameter) variable);
         } else if (variable instanceof PropertyNode) {
-            builder.kind(SymbolKind.Field);
-            builder.location(GroovyLocations.createLocation(sourceUri, (PropertyNode) variable));
+            kind = SymbolKind.Field;
+            location = GroovyLocations.createLocation(sourceUri, (PropertyNode) variable);
         } else if (variable instanceof VariableExpression) {
-            builder.kind(SymbolKind.Variable);
-            builder.location(GroovyLocations.createLocation(sourceUri, (VariableExpression) variable));
+            kind = SymbolKind.Variable;
+            location = GroovyLocations.createLocation(sourceUri, (VariableExpression) variable);
         } else {
             throw new IllegalArgumentException(String.format("Unknown type of variable: %s", variable));
         }
-        return builder.build();
+        return new SymbolInformation(variable.getName(), kind, location, parentName);
     }
 
     // sourceUri should already have been converted to a workspace URI
@@ -351,12 +350,7 @@ public final class GroovyTreeParser implements TreeParser {
 
     private static SymbolInformation createSymbolInformation(String name, SymbolKind kind, Location location,
             Optional<String> parentName) {
-        return new SymbolInformationBuilder()
-                .containerName(parentName.orNull())
-                .kind(kind)
-                .location(location)
-                .name(name)
-                .build();
+        return new SymbolInformation(name, kind, location, parentName.orNull());
     }
 
     private static class ReferenceLocation {

@@ -22,22 +22,15 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import com.google.common.base.Supplier;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.io.Files;
 import com.palantir.ls.api.WorkspaceCompiler;
-import com.palantir.ls.groovy.util.DefaultDiagnosticBuilder;
 import com.palantir.ls.groovy.util.GroovyConstants;
 import com.palantir.ls.util.Ranges;
 import com.palantir.ls.util.SourceWriter;
 import com.palantir.ls.util.Uris;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import io.typefox.lsapi.Diagnostic;
-import io.typefox.lsapi.DiagnosticSeverity;
-import io.typefox.lsapi.FileEvent;
-import io.typefox.lsapi.PublishDiagnosticsParams;
-import io.typefox.lsapi.Range;
-import io.typefox.lsapi.TextDocumentContentChangeEvent;
-import io.typefox.lsapi.builders.PublishDiagnosticsParamsBuilder;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -58,6 +51,12 @@ import org.codehaus.groovy.control.messages.Message;
 import org.codehaus.groovy.control.messages.SyntaxErrorMessage;
 import org.codehaus.groovy.control.messages.WarningMessage;
 import org.codehaus.groovy.syntax.SyntaxException;
+import org.eclipse.lsp4j.Diagnostic;
+import org.eclipse.lsp4j.DiagnosticSeverity;
+import org.eclipse.lsp4j.FileEvent;
+import org.eclipse.lsp4j.PublishDiagnosticsParams;
+import org.eclipse.lsp4j.Range;
+import org.eclipse.lsp4j.TextDocumentContentChangeEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -241,13 +240,16 @@ public final class GroovyWorkspaceCompiler implements WorkspaceCompiler, Supplie
     }
 
     private Set<PublishDiagnosticsParams> parseErrors(ErrorCollector collector) {
-        Map<URI, PublishDiagnosticsParamsBuilder> diagnosticsByFile = Maps.newHashMap();
+        Map<URI, List<Diagnostic>> diagnosticsByFile = Maps.newHashMap();
 
         for (int i = 0; i < collector.getWarningCount(); i++) {
             WarningMessage message = collector.getWarning(i);
-            diagnosticsByFile.computeIfAbsent(workspaceRoot.toUri(),
-                    (value) -> new PublishDiagnosticsParamsBuilder().uri(workspaceRoot.toUri().toString()))
-                    .diagnostic(new DefaultDiagnosticBuilder(message.getMessage(), DiagnosticSeverity.Warning).build());
+            String message1 = message.getMessage() == null
+                    ? ""
+                    : message.getMessage();
+            Diagnostic diag = new Diagnostic(
+                    Ranges.UNDEFINED_RANGE, message1, DiagnosticSeverity.Warning, GroovyConstants.GROOVY_COMPILER);
+            diagnosticsByFile.computeIfAbsent(workspaceRoot.toUri(), (ignored) -> Lists.newArrayList()).add(diag);
         }
         for (int i = 0; i < collector.getErrorCount(); i++) {
             Message message = collector.getError(i);
@@ -261,20 +263,22 @@ public final class GroovyWorkspaceCompiler implements WorkspaceCompiler, Supplie
                         Ranges.createZeroBasedRange(cause.getStartLine(), cause.getStartColumn(), cause.getEndLine(),
                                 cause.getEndColumn());
                 uri = Paths.get(cause.getSourceLocator()).toUri();
-                diagnostic = new DefaultDiagnosticBuilder(cause.getMessage(), DiagnosticSeverity.Error)
-                        .range(range)
-                        .build();
+                diagnostic = new Diagnostic(
+                        range, cause.getMessage(), DiagnosticSeverity.Error, GroovyConstants.GROOVY_COMPILER);
             } else {
                 StringWriter data = new StringWriter();
                 PrintWriter writer = new PrintWriter(data);
                 message.write(writer);
                 uri = workspaceRoot.toUri();
-                diagnostic = new DefaultDiagnosticBuilder(data.toString(), DiagnosticSeverity.Error).build();
+                String message1 = data.toString();
+                diagnostic = new Diagnostic(
+                        Ranges.UNDEFINED_RANGE, message1, DiagnosticSeverity.Error, GroovyConstants.GROOVY_COMPILER);
             }
-            diagnosticsByFile.computeIfAbsent(uri, (value) -> new PublishDiagnosticsParamsBuilder().uri(uri.toString()))
-                    .diagnostic(diagnostic);
+            diagnosticsByFile.computeIfAbsent(uri, (ignored) -> Lists.newArrayList()).add(diagnostic);
         }
-        return diagnosticsByFile.values().stream().map(PublishDiagnosticsParamsBuilder::build)
+        return diagnosticsByFile.entrySet()
+                .stream()
+                .map(entry -> new PublishDiagnosticsParams(entry.getKey().toString(), entry.getValue()))
                 .collect(Collectors.toSet());
     }
 
