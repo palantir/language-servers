@@ -298,7 +298,7 @@ public class GroovyLanguageServerIntegrationTest {
         sendDidOpen(test1);
 
         // Give it some time to publish
-        Thread.sleep(2000);
+        Thread.sleep(5000);
 
         Set<MyPublishDiagnosticParams> expectedDiagnosticsResult =
                 Sets.newHashSet(
