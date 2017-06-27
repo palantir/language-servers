@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.eclipse.lsp4j.Position;
@@ -40,6 +41,7 @@ public final class InMemoryContentsManager implements ContentsManager {
         reload();
     }
 
+    @Override
     public String getContents() {
         return contents.toString();
     }
@@ -54,6 +56,7 @@ public final class InMemoryContentsManager implements ContentsManager {
         }
     }
 
+    @Override
     public synchronized void applyChanges(List<TextDocumentContentChangeEvent> contentChanges) {
         // Check if any of the ranges are null
         for (TextDocumentContentChangeEvent change : contentChanges) {
@@ -88,6 +91,16 @@ public final class InMemoryContentsManager implements ContentsManager {
 
         try {
             handleChanges(sortedChanges);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public synchronized void saveChanges() {
+        try {
+            Files.write(
+                    initialContents, contents.toString().getBytes(StandardCharsets.UTF_8), StandardOpenOption.WRITE);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

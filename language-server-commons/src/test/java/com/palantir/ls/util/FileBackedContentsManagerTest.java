@@ -19,11 +19,10 @@ package com.palantir.ls.util;
 import static org.junit.Assert.assertEquals;
 
 import com.google.common.collect.Lists;
+import com.google.common.io.Files;
 import java.io.File;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
@@ -255,11 +254,28 @@ public class FileBackedContentsManagerTest {
                 FileUtils.readFileToString(destination.toFile()));
     }
 
+    @Test
+    public void testSaveChanges() throws IOException {
+        String originalContents = "first line\n";
+        // Should be appended to the start of the file
+        Path source = addFileToFolder(sourceFolder.getRoot(), "myfile.txt", originalContents);
+        Path destination = destinationFolder.getRoot().toPath().resolve("myfile.txt");
+        FileBackedContentsManager manager = FileBackedContentsManager.of(source, destination);
+        List<TextDocumentContentChangeEvent> changes = Lists.newArrayList();
+        changes.add(new TextDocumentContentChangeEvent(Ranges.createRange(0, 0, 0, 0), 7, "change\n"));
+        manager.applyChanges(changes);
+
+        String newContents = "change\nfirst line\n";
+        assertEquals(newContents, Files.toString(destination.toFile(), StandardCharsets.UTF_8));
+        assertEquals(originalContents, Files.toString(source.toFile(), StandardCharsets.UTF_8));
+
+        manager.saveChanges();
+        assertEquals(newContents, Files.toString(source.toFile(), StandardCharsets.UTF_8));
+    }
+
     private Path addFileToFolder(File parent, String filename, String contents) throws IOException {
-        File file = Files.createFile(Paths.get(parent.getAbsolutePath(), filename)).toFile();
-        PrintWriter writer = new PrintWriter(file, StandardCharsets.UTF_8.toString());
-        writer.print(contents);
-        writer.close();
+        File file = Paths.get(parent.getAbsolutePath(), filename).toFile();
+        Files.write(contents, file, StandardCharsets.UTF_8);
         return file.toPath();
     }
 
