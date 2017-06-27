@@ -41,4 +41,9 @@ public interface ContentsManager {
      */
     void reload();
 
+    /**
+     * Save changes to the backing store.
+     */
+    void saveChanges();
+
 }

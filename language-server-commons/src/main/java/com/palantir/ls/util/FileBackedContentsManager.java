@@ -129,6 +129,15 @@ public final class FileBackedContentsManager implements ContentsManager {
         }
     }
 
+    @Override
+    public synchronized void saveChanges() {
+        try {
+            FileUtils.copyFile(destination.toFile(), source.toFile());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     private synchronized void handleFullReplacement(TextDocumentContentChangeEvent change) {
         File file = new File(destination.toAbsolutePath().toString());
         try {
@@ -236,10 +245,6 @@ public final class FileBackedContentsManager implements ContentsManager {
         if (changeIdx < sortedChanges.size()) {
             output.newLine();
         }
-    }
-
-    private synchronized void saveChangesToSource() throws IOException {
-        FileUtils.copyFile(destination.toFile(), source.toFile());
     }
 
     private synchronized void initialize() throws IOException {
