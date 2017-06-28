@@ -41,6 +41,9 @@ allprojects {
 
     repositories {
         jcenter()
+        maven {
+            url "https://oss.sonatype.org/content/repositories/snapshots/"
+        }
     }
 
     if (System.env.CIRCLE_ARTIFACTS) {
