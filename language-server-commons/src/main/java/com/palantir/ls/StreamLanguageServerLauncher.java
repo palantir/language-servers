@@ -24,6 +24,7 @@ import java.io.PrintWriter;
 import org.eclipse.lsp4j.jsonrpc.Launcher;
 import org.eclipse.lsp4j.launch.LSPLauncher;
 import org.eclipse.lsp4j.services.LanguageClient;
+import org.eclipse.lsp4j.services.LanguageClientAware;
 import org.eclipse.lsp4j.services.LanguageServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,6 +52,10 @@ public class StreamLanguageServerLauncher {
                 outputStream,
                 false,
                 new PrintWriter(new DelegatingOutputStream(log::info)));
+        if (languageServer instanceof LanguageClientAware) {
+            LanguageClient client = serverLauncher.getRemoteProxy();
+            ((LanguageClientAware) languageServer).connect(client);
+        }
         serverLauncher.startListening();
     }
 }
