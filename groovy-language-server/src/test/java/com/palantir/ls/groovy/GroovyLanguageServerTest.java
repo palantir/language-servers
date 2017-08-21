@@ -17,6 +17,7 @@
 package com.palantir.ls.groovy;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 import com.palantir.ls.api.LanguageServerState;
 import java.io.File;
@@ -89,6 +90,12 @@ public class GroovyLanguageServerTest {
         uriServer.initialize(rootUriParams);
 
         assertThat(pathServer.getWorkspaceRoot()).isEqualTo(uriServer.getWorkspaceRoot());
+    }
+
+    @Test
+    public void testInitialize_noRootPathOrRootUri() throws Exception {
+        InitializeParams params = new InitializeParams();
+        assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> server.initialize(params));
     }
 
     @Test
