@@ -93,12 +93,12 @@ public final class GroovyWorkspaceCompiler implements WorkspaceCompiler, Supplie
      */
     @SuppressFBWarnings("PT_FINAL_TYPE_RETURN")
     public static GroovyWorkspaceCompiler of(Path targetDirectory, Path workspaceRoot, Path changedFilesRoot) {
-        checkNotNull(targetDirectory, "targetDirectory %s must not be null", targetDirectory);
-        checkNotNull(workspaceRoot, "workspaceRoot %s must not be null", workspaceRoot);
-        checkNotNull(changedFilesRoot, "changedFilesRoot %s must not be null", changedFilesRoot);
-        checkArgument(targetDirectory.toFile().isDirectory(), "targetDirectory %s must be a directory", targetDirectory);
-        checkArgument(workspaceRoot.toFile().isDirectory(), "workspaceRoot %s must be a directory", workspaceRoot);
-        checkArgument(changedFilesRoot.toFile().isDirectory(), "changedFilesRoot %s must be a directory", changedFilesRoot);
+        checkNotNull(targetDirectory, "targetDirectory must not be null");
+        checkNotNull(workspaceRoot, "workspaceRoot must not be null");
+        checkNotNull(changedFilesRoot, "changedFilesRoot must not be null");
+        checkArgument(targetDirectory.toFile().isDirectory(), "targetDirectory must be a directory");
+        checkArgument(workspaceRoot.toFile().isDirectory(), "workspaceRoot must be a directory");
+        checkArgument(changedFilesRoot.toFile().isDirectory(), "changedFilesRoot must be a directory");
 
         CompilerConfiguration config = new CompilerConfiguration();
         config.setTargetDirectory(targetDirectory.toFile());
