@@ -68,8 +68,27 @@ public class GroovyLanguageServerTest {
         InitializeParams initializeParams = new InitializeParams();
         initializeParams.setProcessId(1);
         initializeParams.setCapabilities(new ClientCapabilities());
-        initializeParams.setRootPath(root.orElse(folder.getRoot().toPath().toAbsolutePath().toString()));
+        initializeParams.setRootUri(root.map(Paths::get).orElse(folder.getRoot().toPath()).toUri().toString());
         return initializeParams;
+    }
+
+    @Test
+    public void testInitialize_rootPathRootUri() throws Exception {
+        InitializeParams rootPathParams = new InitializeParams();
+        rootPathParams.setRootPath(folder.getRoot().toPath().toString());
+
+        InitializeParams rootUriParams = new InitializeParams();
+        rootUriParams.setRootUri(folder.getRoot().toURI().toString());
+
+        GroovyLanguageServer pathServer = new GroovyLanguageServer(Mockito.mock(LanguageServerState.class),
+                Mockito.mock(TextDocumentService.class), Mockito.mock(WorkspaceService.class));
+        pathServer.initialize(rootPathParams);
+
+        GroovyLanguageServer uriServer = new GroovyLanguageServer(Mockito.mock(LanguageServerState.class),
+                Mockito.mock(TextDocumentService.class), Mockito.mock(WorkspaceService.class));
+        uriServer.initialize(rootUriParams);
+
+        assertThat(pathServer.getWorkspaceRoot()).isEqualTo(uriServer.getWorkspaceRoot());
     }
 
     @Test
