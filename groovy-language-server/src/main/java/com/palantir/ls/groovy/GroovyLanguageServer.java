@@ -73,7 +73,7 @@ public class GroovyLanguageServer implements LanguageServer, LanguageClientAware
                 .map(URI::create)
                 .orElseGet(() -> Paths.get(Optional.ofNullable(params.getRootPath())
                         .orElseThrow(() -> new IllegalArgumentException("Either rootUri or rootPath must be set")))
-                        .toUri()));
+                        .toUri())).toAbsolutePath().normalize();
         logger.debug("Resolved workspace root: {}", workspaceRoot);
 
         CompletionOptions completionOptions = new CompletionOptions(false, ImmutableList.of("."));
