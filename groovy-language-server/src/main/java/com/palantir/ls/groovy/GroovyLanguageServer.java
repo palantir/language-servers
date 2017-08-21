@@ -25,11 +25,13 @@ import com.palantir.ls.api.LanguageServerState;
 import com.palantir.ls.api.TreeParser;
 import com.palantir.ls.services.DefaultTextDocumentService;
 import com.palantir.ls.services.DefaultWorkspaceService;
-import com.palantir.ls.util.Uris;
 import com.palantir.ls.util.WorkspaceUriSupplier;
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import org.apache.commons.io.FileUtils;
 import org.eclipse.lsp4j.CompletionOptions;
@@ -67,8 +69,16 @@ public class GroovyLanguageServer implements LanguageServer, LanguageClientAware
     @Override
     public CompletableFuture<InitializeResult> initialize(InitializeParams params) {
         logger.debug("Initializing Groovy Language Server");
-        workspaceRoot = Uris.getAbsolutePath(params.getRootPath());
-        logger.debug("Resolve workspace root from '{}' to '{}'", params.getRootPath(), workspaceRoot);
+        workspaceRoot = Paths.get(Optional.ofNullable(params.getRootUri())
+                .map(URI::create)
+                .map(URI::normalize)
+                .orElseGet(() -> Optional.ofNullable(params.getRootPath())
+                        .map(Paths::get)
+                        .map(Path::toAbsolutePath)
+                        .map(Path::normalize)
+                        .orElseThrow(() ->
+                                new IllegalArgumentException("Either rootUri or rootPath must be set")).toUri()));
+        logger.debug("Resolved workspace root: {}", workspaceRoot);
 
         CompletionOptions completionOptions = new CompletionOptions(false, ImmutableList.of("."));
         ServerCapabilities serverCapabilities = new ServerCapabilities();

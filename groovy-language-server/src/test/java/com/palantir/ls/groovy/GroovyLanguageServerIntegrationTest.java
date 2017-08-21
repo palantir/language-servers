@@ -170,7 +170,7 @@ public class GroovyLanguageServerIntegrationTest {
         InitializeParams params = new InitializeParams();
         params.setProcessId(0);
         params.setClientName("natacha");
-        params.setRootPath(workspaceRoot.getRoot().toPath().toUri().toString());
+        params.setRootUri(workspaceRoot.getRoot().toPath().toUri().toString());
         return params;
     }
 
