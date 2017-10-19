@@ -36,7 +36,8 @@ public abstract class AbstractWorkspaceService implements WorkspaceService {
     @Override
     public final CompletableFuture<List<? extends SymbolInformation>> symbol(WorkspaceSymbolParams params) {
         return CompletableFuture.completedFuture(getState().getCompilerWrapper().getFilteredSymbols(params.getQuery())
-                .stream().filter(symbol -> Ranges.isValid(symbol.getLocation().getRange()))
+                .stream()
+                .filter(symbol -> Ranges.isValid(symbol.getLocation().getRange()))
                 .collect(Collectors.toList()));
     }
 
@@ -52,6 +53,6 @@ public abstract class AbstractWorkspaceService implements WorkspaceService {
 
     @Override
     public void didChangeConfiguration(DidChangeConfigurationParams didChangeConfigurationParams) {
-        throw new UnsupportedOperationException();
+        // default to do nothing
     }
 }

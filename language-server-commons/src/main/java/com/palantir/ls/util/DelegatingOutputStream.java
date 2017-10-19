@@ -16,8 +16,7 @@
 
 package com.palantir.ls.util;
 
-import static com.google.common.base.Preconditions.checkState;
-
+import com.google.common.base.Preconditions;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
@@ -27,20 +26,20 @@ public class DelegatingOutputStream extends OutputStream {
 
     private static final int DEFAULT_BUFFER_LENGTH = 4096;
 
-    private final Consumer<String> logger;
+    private final Consumer<String> stringConsumer;
 
     private byte[] buffer = new byte[DEFAULT_BUFFER_LENGTH];
     private int count = 0;
     private int currentBufferSize = DEFAULT_BUFFER_LENGTH;
     private boolean closed = false;
 
-    public DelegatingOutputStream(Consumer<String> logger) {
-        this.logger = logger;
+    public DelegatingOutputStream(Consumer<String> stringConsumer) {
+        this.stringConsumer = stringConsumer;
     }
 
     @Override
     public void write(final int byteToWrite) throws IOException {
-        checkState(!closed, "Attempted to write to a closed stream.");
+        Preconditions.checkState(!closed, "Attempted to write to a closed stream.");
         if (count >= currentBufferSize) {
             int newSize = currentBufferSize + DEFAULT_BUFFER_LENGTH;
             byte[] newBuffer = new byte[newSize];
@@ -55,7 +54,7 @@ public class DelegatingOutputStream extends OutputStream {
     @Override
     public void flush() {
         String str = new String(buffer, StandardCharsets.UTF_8);
-        logger.accept(str);
+        stringConsumer.accept(str);
         count = 0;
     }
 

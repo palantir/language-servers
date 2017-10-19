@@ -137,7 +137,7 @@ public final class GroovyWorkspaceCompiler implements WorkspaceCompiler, Supplie
     @Override
     public void handleFileChanged(URI originalFile, List<TextDocumentContentChangeEvent> contentChanges) {
         try {
-            FileBackedContentsManager fileBackedContentsManager = null;
+            FileBackedContentsManager fileBackedContentsManager;
             if (originalSourceToChangedSource.containsKey(originalFile)) {
                 // New change on existing changed source
                 fileBackedContentsManager = originalSourceToChangedSource.get(originalFile);

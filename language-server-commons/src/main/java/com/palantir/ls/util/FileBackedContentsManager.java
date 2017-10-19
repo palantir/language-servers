@@ -18,6 +18,7 @@ package com.palantir.ls.util;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
+import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
 import com.palantir.ls.api.ContentsManager;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
@@ -63,10 +64,6 @@ public final class FileBackedContentsManager implements ContentsManager {
         FileBackedContentsManager writer = new FileBackedContentsManager(source, destination);
         writer.initialize();
         return writer;
-    }
-
-    public Path getSource() {
-        return source;
     }
 
     public Path getDestination() {
@@ -122,6 +119,7 @@ public final class FileBackedContentsManager implements ContentsManager {
 
     @Override
     public synchronized void reload() {
+        checkSourceFileExists();
         try {
             FileUtils.copyFile(source.toFile(), destination.toFile());
         } catch (IOException e) {
@@ -131,6 +129,7 @@ public final class FileBackedContentsManager implements ContentsManager {
 
     @Override
     public synchronized void saveChanges() {
+        checkSourceFileExists();
         try {
             FileUtils.copyFile(destination.toFile(), source.toFile());
         } catch (IOException e) {
@@ -221,8 +220,8 @@ public final class FileBackedContentsManager implements ContentsManager {
         FileUtils.copyFile(tempFile, destination.toFile());
     }
 
-    private synchronized void appendRemainingFile(BufferedReader file, String currentLine, BufferedWriter output,
-            int lastColumn)
+    private synchronized void appendRemainingFile(
+            BufferedReader file, String currentLine, BufferedWriter output, int lastColumn)
             throws IOException {
         output.write(currentLine.substring(Math.min(lastColumn, currentLine.length())));
         output.newLine();
@@ -248,6 +247,7 @@ public final class FileBackedContentsManager implements ContentsManager {
     }
 
     private synchronized void initialize() throws IOException {
+        checkSourceFileExists();
         if (!destination.toFile().exists() && destination.toFile().isDirectory()) {
             if (!destination.toFile().mkdirs()) {
                 logger.error("Could not recreate destination file '{}'", destination.toString());
@@ -256,6 +256,10 @@ public final class FileBackedContentsManager implements ContentsManager {
             }
         }
         FileUtils.copyFile(source.toFile(), destination.toFile());
+    }
+
+    private void checkSourceFileExists() {
+        Preconditions.checkState(source.toFile().exists(), "Source file %s does not exist", source.toAbsolutePath());
     }
 
 }
