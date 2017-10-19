@@ -177,17 +177,6 @@ public class DefaultTextDocumentServiceTest {
     }
 
     @Test
-    public void testDidChange_nonExistantUri() {
-        expectedException.expect(IllegalArgumentException.class);
-        expectedException
-                .expectMessage(String.format("Uri '%s' does not exist", filePath.toUri() + "_fake"));
-        VersionedTextDocumentIdentifier ident = new VersionedTextDocumentIdentifier(0);
-        ident.setUri(filePath.toAbsolutePath().toString() + "_fake");
-        service.didChange(new DidChangeTextDocumentParams(ident,
-                ImmutableList.of(new TextDocumentContentChangeEvent(Ranges.createRange(0, 0, 1, 1), 3, "Hello"))));
-    }
-
-    @Test
     public void testDidClose() {
         service.didClose(new DidCloseTextDocumentParams(
                 new TextDocumentIdentifier(filePath.toAbsolutePath().toString())));
@@ -197,30 +186,12 @@ public class DefaultTextDocumentServiceTest {
     }
 
     @Test
-    public void testDidClose_nonExistantUri() {
-        expectedException.expect(IllegalArgumentException.class);
-        expectedException
-                .expectMessage(String.format("Uri '%s' does not exist", filePath.toUri() + "_fake"));
-        service.didClose(new DidCloseTextDocumentParams(
-                new TextDocumentIdentifier(filePath.toAbsolutePath().toString() + "_fake")));
-    }
-
-    @Test
     public void testDidSave() {
         service.didSave(new DidSaveTextDocumentParams(
                 new TextDocumentIdentifier(filePath.toAbsolutePath().toString())));
         // assert diagnostics were published
         assertEquals(1, publishedDiagnostics.size());
         assertEquals(expectedDiagnostics, Sets.newHashSet(publishedDiagnostics.get(0)));
-    }
-
-    @Test
-    public void testDidSave_nonExistantUri() {
-        expectedException.expect(IllegalArgumentException.class);
-        expectedException
-                .expectMessage(String.format("Uri '%s' does not exist", filePath.toUri() + "_fake"));
-        service.didSave(new DidSaveTextDocumentParams(
-                new TextDocumentIdentifier(filePath.toAbsolutePath().toString() + "_fake")));
     }
 
     @Test
@@ -238,15 +209,6 @@ public class DefaultTextDocumentServiceTest {
                 service.documentSymbol(new DocumentSymbolParams(new TextDocumentIdentifier("something.groovy")));
         assertThat(response.get().stream().collect(Collectors.toSet()),
                 is(symbolsMap.get(filePath.toUri())));
-    }
-
-    @Test
-    public void testDocumentSymbols_nonExistantUri() throws InterruptedException, ExecutionException {
-        expectedException.expect(IllegalArgumentException.class);
-        expectedException
-                .expectMessage(String.format("Uri '%s' does not exist", filePath.toUri() + "_fake"));
-        service.documentSymbol(new DocumentSymbolParams(
-                new TextDocumentIdentifier(filePath.toAbsolutePath().toString() + "_fake")));
     }
 
     @Test

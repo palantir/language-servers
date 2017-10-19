@@ -16,12 +16,13 @@
 
 package com.palantir.ls;
 
-import com.palantir.ls.util.DelegatingOutputStream;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.PrintWriter;
+import java.util.concurrent.Executors;
+import java.util.function.Function;
 import org.eclipse.lsp4j.jsonrpc.Launcher;
+import org.eclipse.lsp4j.jsonrpc.MessageConsumer;
 import org.eclipse.lsp4j.launch.LSPLauncher;
 import org.eclipse.lsp4j.services.LanguageClient;
 import org.eclipse.lsp4j.services.LanguageClientAware;
@@ -46,12 +47,19 @@ public class StreamLanguageServerLauncher {
 
     @SuppressFBWarnings("DM_DEFAULT_ENCODING")
     public void launch() {
+        Function<MessageConsumer, MessageConsumer> loggingMessageConsumerAdapter = consumer -> {
+            return message -> {
+                log.debug("Message received to client: {}", message);
+                consumer.consume(message);
+            };
+        };
+
         Launcher<LanguageClient> serverLauncher = LSPLauncher.createServerLauncher(
                 languageServer,
                 inputStream,
                 outputStream,
-                false,
-                new PrintWriter(new DelegatingOutputStream(log::info)));
+                Executors.newCachedThreadPool(),
+                loggingMessageConsumerAdapter);
         if (languageServer instanceof LanguageClientAware) {
             LanguageClient client = serverLauncher.getRemoteProxy();
             ((LanguageClientAware) languageServer).connect(client);

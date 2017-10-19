@@ -28,7 +28,7 @@ import org.slf4j.LoggerFactory;
 
 public abstract class AbstractLanguageServerState implements LanguageServerState {
 
-    private static final Logger logger = LoggerFactory.getLogger(AbstractLanguageServerState.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AbstractLanguageServerState.class);
 
     private CompilerWrapper compilerWrapper = null;
     private Consumer<MessageParams> showMessage = m -> { };
@@ -95,9 +95,10 @@ public abstract class AbstractLanguageServerState implements LanguageServerState
     @Override
     public void publishDiagnostics(Set<PublishDiagnosticsParams> diagnostics) {
         if (diagnostics.isEmpty()) {
+            LOG.debug("No diagnostics to publish.");
             return;
         }
-        logger.debug("Publishing diagnostics:\n{}", diagnostics);
+        LOG.debug("Publishing diagnostics:\n{}", diagnostics);
         diagnostics.stream().forEach(publishDiagnostics::accept);
     }
 

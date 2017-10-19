@@ -46,6 +46,16 @@ public class FileBackedContentsManagerTest {
     public TemporaryFolder destinationFolder = new TemporaryFolder();
 
     @Test
+    public void testInitialize_sourceDoesNotExist() throws IOException {
+        Path nonExistSource = new File(sourceFolder.getRoot(), "myfile.txt").toPath();
+        Path destination = destinationFolder.getRoot().toPath().resolve("myfile.txt");
+
+        expectedException.expectMessage("Source file " + nonExistSource + " does not exist");
+        expectedException.expect(IllegalStateException.class);
+        FileBackedContentsManager.of(nonExistSource, destination);
+    }
+
+    @Test
     public void testInitialize_noNewLine() throws IOException {
         Path source = addFileToFolder(sourceFolder.getRoot(), "myfile.txt", "my file contents");
         Path destination = destinationFolder.getRoot().toPath().resolve("myfile.txt");
@@ -82,7 +92,6 @@ public class FileBackedContentsManagerTest {
         writer.applyChanges(changes);
         assertEquals("foo", FileUtils.readFileToString(destination.toFile()));
     }
-
 
     @Test
     public void testDidChanges_nullRangeWithMultipleChanges() throws IOException {
@@ -271,6 +280,30 @@ public class FileBackedContentsManagerTest {
 
         manager.saveChanges();
         assertEquals(newContents, Files.toString(source.toFile(), StandardCharsets.UTF_8));
+    }
+
+    @Test
+    public void testSaveChanges_sourceDoesNotExist() throws IOException {
+        Path source = addFileToFolder(sourceFolder.getRoot(), "myfile.txt", "my file contents\n");
+        Path destination = destinationFolder.getRoot().toPath().resolve("myfile.txt");
+        FileBackedContentsManager manager = FileBackedContentsManager.of(source, destination);
+
+        FileUtils.forceDelete(source.toFile());
+        expectedException.expectMessage("Source file " + source + " does not exist");
+        expectedException.expect(IllegalStateException.class);
+        manager.saveChanges();
+    }
+
+    @Test
+    public void testReload_sourceDoesNotExist() throws IOException {
+        Path source = addFileToFolder(sourceFolder.getRoot(), "myfile.txt", "my file contents\n");
+        Path destination = destinationFolder.getRoot().toPath().resolve("myfile.txt");
+        FileBackedContentsManager manager = FileBackedContentsManager.of(source, destination);
+
+        FileUtils.forceDelete(source.toFile());
+        expectedException.expectMessage("Source file " + source + " does not exist");
+        expectedException.expect(IllegalStateException.class);
+        manager.reload();
     }
 
     private Path addFileToFolder(File parent, String filename, String contents) throws IOException {

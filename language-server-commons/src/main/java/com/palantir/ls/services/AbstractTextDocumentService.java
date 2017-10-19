@@ -16,15 +16,12 @@
 
 package com.palantir.ls.services;
 
-import static com.google.common.base.Preconditions.checkArgument;
-
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.palantir.ls.api.LanguageServerState;
 import com.palantir.ls.util.Ranges;
 import com.palantir.ls.util.Uris;
-import java.io.File;
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -57,6 +54,8 @@ import org.eclipse.lsp4j.TextEdit;
 import org.eclipse.lsp4j.WorkspaceEdit;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.lsp4j.services.TextDocumentService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Provides a default implemented not dissimilar to to antlr generated visitors.
@@ -64,12 +63,13 @@ import org.eclipse.lsp4j.services.TextDocumentService;
  */
 public abstract class AbstractTextDocumentService implements TextDocumentService {
 
+    private static final Logger LOG = LoggerFactory.getLogger(AbstractTextDocumentService.class);
+
     protected abstract LanguageServerState getState();
 
     @Override
     public final void didOpen(DidOpenTextDocumentParams params) {
         URI uri = Uris.resolveToRoot(getWorkspacePath(), params.getTextDocument().getUri());
-        assertFileExists(uri);
         getState().getCompilerWrapper().handleFileOpened(uri);
         getState().publishDiagnostics(getState().getCompilerWrapper().compile(ImmutableSet.of(uri)));
     }
@@ -77,7 +77,6 @@ public abstract class AbstractTextDocumentService implements TextDocumentService
     @Override
     public final void didChange(DidChangeTextDocumentParams params) {
         URI uri = Uris.resolveToRoot(getWorkspacePath(), params.getTextDocument().getUri());
-        assertFileExists(uri);
         if (params.getContentChanges() == null || params.getContentChanges().isEmpty()) {
             throw new IllegalArgumentException(
                     String.format("Calling didChange with no changes on uri '%s'", uri.toString()));
@@ -89,7 +88,6 @@ public abstract class AbstractTextDocumentService implements TextDocumentService
     @Override
     public final void didClose(DidCloseTextDocumentParams params) {
         URI uri = Uris.resolveToRoot(getWorkspacePath(), params.getTextDocument().getUri());
-        assertFileExists(uri);
         getState().getCompilerWrapper().handleFileClosed(uri);
         getState().publishDiagnostics(getState().getCompilerWrapper().compile(ImmutableSet.of(uri)));
     }
@@ -97,7 +95,6 @@ public abstract class AbstractTextDocumentService implements TextDocumentService
     @Override
     public final void didSave(DidSaveTextDocumentParams params) {
         URI uri = Uris.resolveToRoot(getWorkspacePath(), params.getTextDocument().getUri());
-        assertFileExists(uri);
         getState().getCompilerWrapper().handleFileSaved(uri);
         getState().publishDiagnostics(getState().getCompilerWrapper().compile(ImmutableSet.of(uri)));
     }
@@ -106,9 +103,6 @@ public abstract class AbstractTextDocumentService implements TextDocumentService
         return Paths.get(getState().getCompilerWrapper().getWorkspaceRoot());
     }
 
-    final void assertFileExists(URI uri) {
-        checkArgument(new File(uri).exists(), String.format("Uri '%s' does not exist", uri));
-    }
 
     @Override
     public CompletableFuture<List<? extends DocumentHighlight>> documentHighlight(TextDocumentPositionParams position) {
@@ -193,7 +187,6 @@ public abstract class AbstractTextDocumentService implements TextDocumentService
     @Override
     public CompletableFuture<List<? extends SymbolInformation>> documentSymbol(DocumentSymbolParams params) {
         URI uri = Uris.resolveToRoot(getWorkspacePath(), params.getTextDocument().getUri());
-        assertFileExists(uri);
         List<SymbolInformation> symbols = Optional.fromNullable(getState().getCompilerWrapper().getFileSymbols()
                 .get(uri).stream().collect(Collectors.toList())).or(Lists.newArrayList());
         return CompletableFuture.completedFuture(symbols);
