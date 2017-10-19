@@ -110,6 +110,16 @@ public class InMemoryContentsManagerTest {
     }
 
     @Test
+    public void testDidChanges_insertionEndOfFile() throws IOException {
+        Path source = addFileToFolder(sourceFolder.getRoot(), "myfile.txt", "first line\nsecond line");
+        InMemoryContentsManager manager = new InMemoryContentsManager(source);
+        List<TextDocumentContentChangeEvent> changes = Lists.newArrayList();
+        changes.add(new TextDocumentContentChangeEvent(Ranges.createRange(2, 0, 2, 0), 13, "small change"));
+        manager.applyChanges(changes);
+        assertEquals("first line\nsecond line\nsmall change\n", manager.getContents());
+    }
+
+    @Test
     public void testDidChanges_oneLineRange() throws IOException {
         Path source = addFileToFolder(sourceFolder.getRoot(), "myfile.txt", "first line\nsecond line\n");
         InMemoryContentsManager manager = new InMemoryContentsManager(source);

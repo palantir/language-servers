@@ -127,16 +127,16 @@ public final class InMemoryContentsManager implements ContentsManager {
 
             // copy over current contents leading up to the change
             while (start.getLine() > lineNum) {
-                if (lineNum >= currentContentsLineCount) {
-                    // this is a weird place to get into
-                    endOfFile = true;
-                    break;
-                }
                 String currentLine = currentContents[lineNum];
                 contents.append(currentLine.substring(Math.min(lastColumn, currentLine.length())))
                         .append(NEWLINE); // aint no windows
                 lastColumn = 0;
                 lineNum++;
+                if (lineNum >= currentContentsLineCount) {
+                    // this is a weird place to get into
+                    endOfFile = true;
+                    break;
+                }
             }
 
             if (endOfFile) {
