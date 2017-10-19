@@ -145,7 +145,7 @@ public final class InMemoryContentsManager implements ContentsManager {
             }
 
             // handle the change under consideration
-            // if changes are asserted to a new line after the existing contents append it at the end
+            // if changes are inserted to a new line after the existing contents append it at the end
             String currentLine = lineNum >= currentContentsLineCount ? "" : currentContents[lineNum];
             contents.append(currentLine.substring(lastColumn, Math.min(start.getCharacter(), currentLine.length())))
                     .append(sortedChanges.get(changeIndex).getText());
