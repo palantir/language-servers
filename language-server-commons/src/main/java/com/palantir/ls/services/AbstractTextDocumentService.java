@@ -70,7 +70,7 @@ public abstract class AbstractTextDocumentService implements TextDocumentService
     @Override
     public final void didOpen(DidOpenTextDocumentParams params) {
         URI uri = Uris.resolveToRoot(getWorkspacePath(), params.getTextDocument().getUri());
-        getState().getCompilerWrapper().handleFileOpened(uri);
+        getState().getCompilerWrapper().handleFileOpened(uri, params.getTextDocument().getText());
         getState().publishDiagnostics(getState().getCompilerWrapper().compile(ImmutableSet.of(uri)));
     }
 
@@ -95,7 +95,7 @@ public abstract class AbstractTextDocumentService implements TextDocumentService
     @Override
     public final void didSave(DidSaveTextDocumentParams params) {
         URI uri = Uris.resolveToRoot(getWorkspacePath(), params.getTextDocument().getUri());
-        getState().getCompilerWrapper().handleFileSaved(uri);
+        getState().getCompilerWrapper().handleFileSaved(uri, Optional.fromNullable(params.getText()));
         getState().publishDiagnostics(getState().getCompilerWrapper().compile(ImmutableSet.of(uri)));
     }
 

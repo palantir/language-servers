@@ -16,6 +16,7 @@
 
 package com.palantir.ls.api;
 
+import com.google.common.base.Optional;
 import java.net.URI;
 import java.util.List;
 import java.util.Set;
@@ -43,7 +44,7 @@ public interface WorkspaceCompiler {
     /**
      * Handle opening a file.
      */
-    void handleFileOpened(URI file);
+    void handleFileOpened(URI file, String contents);
 
     /**
      * Handle adding incremental changes to open files.
@@ -57,10 +58,10 @@ public interface WorkspaceCompiler {
     void handleFileClosed(URI originalFile);
 
     /**
-     * Handle changes saved to {@code originalFile}.
+     * Handle changes saved to {@code originalFile} with optional contents of the file.
      * @param originalFile the URI of the original file
      */
-    void handleFileSaved(URI originalFile);
+    void handleFileSaved(URI originalFile, Optional<String> contents);
 
     /**
      * Handles reconfiguring the compiled files in the event some files were created, changed or deleted outside of the

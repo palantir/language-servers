@@ -19,6 +19,7 @@ package com.palantir.ls.groovy;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import com.google.common.base.Optional;
 import com.google.common.base.Supplier;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableSet;
@@ -130,7 +131,7 @@ public final class GroovyWorkspaceCompiler implements WorkspaceCompiler, Supplie
     }
 
     @Override
-    public void handleFileOpened(URI file) {
+    public void handleFileOpened(URI file, String contents) {
 
     }
 
@@ -171,7 +172,7 @@ public final class GroovyWorkspaceCompiler implements WorkspaceCompiler, Supplie
     }
 
     @Override
-    public void handleFileSaved(URI originalFile) {
+    public void handleFileSaved(URI originalFile, Optional<String> contents) {
         if (originalSourceToChangedSource.containsKey(originalFile)) {
             originalSourceToChangedSource.get(originalFile).reload();
             resetCompilationUnit();
