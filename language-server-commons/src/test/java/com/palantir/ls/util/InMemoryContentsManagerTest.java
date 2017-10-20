@@ -120,8 +120,7 @@ public class InMemoryContentsManagerTest {
 
     @Test
     public void testDidChanges_insertionEndOfFileExtraWhiteLines() throws IOException {
-        Path source = addFileToFolder(sourceFolder.getRoot(), "myfile.txt", "first line\nsecond line");
-        InMemoryContentsManager manager = new InMemoryContentsManager(source);
+        InMemoryContentsManager manager = new InMemoryContentsManager(defaultSourcePath, "first line\nsecond line");
         List<TextDocumentContentChangeEvent> changes = Lists.newArrayList();
         changes.add(new TextDocumentContentChangeEvent(Ranges.createRange(3, 0, 3, 0), 13, "small change"));
         manager.applyChanges(changes);
