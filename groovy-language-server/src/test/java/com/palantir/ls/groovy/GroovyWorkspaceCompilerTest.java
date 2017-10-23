@@ -19,6 +19,7 @@ package com.palantir.ls.groovy;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterators;
@@ -383,7 +384,7 @@ public class GroovyWorkspaceCompilerTest {
         assertSingleSourceFileUri(catChangedFile, compiler.get().iterator());
 
         // Call handleClose
-        compiler.handleFileSaved(catFile.toURI());
+        compiler.handleFileSaved(catFile.toURI(), Optional.absent());
         // Assert things reloaded
         assertEquals("class Cat {\n}\n", FileUtils.readFileToString(catFile));
         assertEquals("class Cat {\n}\n", FileUtils.readFileToString(catChangedFile));

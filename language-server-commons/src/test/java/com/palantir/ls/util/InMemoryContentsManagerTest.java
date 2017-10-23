@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.TextDocumentContentChangeEvent;
+import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -41,24 +42,27 @@ public class InMemoryContentsManagerTest {
 
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
-
     @Rule
     public TemporaryFolder sourceFolder = new TemporaryFolder();
-
     @Rule
     public TemporaryFolder destinationFolder = new TemporaryFolder();
 
+    private Path defaultSourcePath;
+
+    @Before
+    public void before() {
+        defaultSourcePath = new File(sourceFolder.getRoot(), "myfile.txt").toPath();
+    }
+
     @Test
     public void testInitialize_noNewLine() throws IOException {
-        Path source = addFileToFolder(sourceFolder.getRoot(), "myfile.txt", "my file contents");
-        InMemoryContentsManager manager = new InMemoryContentsManager(source);
+        InMemoryContentsManager manager = new InMemoryContentsManager(defaultSourcePath, "my file contents");
         assertEquals("my file contents", manager.getContents());
     }
 
     @Test
     public void testDidChanges_noChanges() throws IOException {
-        Path source = addFileToFolder(sourceFolder.getRoot(), "myfile.txt", "first line\nsecond line\n");
-        InMemoryContentsManager manager = new InMemoryContentsManager(source);
+        InMemoryContentsManager manager = new InMemoryContentsManager(defaultSourcePath, "first line\nsecond line\n");
         List<TextDocumentContentChangeEvent> changes = Lists.newArrayList();
         manager.applyChanges(changes);
         assertEquals("first line\nsecond line\n", manager.getContents());
@@ -66,8 +70,7 @@ public class InMemoryContentsManagerTest {
 
     @Test
     public void testDidChanges_nullRangeChange() throws IOException {
-        Path source = addFileToFolder(sourceFolder.getRoot(), "myfile.txt", "first line\nsecond line\n");
-        InMemoryContentsManager writer = new InMemoryContentsManager(source);
+        InMemoryContentsManager writer = new InMemoryContentsManager(defaultSourcePath, "first line\nsecond line\n");
         List<TextDocumentContentChangeEvent> changes = Lists.newArrayList();
         changes.add(new TextDocumentContentChangeEvent("foo"));
         writer.applyChanges(changes);
@@ -77,8 +80,7 @@ public class InMemoryContentsManagerTest {
 
     @Test
     public void testDidChanges_nullRangeWithMultipleChanges() throws IOException {
-        Path source = addFileToFolder(sourceFolder.getRoot(), "myfile.txt", "first line\nsecond line\n");
-        InMemoryContentsManager writer = new InMemoryContentsManager(source);
+        InMemoryContentsManager writer = new InMemoryContentsManager(defaultSourcePath, "first line\nsecond line\n");
         List<TextDocumentContentChangeEvent> changes = Lists.newArrayList();
         changes.add(new TextDocumentContentChangeEvent("foo"));
         changes.add(new TextDocumentContentChangeEvent(Ranges.createRange(1, 0, 1, 0), 1, "notfoo"));
@@ -90,8 +92,7 @@ public class InMemoryContentsManagerTest {
 
     @Test
     public void testDidChanges_insertionBeginningOfLine() throws IOException {
-        Path source = addFileToFolder(sourceFolder.getRoot(), "myfile.txt", "first line\necond line\n");
-        InMemoryContentsManager writer = new InMemoryContentsManager(source);
+        InMemoryContentsManager writer = new InMemoryContentsManager(defaultSourcePath, "first line\necond line\n");
         List<TextDocumentContentChangeEvent> changes = Lists.newArrayList();
         changes.add(new TextDocumentContentChangeEvent(Ranges.createRange(1, 0, 1, 0), 1, "s"));
         writer.applyChanges(changes);
@@ -100,8 +101,7 @@ public class InMemoryContentsManagerTest {
 
     @Test
     public void testDidChanges_insertionEndOfLine() throws IOException {
-        Path source = addFileToFolder(sourceFolder.getRoot(), "myfile.txt", "first line\nsecond line\n");
-        InMemoryContentsManager manager = new InMemoryContentsManager(source);
+        InMemoryContentsManager manager = new InMemoryContentsManager(defaultSourcePath, "first line\nsecond line\n");
         List<TextDocumentContentChangeEvent> changes = Lists.newArrayList();
         changes.add(new TextDocumentContentChangeEvent(Ranges.createRange(1, 20, 1, 20), 13, "small change\n"));
         manager.applyChanges(changes);
@@ -111,8 +111,7 @@ public class InMemoryContentsManagerTest {
 
     @Test
     public void testDidChanges_insertionEndOfFile() throws IOException {
-        Path source = addFileToFolder(sourceFolder.getRoot(), "myfile.txt", "first line\nsecond line");
-        InMemoryContentsManager manager = new InMemoryContentsManager(source);
+        InMemoryContentsManager manager = new InMemoryContentsManager(defaultSourcePath, "first line\nsecond line");
         List<TextDocumentContentChangeEvent> changes = Lists.newArrayList();
         changes.add(new TextDocumentContentChangeEvent(Ranges.createRange(2, 0, 2, 0), 13, "small change"));
         manager.applyChanges(changes);
@@ -120,9 +119,17 @@ public class InMemoryContentsManagerTest {
     }
 
     @Test
+    public void testDidChanges_insertionEndOfFileExtraWhiteLines() throws IOException {
+        InMemoryContentsManager manager = new InMemoryContentsManager(defaultSourcePath, "first line\nsecond line");
+        List<TextDocumentContentChangeEvent> changes = Lists.newArrayList();
+        changes.add(new TextDocumentContentChangeEvent(Ranges.createRange(3, 0, 3, 0), 13, "small change"));
+        manager.applyChanges(changes);
+        assertEquals("first line\nsecond line\nsmall change\n", manager.getContents());
+    }
+
+    @Test
     public void testDidChanges_oneLineRange() throws IOException {
-        Path source = addFileToFolder(sourceFolder.getRoot(), "myfile.txt", "first line\nsecond line\n");
-        InMemoryContentsManager manager = new InMemoryContentsManager(source);
+        InMemoryContentsManager manager = new InMemoryContentsManager(defaultSourcePath, "first line\nsecond line\n");
         List<TextDocumentContentChangeEvent> changes = Lists.newArrayList();
         changes.add(new TextDocumentContentChangeEvent(Ranges.createRange(0, 6, 0, 10), 12, "small change"));
         manager.applyChanges(changes);
@@ -132,8 +139,8 @@ public class InMemoryContentsManagerTest {
     @Ignore("Purely for very naive perf testing")
     @Test
     public void testDidChanges_multiLineRange_new() throws IOException {
-        Path source = addFileToFolder(sourceFolder.getRoot(), "myfile.txt", "first line\nsecond line\nthird line\n");
-        InMemoryContentsManager manager = new InMemoryContentsManager(source);
+        InMemoryContentsManager manager = new InMemoryContentsManager(
+                defaultSourcePath, "first line\nsecond line\nthird line\n");
         List<TextDocumentContentChangeEvent> changes = Lists.newArrayList();
         changes.add(new TextDocumentContentChangeEvent(Ranges.createRange(0, 6, 1, 6), 12, "small change"));
         Stopwatch started = Stopwatch.createStarted();
@@ -144,26 +151,10 @@ public class InMemoryContentsManagerTest {
         System.out.println(stop.elapsed(TimeUnit.MILLISECONDS));
     }
 
-    @Ignore("Purely for very naive perf testing")
-    @Test
-    public void testDidChanges_multiLineRange() throws IOException {
-        Path source = addFileToFolder(sourceFolder.getRoot(), "myfile.txt", "first line\nsecond line\nthird line\n");
-        Path destination = destinationFolder.getRoot().toPath().resolve("myfile.txt");
-        Stopwatch started = Stopwatch.createStarted();
-        FileBackedContentsManager writer = FileBackedContentsManager.of(source, destination);
-        List<TextDocumentContentChangeEvent> changes = Lists.newArrayList();
-        changes.add(new TextDocumentContentChangeEvent(Ranges.createRange(0, 6, 1, 6), 12, "small change"));
-        for (int i = 0; i < 10000; i++) {
-            writer.applyChanges(changes);
-        }
-        Stopwatch stop = started.stop();
-        System.out.println(stop.elapsed(TimeUnit.MILLISECONDS));
-    }
-
     @Test
     public void testDidChanges_multipleRangesWholeLines() throws IOException {
-        Path source = addFileToFolder(sourceFolder.getRoot(), "myfile.txt", "first line\nsecond line\nthird line\n");
-        InMemoryContentsManager manager = new InMemoryContentsManager(source);
+        InMemoryContentsManager manager = new InMemoryContentsManager(
+                defaultSourcePath, "first line\nsecond line\nthird line\n");
         List<TextDocumentContentChangeEvent> changes = Lists.newArrayList();
         changes.add(new TextDocumentContentChangeEvent(Ranges.createRange(0, 0, 0, 20), 16, "new line number 1"));
         changes.add(new TextDocumentContentChangeEvent(Ranges.createRange(1, 0, 1, 20), 16, "new line number 2"));
@@ -174,9 +165,8 @@ public class InMemoryContentsManagerTest {
 
     @Test
     public void testDidChanges_multipleRangesSpecific() throws IOException {
-        // Tests replacing the whole lines
-        Path source = addFileToFolder(sourceFolder.getRoot(), "myfile.txt", "first line\nsecond line\nthird line\n");
-        InMemoryContentsManager manager = new InMemoryContentsManager(source);
+        InMemoryContentsManager manager = new InMemoryContentsManager(
+                defaultSourcePath, "first line\nsecond line\nthird line\n");
         List<TextDocumentContentChangeEvent> changes = Lists.newArrayList();
         changes.add(new TextDocumentContentChangeEvent(Ranges.createRange(0, 1, 0, 9), 16, "new line number 1"));
         changes.add(new TextDocumentContentChangeEvent(Ranges.createRange(1, 1, 1, 10), 16, "new line number 2"));
@@ -188,8 +178,8 @@ public class InMemoryContentsManagerTest {
     @Test
     public void testDidChanges_beforeFile() throws IOException {
         // Should be appended to the start of the file
-        Path source = addFileToFolder(sourceFolder.getRoot(), "myfile.txt", "first line\nsecond line\nthird line\n");
-        InMemoryContentsManager writer = new InMemoryContentsManager(source);
+        InMemoryContentsManager writer = new InMemoryContentsManager(
+                defaultSourcePath, "first line\nsecond line\nthird line\n");
         List<TextDocumentContentChangeEvent> changes = Lists.newArrayList();
         changes.add(new TextDocumentContentChangeEvent(Ranges.createRange(0, 0, 0, 0), 7, "change\n"));
         writer.applyChanges(changes);
@@ -199,8 +189,8 @@ public class InMemoryContentsManagerTest {
     @Test
     public void testDidChanges_afterFile() throws IOException {
         // Should be appended to the end of the file
-        Path source = addFileToFolder(sourceFolder.getRoot(), "myfile.txt", "first line\nsecond line\nthird line\n");
-        InMemoryContentsManager writer = new InMemoryContentsManager(source);
+        InMemoryContentsManager writer = new InMemoryContentsManager(
+                defaultSourcePath, "first line\nsecond line\nthird line\n");
         List<TextDocumentContentChangeEvent> changes = Lists.newArrayList();
         changes.add(new TextDocumentContentChangeEvent(Ranges.createRange(30, 1, 30, 1), 6, "first "));
         changes.add(new TextDocumentContentChangeEvent(Ranges.createRange(31, 1, 31, 1), 6, "second"));
@@ -211,8 +201,8 @@ public class InMemoryContentsManagerTest {
     @Test
     public void testDidChanges_invalidRanges() throws IOException {
         // Should be appended to the end of the file
-        Path source = addFileToFolder(sourceFolder.getRoot(), "myfile.txt", "first line\nsecond line\nthird line\n");
-        InMemoryContentsManager writer = new InMemoryContentsManager(source);
+        InMemoryContentsManager writer = new InMemoryContentsManager(
+                defaultSourcePath, "first line\nsecond line\nthird line\n");
         List<TextDocumentContentChangeEvent> changes = Lists.newArrayList();
         changes.add(new TextDocumentContentChangeEvent(Ranges.createRange(-1, 0, 0, 0), 3, "one"));
         changes.add(new TextDocumentContentChangeEvent(Ranges.createRange(0, 0, 0, 0), 3, "two"));
@@ -225,8 +215,8 @@ public class InMemoryContentsManagerTest {
     @Test
     public void testDidChanges_intersectingRanges() throws IOException {
         // Should be appended to the end of the file
-        Path source = addFileToFolder(sourceFolder.getRoot(), "myfile.txt", "first line\nsecond line\nthird line\n");
-        InMemoryContentsManager writer = new InMemoryContentsManager(source);
+        InMemoryContentsManager writer = new InMemoryContentsManager(
+                defaultSourcePath, "first line\nsecond line\nthird line\n");
         List<TextDocumentContentChangeEvent> changes = Lists.newArrayList();
         Range range = Ranges.createRange(0, 0, 0, 1);
         changes.add(new TextDocumentContentChangeEvent(range, 3, "one"));
@@ -240,10 +230,8 @@ public class InMemoryContentsManagerTest {
     @Test
     public void testDidChanges_rangesStartAndEndOnSameLine() throws IOException {
         // Should be appended to the end of the file
-        Path source =
-                addFileToFolder(sourceFolder.getRoot(), "myfile.txt",
-                        "0123456789\n0123456789\n0123456789\n0123456789\n0123456789\n");
-        InMemoryContentsManager writer = new InMemoryContentsManager(source);
+        InMemoryContentsManager writer = new InMemoryContentsManager(
+                defaultSourcePath, "0123456789\n0123456789\n0123456789\n0123456789\n0123456789\n");
         List<TextDocumentContentChangeEvent> changes = Lists.newArrayList();
         changes.add(new TextDocumentContentChangeEvent(Ranges.createRange(0, 0, 0, 1), 1, "a"));
         changes.add(new TextDocumentContentChangeEvent(Ranges.createRange(0, 2, 0, 3), 1, "b"));
@@ -263,7 +251,7 @@ public class InMemoryContentsManagerTest {
         String originalContents = "first line\n";
         // Tests replacing the whole lines
         Path source = addFileToFolder(sourceFolder.getRoot(), "myfile.txt", originalContents);
-        InMemoryContentsManager manager = new InMemoryContentsManager(source);
+        InMemoryContentsManager manager = new InMemoryContentsManager(defaultSourcePath, "first line\n");
         List<TextDocumentContentChangeEvent> changes = Lists.newArrayList();
         changes.add(new TextDocumentContentChangeEvent(Ranges.createRange(0, 1, 0, 9), 16, "new line number 1"));
         manager.applyChanges(changes);

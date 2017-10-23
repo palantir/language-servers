@@ -96,8 +96,8 @@ public class DefaultCompilerWrapper implements CompilerWrapper {
     }
 
     @Override
-    public void handleFileOpened(URI file) {
-        compiler.handleFileOpened(file);
+    public void handleFileOpened(URI file, String contents) {
+        compiler.handleFileOpened(file, contents);
     }
 
     @Override
@@ -111,8 +111,8 @@ public class DefaultCompilerWrapper implements CompilerWrapper {
     }
 
     @Override
-    public void handleFileSaved(URI originalFile) {
-        compiler.handleFileSaved(originalFile);
+    public void handleFileSaved(URI originalFile, Optional<String> contents) {
+        compiler.handleFileSaved(originalFile, contents);
     }
 
     @Override
