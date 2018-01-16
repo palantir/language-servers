@@ -8,11 +8,11 @@ sourceCompatibility = '1.8'
 
 dependencies {
     compile project(":language-server-commons")
+    compile "ch.qos.logback:logback-classic:${logbackVersion}"
     compile "com.fasterxml.jackson.core:jackson-databind:${jacksonDatabindVersion}"
     compile "com.google.code.findbugs:annotations:${findbugsAnnotationsVersion}"
     compile "com.google.guava:guava:${guavaVersion}"
     compile "commons-io:commons-io:${commonsIoVersion}"
-    compile "org.slf4j:jcl-over-slf4j:${jclOverSlf4jVersion}"
     compile "org.slf4j:slf4j-api:${slf4jApiVersion}"
     compile "org.eclipse.lsp4j:org.eclipse.lsp4j:${lsApiVersion}"
     compile "org.eclipse.lsp4j:org.eclipse.lsp4j.jsonrpc:${lsApiVersion}"
