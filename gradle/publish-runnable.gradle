@@ -3,6 +3,7 @@ apply plugin: 'com.github.johnrengelman.shadow'
 apply plugin: 'com.jfrog.bintray'
 
 shadowJar {
+    zip64 true
     manifest {
         attributes 'Main-Class': project.ext.get("mainClass")
     }
