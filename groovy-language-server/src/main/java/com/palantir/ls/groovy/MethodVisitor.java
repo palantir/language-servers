@@ -80,6 +80,7 @@ public class MethodVisitor extends CodeVisitorSupport {
         super.visitCatchStatement(statement);
     }
 
+    @SuppressWarnings("checkstyle:cyclomaticcomplexity")
     @Override
     public void visitMethodCallExpression(MethodCallExpression call) {
         List<MethodNode> possibleMethods = null;
@@ -118,6 +119,7 @@ public class MethodVisitor extends CodeVisitorSupport {
 
         final ClassNode parentClass = potentialParentClass;
         if (possibleMethods != null && !possibleMethods.isEmpty()
+                && classes.containsKey(parentClass.getName())
                 && call.getArguments() instanceof ArgumentListExpression) {
             ArgumentListExpression actualArguments = (ArgumentListExpression) call.getArguments();
             possibleMethods.stream()
@@ -159,15 +161,19 @@ public class MethodVisitor extends CodeVisitorSupport {
             // This means it's a non static reference to a class variable
             VariableExpression var = (VariableExpression) expression.getObjectExpression();
             FieldNode field = var.getType().getField(expression.getProperty().getText());
-            indexer.addReference(createLocation(URI.create(classes.get(var.getType().getName()).getUri()), field),
-                    createLocation(expression.getProperty()));
+            if (classes.containsKey(var.getType().getName())) {
+                indexer.addReference(createLocation(URI.create(classes.get(var.getType().getName()).getUri()), field),
+                        createLocation(expression.getProperty()));
+            }
         } else if (expression.getObjectExpression() instanceof ClassExpression) {
             // This means it's a static reference to a class variable
             ClassExpression classExpression = (ClassExpression) expression.getObjectExpression();
             FieldNode field = classExpression.getType().getField(expression.getProperty().getText());
-            indexer.addReference(
-                    createLocation(URI.create(classes.get(classExpression.getType().getName()).getUri()), field),
-                    createLocation(expression.getProperty()));
+            if (classes.containsKey(classExpression.getType().getName())) {
+                indexer.addReference(
+                        createLocation(URI.create(classes.get(classExpression.getType().getName()).getUri()), field),
+                        createLocation(expression.getProperty()));
+            }
         }
         super.visitPropertyExpression(expression);
     }
